@@ -1,14 +1,17 @@
 package benchs
 
 import (
+	"runtime"
 	"sync"
 	"sync/atomic"
+	"unsafe"
 )
 
 // Test data structure
 type testObject struct {
-	ID   int
-	Data string
+	ID         int
+	Data       string
+	shardIndex int
 }
 
 // Ring buffer data structure
@@ -95,50 +98,11 @@ func (p *MutexRingBufferPool) Get() *testObject {
 	if obj, ok := p.ringBuffer.Pop(); ok {
 		return obj
 	}
+
 	return p.allocator()
 }
 
 func (p *MutexRingBufferPool) Put(obj *testObject) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	p.ringBuffer.Push(obj)
-}
-
-// RWMutex-protected ring buffer implementation
-type RWMutexRingBufferPool struct {
-	ringBuffer *RingBuffer[*testObject]
-	mu         sync.RWMutex
-	allocator  func() *testObject
-	cleaner    func(*testObject)
-}
-
-func NewRWMutexRingBufferPool(capacity int, allocator func() *testObject, cleaner func(*testObject)) *RWMutexRingBufferPool {
-	pool := &RWMutexRingBufferPool{
-		ringBuffer: NewRingBuffer[*testObject](capacity),
-		allocator:  allocator,
-		cleaner:    cleaner,
-	}
-
-	// Pre-populate the pool
-	for range capacity {
-		pool.ringBuffer.Push(allocator())
-	}
-
-	return pool
-}
-
-func (p *RWMutexRingBufferPool) Get() *testObject {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if obj, ok := p.ringBuffer.Pop(); ok {
-		return obj
-	}
-	return p.allocator()
-}
-
-func (p *RWMutexRingBufferPool) Put(obj *testObject) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -221,10 +185,6 @@ func (p *MutexBasedPool) Get() *testObject {
 }
 
 func (p *MutexBasedPool) Put(obj *testObject) {
-	if p.cleaner != nil {
-		p.cleaner(obj)
-	}
-
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -233,59 +193,10 @@ func (p *MutexBasedPool) Put(obj *testObject) {
 	}
 }
 
-// RWMutex-based implementation for comparison
-type RWMutexBasedPool struct {
-	objects   []*testObject
-	mu        sync.RWMutex
-	allocator func() *testObject
-	cleaner   func(*testObject)
-}
-
-func NewRWMutexBasedPool(capacity int, allocator func() *testObject, cleaner func(*testObject)) *RWMutexBasedPool {
-	pool := &RWMutexBasedPool{
-		objects:   make([]*testObject, 0, capacity),
-		allocator: allocator,
-		cleaner:   cleaner,
-	}
-
-	// Pre-populate the pool
-	for range capacity {
-		pool.objects = append(pool.objects, allocator())
-	}
-
-	return pool
-}
-
-func (p *RWMutexBasedPool) Get() *testObject {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if len(p.objects) == 0 {
-		return p.allocator()
-	}
-
-	obj := p.objects[len(p.objects)-1]
-	p.objects = p.objects[:len(p.objects)-1]
-	return obj
-}
-
-func (p *RWMutexBasedPool) Put(obj *testObject) {
-	if p.cleaner != nil {
-		p.cleaner(obj)
-	}
-
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
-	if len(p.objects) < cap(p.objects) {
-		p.objects = append(p.objects, obj)
-	}
-}
-
-// Atomic-based implementation using atomic.Value
+// Atomic-based implementation using atomic.Int64
 type AtomicBasedPool struct {
 	objects   []*testObject
-	index     int64
+	index     atomic.Int64
 	capacity  int64
 	allocator func() *testObject
 	cleaner   func(*testObject)
@@ -303,39 +214,31 @@ func NewAtomicBasedPool(capacity int, allocator func() *testObject, cleaner func
 	for i := range capacity {
 		pool.objects[i] = allocator()
 	}
+	// initialize index to full
+	pool.index.Store(int64(capacity))
 
 	return pool
 }
 
 func (p *AtomicBasedPool) Get() *testObject {
-	// Try to get an object using atomic operations
 	for {
-		idx := atomic.LoadInt64(&p.index)
+		idx := p.index.Load()
 		if idx <= 0 {
 			return p.allocator()
 		}
-
-		newIdx := idx - 1
-		if atomic.CompareAndSwapInt64(&p.index, idx, newIdx) {
-			return p.objects[newIdx]
+		if p.index.CompareAndSwap(idx, idx-1) {
+			return p.objects[idx-1]
 		}
 	}
 }
 
 func (p *AtomicBasedPool) Put(obj *testObject) {
-	if p.cleaner != nil {
-		p.cleaner(obj)
-	}
-
-	// Try to put the object back
 	for {
-		idx := atomic.LoadInt64(&p.index)
+		idx := p.index.Load()
 		if idx >= p.capacity {
-			return // Pool is full
+			return
 		}
-
-		newIdx := idx + 1
-		if atomic.CompareAndSwapInt64(&p.index, idx, newIdx) {
+		if p.index.CompareAndSwap(idx, idx+1) {
 			p.objects[idx] = obj
 			return
 		}
@@ -383,10 +286,6 @@ func (p *CondBasedPool) Get() *testObject {
 }
 
 func (p *CondBasedPool) Put(obj *testObject) {
-	if p.cleaner != nil {
-		p.cleaner(obj)
-	}
-
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -444,15 +343,264 @@ func (p *RingBufferCondPool) Put(obj *testObject) {
 	}
 }
 
+// Sharded pool implementations
+// These implementations use multiple sub-pools to reduce contention
+
+// Sharded Mutex Ring Buffer Pool
+type ShardedMutexRingBufferPool struct {
+	shards []*MutexRingBufferPool
+}
+
+func NewShardedMutexRingBufferPool(capacity int, numShards int, allocator func() *testObject, cleaner func(*testObject)) *ShardedMutexRingBufferPool {
+	if numShards <= 0 {
+		numShards = runtime.GOMAXPROCS(0)
+	}
+
+	shards := make([]*MutexRingBufferPool, numShards)
+	shardCapacity := max(capacity/numShards, 1)
+
+	for i := range numShards {
+		shards[i] = NewMutexRingBufferPool(shardCapacity, allocator, cleaner)
+	}
+
+	return &ShardedMutexRingBufferPool{
+		shards: shards,
+	}
+}
+
+func (p *ShardedMutexRingBufferPool) Get() *testObject {
+	shardIndex := runtimeProcPin()
+	shard := p.shards[shardIndex]
+	runtimeProcUnpin()
+
+	obj := shard.Get()
+	obj.shardIndex = shardIndex
+	return obj
+}
+
+func (p *ShardedMutexRingBufferPool) Put(obj *testObject) {
+	shard := p.shards[obj.shardIndex]
+	shard.Put(obj)
+}
+
+// Sharded Channel Based Pool
+type ShardedChannelBasedPool struct {
+	shards []*ChannelBasedPool
+}
+
+func NewShardedChannelBasedPool(capacity int, numShards int, allocator func() *testObject, cleaner func(*testObject)) *ShardedChannelBasedPool {
+	if numShards <= 0 {
+		numShards = runtime.GOMAXPROCS(0)
+	}
+
+	shards := make([]*ChannelBasedPool, numShards)
+	shardCapacity := capacity / numShards
+	if shardCapacity < 1 {
+		shardCapacity = 1
+	}
+
+	for i := 0; i < numShards; i++ {
+		shards[i] = NewChannelBasedPool(shardCapacity, allocator, cleaner)
+	}
+
+	return &ShardedChannelBasedPool{
+		shards: shards,
+	}
+}
+
+func (p *ShardedChannelBasedPool) Get() *testObject {
+	shardIndex := runtimeProcPin()
+	shard := p.shards[shardIndex]
+	runtimeProcUnpin()
+
+	obj := shard.Get()
+	obj.shardIndex = shardIndex
+	return obj
+}
+
+func (p *ShardedChannelBasedPool) Put(obj *testObject) {
+	// Return the object to the same shard it came from
+	shardIndex := obj.shardIndex
+	if shardIndex >= 0 && shardIndex < len(p.shards) {
+		p.shards[shardIndex].Put(obj)
+	}
+}
+
+// Sharded Atomic Based Pool
+type ShardedAtomicBasedPool struct {
+	shards []*AtomicBasedPool
+}
+
+func NewShardedAtomicBasedPool(capacity int, numShards int, allocator func() *testObject, cleaner func(*testObject)) *ShardedAtomicBasedPool {
+	if numShards <= 0 {
+		numShards = runtime.GOMAXPROCS(0)
+	}
+
+	shards := make([]*AtomicBasedPool, numShards)
+	shardCapacity := max(capacity/numShards, 1)
+
+	for i := 0; i < numShards; i++ {
+		shards[i] = NewAtomicBasedPool(shardCapacity, allocator, cleaner)
+	}
+
+	return &ShardedAtomicBasedPool{
+		shards: shards,
+	}
+}
+
+func (p *ShardedAtomicBasedPool) Get() *testObject {
+	shardIndex := runtimeProcPin()
+	shard := p.shards[shardIndex]
+	runtimeProcUnpin()
+
+	obj := shard.Get()
+	obj.shardIndex = shardIndex
+	return obj
+}
+
+func (p *ShardedAtomicBasedPool) Put(obj *testObject) {
+	shard := p.shards[obj.shardIndex]
+	shard.Put(obj)
+}
+
+// Sharded Condition Based Pool
+type ShardedCondBasedPool struct {
+	shards []*RingBufferCondPool
+}
+
+func NewShardedCondBasedPool(capacity int, numShards int, allocator func() *testObject, cleaner func(*testObject)) *ShardedCondBasedPool {
+	if numShards <= 0 {
+		numShards = runtime.GOMAXPROCS(0)
+	}
+
+	shards := make([]*RingBufferCondPool, numShards)
+	shardCapacity := capacity / numShards
+	if shardCapacity < 1 {
+		shardCapacity = 1
+	}
+
+	for i := 0; i < numShards; i++ {
+		shards[i] = NewRingBufferCondPool(shardCapacity, allocator, cleaner)
+	}
+
+	return &ShardedCondBasedPool{
+		shards: shards,
+	}
+}
+
+func (p *ShardedCondBasedPool) Get() *testObject {
+	shardIndex := runtimeProcPin()
+	shard := p.shards[shardIndex]
+	runtimeProcUnpin()
+
+	obj := shard.Get()
+	obj.shardIndex = shardIndex
+	return obj
+}
+
+func (p *ShardedCondBasedPool) Put(obj *testObject) {
+	shard := p.shards[obj.shardIndex]
+	shard.Put(obj)
+}
+
+// Sharded Ring Buffer Condition Pool
+type ShardedRingBufferCondPool struct {
+	shards []*RingBufferCondPool
+}
+
+func NewShardedRingBufferCondPool(capacity int, numShards int, allocator func() *testObject, cleaner func(*testObject)) *ShardedRingBufferCondPool {
+	if numShards <= 0 {
+		numShards = runtime.GOMAXPROCS(0)
+	}
+
+	shards := make([]*RingBufferCondPool, numShards)
+	shardCapacity := capacity / numShards
+	if shardCapacity < 1 {
+		shardCapacity = 1
+	}
+
+	for i := 0; i < numShards; i++ {
+		shards[i] = NewRingBufferCondPool(shardCapacity, allocator, cleaner)
+	}
+
+	return &ShardedRingBufferCondPool{
+		shards: shards,
+	}
+}
+
+func (p *ShardedRingBufferCondPool) Get() *testObject {
+	shardIndex := runtimeProcPin()
+	shard := p.shards[shardIndex]
+	runtimeProcUnpin()
+
+	obj := shard.Get()
+	obj.shardIndex = shardIndex
+	return obj
+}
+
+func (p *ShardedRingBufferCondPool) Put(obj *testObject) {
+	shard := p.shards[obj.shardIndex]
+	shard.Put(obj)
+}
+
+// Sharded Pool using Goroutine ID (no proc pinning, no shard index storage)
+type ShardedGoroutineIDPool struct {
+	shards    []*MutexRingBufferPool
+	numShards int
+}
+
+func NewShardedGoroutineIDPool(capacity int, numShards int, allocator func() *testObject, cleaner func(*testObject)) *ShardedGoroutineIDPool {
+	if numShards <= 0 {
+		numShards = runtime.GOMAXPROCS(0)
+	}
+
+	shards := make([]*MutexRingBufferPool, numShards)
+	shardCapacity := max(capacity/numShards, 1)
+
+	for i := range numShards {
+		shards[i] = NewMutexRingBufferPool(shardCapacity, allocator, cleaner)
+	}
+
+	return &ShardedGoroutineIDPool{
+		shards:    shards,
+		numShards: numShards,
+	}
+}
+
+func (p *ShardedGoroutineIDPool) getShard() *MutexRingBufferPool {
+	var dummy byte
+	addr := uintptr(unsafe.Pointer(&dummy))
+	id := int(addr>>12) & (p.numShards - 1)
+	return p.shards[id]
+}
+
+func (p *ShardedGoroutineIDPool) Get() *testObject {
+	shard := p.getShard()
+	return shard.Get()
+}
+
+func (p *ShardedGoroutineIDPool) Put(obj *testObject) {
+	shard := p.getShard()
+	shard.Put(obj)
+}
+
+//go:linkname runtimeProcPin runtime.procPin
+func runtimeProcPin() int
+
+//go:linkname runtimeProcUnpin runtime.procUnpin
+func runtimeProcUnpin()
+
 // Test functions
 var testAllocator = func() *testObject {
 	return &testObject{
-		ID:   0,
-		Data: "test",
+		ID:         0,
+		Data:       "test",
+		shardIndex: -1, // -1 indicates not yet assigned to a shard
 	}
 }
 
 var testCleaner = func(obj *testObject) {
 	obj.ID = 0
 	obj.Data = ""
+	obj.shardIndex = -1
 }
