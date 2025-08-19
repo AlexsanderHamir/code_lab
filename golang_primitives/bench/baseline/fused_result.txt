@@ -19,7 +19,7 @@
 - **Runs**: 10
 - **Rank**: 2nd
 
-### 3. Benchmark_RingBufferCond
+### 3. Benchmark_CondPool
 - **Average Performance**: 198.4 ns/op
 - **Average Operations/sec**: 5,040,000 ops/sec
 - **Memory**: 0 B/op, 0 allocs/op
