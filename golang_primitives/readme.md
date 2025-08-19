@@ -1,26 +1,24 @@
 # Go Primitives Performance Benchmark
 
-## Overview
-
 Benchmarking different Go synchronization primitives for object pools to see which performs best.
 
 ## Results
 
 ### Performance Rankings (ns/op)
 
-| Rank | Implementation        | Performance     | Performance Ratio |
-| ---- | --------------------- | --------------- | ----------------- |
-| 1    | ChannelBasedPool      | **132.7 ns/op** | 1.0x (baseline)   |
-| 2    | RWMutexRingBufferPool | 197.1 ns/op     | 1.5x slower       |
-| 3    | RingBufferCond        | 198.4 ns/op     | 1.5x slower       |
-| 4    | MutexRingBufferPool   | 198.7 ns/op     | 1.5x slower       |
-| 5    | AtomicBasedPool       | 631.6 ns/op     | 4.8x slower       |
+| Rank | Implementation        | Performance     | Performance vs Baseline |
+| ---- | --------------------- | --------------- | ----------------------- |
+| 1    | ChannelBasedPool      | **132.7 ns/op** | 0% (baseline)           |
+| 2    | RWMutexRingBufferPool | 197.1 ns/op     | 48.5% slower            |
+| 3    | RingBufferCond        | 198.4 ns/op     | 49.5% slower            |
+| 4    | MutexRingBufferPool   | 198.7 ns/op     | 49.7% slower            |
+| 5    | AtomicBasedPool       | 631.6 ns/op     | 375.8% slower           |
 
 ## Key Findings
 
 - **Channels are fastest** by a significant margin
-- **Mutex-based solutions** perform similarly (~198 ns/op)
-- **Atomic operations** are surprisingly slow in this context
+- **Mutex-based solutions** perform similarly (~49-50% slower than channels)
+- **Atomic operations** are surprisingly slow in this context (375.8% slower than channels)
 
 ## Conclusions
 
