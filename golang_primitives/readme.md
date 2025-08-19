@@ -23,7 +23,7 @@ Benchmarking different Go synchronization primitives for object pools to see whi
 ## Conclusions
 
 1. **Channels are optimized** for general use and provide best performance
-2. **Mutexes give consistent** performance across variants
+2. **Mutexes give consistent** performance across variants (unless workload changes)
 3. **Atomics need careful** implementation around it to perform well
 4. **Use channels by default** unless you have specific needs
 
