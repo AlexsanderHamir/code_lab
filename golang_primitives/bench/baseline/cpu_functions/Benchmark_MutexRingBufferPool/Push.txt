@@ -1,0 +1,14 @@
+Total: 52.53s
+ROUTINE ======================== primitives_performance.(*RingBuffer[go.shape.*uint8]).Push in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+      80ms       80ms (flat, cum)  0.15% of Total
+         .          .     33:func (rb *RingBuffer[T]) Push(item T) bool {
+      30ms       30ms     34:	if rb.size >= rb.capacity {
+         .          .     35:		return false // Buffer is full
+         .          .     36:	}
+         .          .     37:
+      50ms       50ms     38:	rb.buffer[rb.tail] = item
+         .          .     39:	rb.tail = (rb.tail + 1) % rb.capacity
+         .          .     40:	rb.size++
+         .          .     41:	return true
+         .          .     42:}
+         .          .     43:

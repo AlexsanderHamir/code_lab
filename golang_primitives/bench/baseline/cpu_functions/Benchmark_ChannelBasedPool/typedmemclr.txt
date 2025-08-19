@@ -1,0 +1,16 @@
+Total: 30.68s
+ROUTINE ======================== runtime.typedmemclr in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mbarrier.go
+      10ms       10ms (flat, cum) 0.033% of Total
+         .          .    361:func typedmemclr(typ *_type, ptr unsafe.Pointer) {
+         .          .    362:	if writeBarrier.enabled && typ.Pointers() {
+         .          .    363:		// This always clears a whole value of type typ, so it's
+         .          .    364:		// safe to pass a type here and apply the optimization.
+         .          .    365:		// See the comment on bulkBarrierPreWrite.
+         .          .    366:		bulkBarrierPreWrite(uintptr(ptr), 0, typ.PtrBytes, typ)
+         .          .    367:	}
+      10ms       10ms    368:	memclrNoHeapPointers(ptr, typ.Size_)
+         .          .    369:}
+         .          .    370:
+         .          .    371:// reflect_typedmemclr is meant for package reflect,
+         .          .    372:// but widely used packages access it using linkname.
+         .          .    373:// Notable members of the hall of shame include:

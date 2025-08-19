@@ -1,0 +1,108 @@
+Total: 30.68s
+ROUTINE ======================== runtime.(*lockTimer).end in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0      100ms (flat, cum)  0.33% of Total
+         .          .    701:func (lt *lockTimer) end() {
+         .          .    702:	gp := getg()
+         .          .    703:
+         .          .    704:	if lt.timeStart != 0 {
+         .       60ms    705:		nowTime := nanotime()
+         .          .    706:		gp.m.mLockProfile.waitTime.Add((nowTime - lt.timeStart) * lt.timeRate)
+         .          .    707:	}
+         .          .    708:
+         .          .    709:	if lt.tickStart != 0 {
+         .       30ms    710:		nowTick := cputicks()
+         .       10ms    711:		gp.m.mLockProfile.recordLock(nowTick-lt.tickStart, lt.lock)
+         .          .    712:	}
+         .          .    713:}
+         .          .    714:
+         .          .    715:type mLockProfile struct {
+         .          .    716:	waitTime   atomic.Int64 // total nanoseconds spent waiting in runtime.lockWithRank
+ROUTINE ======================== runtime.chansend in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/chan.go
+      10ms     15.44s (flat, cum) 50.33% of Total
+         .          .    176:func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {
+         .          .    177:	if c == nil {
+         .          .    178:		if !block {
+         .          .    179:			return false
+         .          .    180:		}
+         .          .    181:		gopark(nil, nil, waitReasonChanSendNilChan, traceBlockForever, 2)
+         .          .    182:		throw("unreachable")
+         .          .    183:	}
+         .          .    184:
+         .          .    185:	if debugChan {
+         .          .    186:		print("chansend: chan=", c, "\n")
+         .          .    187:	}
+         .          .    188:
+         .          .    189:	if raceenabled {
+         .          .    190:		racereadpc(c.raceaddr(), callerpc, abi.FuncPCABIInternal(chansend))
+         .          .    191:	}
+         .          .    192:
+         .          .    193:	if c.synctest && getg().syncGroup == nil {
+         .          .    194:		panic(plainError("send on synctest channel from outside bubble"))
+         .          .    195:	}
+         .          .    196:
+         .          .    197:	// Fast path: check for failed non-blocking operation without acquiring the lock.
+         .          .    198:	//
+         .          .    199:	// After observing that the channel is not closed, we observe that the channel is
+         .          .    200:	// not ready for sending. Each of these observations is a single word-sized read
+         .          .    201:	// (first c.closed and second full()).
+         .          .    202:	// Because a closed channel cannot transition from 'ready for sending' to
+         .          .    203:	// 'not ready for sending', even if the channel is closed between the two observations,
+         .          .    204:	// they imply a moment between the two when the channel was both not yet closed
+         .          .    205:	// and not ready for sending. We behave as if we observed the channel at that moment,
+         .          .    206:	// and report that the send cannot proceed.
+         .          .    207:	//
+         .          .    208:	// It is okay if the reads are reordered here: if we observe that the channel is not
+         .          .    209:	// ready for sending and then observe that it is not closed, that implies that the
+         .          .    210:	// channel wasn't closed during the first observation. However, nothing here
+         .          .    211:	// guarantees forward progress. We rely on the side effects of lock release in
+         .          .    212:	// chanrecv() and closechan() to update this thread's view of c.closed and full().
+         .          .    213:	if !block && c.closed == 0 && full(c) {
+         .          .    214:		return false
+         .          .    215:	}
+         .          .    216:
+         .          .    217:	var t0 int64
+      10ms       10ms    218:	if blockprofilerate > 0 {
+         .      570ms    219:		t0 = cputicks()
+         .          .    220:	}
+         .          .    221:
+         .      9.94s    222:	lock(&c.lock)
+         .          .    223:
+         .          .    224:	if c.closed != 0 {
+         .          .    225:		unlock(&c.lock)
+         .          .    226:		panic(plainError("send on closed channel"))
+         .          .    227:	}
+         .          .    228:
+         .       10ms    229:	if sg := c.recvq.dequeue(); sg != nil {
+         .          .    230:		// Found a waiting receiver. We pass the value we want to send
+         .          .    231:		// directly to the receiver, bypassing the channel buffer (if any).
+         .          .    232:		send(c, sg, ep, func() { unlock(&c.lock) }, 3)
+         .          .    233:		return true
+         .          .    234:	}
+         .          .    235:
+         .          .    236:	if c.qcount < c.dataqsiz {
+         .          .    237:		// Space is available in the channel buffer. Enqueue the element to send.
+         .          .    238:		qp := chanbuf(c, c.sendx)
+         .          .    239:		if raceenabled {
+         .          .    240:			racenotify(c, c.sendx, nil)
+         .          .    241:		}
+         .       20ms    242:		typedmemmove(c.elemtype, qp, ep)
+         .          .    243:		c.sendx++
+         .          .    244:		if c.sendx == c.dataqsiz {
+         .          .    245:			c.sendx = 0
+         .          .    246:		}
+         .          .    247:		c.qcount++
+         .      4.89s    248:		unlock(&c.lock)
+         .          .    249:		return true
+         .          .    250:	}
+         .          .    251:
+         .          .    252:	if !block {
+         .          .    253:		unlock(&c.lock)
+ROUTINE ======================== runtime.chansend1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/chan.go
+         0     15.44s (flat, cum) 50.33% of Total
+         .          .    160:func chansend1(c *hchan, elem unsafe.Pointer) {
+         .     15.44s    161:	chansend(c, elem, true, sys.GetCallerPC())
+         .          .    162:}
+         .          .    163:
+         .          .    164:/*
+         .          .    165: * generic single channel send/recv
+         .          .    166: * If block is not nil,

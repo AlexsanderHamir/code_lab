@@ -1,0 +1,10 @@
+Total: 30.68s
+ROUTINE ======================== sync.runtime_SemacquireWaitGroup in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .    109:func sync_runtime_SemacquireWaitGroup(addr *uint32) {
+         .       10ms    110:	semacquire1(addr, false, semaBlockProfile, 0, waitReasonSyncWaitGroupWait)
+         .          .    111:}
+         .          .    112:
+         .          .    113://go:linkname poll_runtime_Semrelease internal/poll.runtime_Semrelease
+         .          .    114:func poll_runtime_Semrelease(addr *uint32) {
+         .          .    115:	semrelease(addr)

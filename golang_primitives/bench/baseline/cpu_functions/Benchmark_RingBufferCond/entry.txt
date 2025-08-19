@@ -1,0 +1,10 @@
+Total: 52.38s
+ROUTINE ======================== runtime.funcInfo.entry in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+         0       40ms (flat, cum) 0.076% of Total
+         .          .    872:func (f funcInfo) entry() uintptr {
+         .       40ms    873:	return f.datap.textAddr(f.entryOff)
+         .          .    874:}
+         .          .    875:
+         .          .    876://go:linkname badFuncInfoEntry runtime.funcInfo.entry
+         .          .    877:func badFuncInfoEntry(funcInfo) uintptr
+         .          .    878:

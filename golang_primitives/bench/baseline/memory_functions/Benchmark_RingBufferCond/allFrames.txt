@@ -1,0 +1,32 @@
+Total: 6.30MB
+ROUTINE ======================== runtime/pprof.allFrames in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/proto.go
+  512.05kB   512.05kB (flat, cum)  7.94% of Total
+         .          .    209:func allFrames(addr uintptr) ([]runtime.Frame, symbolizeFlag) {
+         .          .    210:	// Expand this one address using CallersFrames so we can cache
+         .          .    211:	// each expansion. In general, CallersFrames takes a whole
+         .          .    212:	// stack, but in this case we know there will be no skips in
+         .          .    213:	// the stack and we have return PCs anyway.
+         .          .    214:	frames := runtime.CallersFrames([]uintptr{addr})
+         .          .    215:	frame, more := frames.Next()
+         .          .    216:	if frame.Function == "runtime.goexit" {
+         .          .    217:		// Short-circuit if we see runtime.goexit so the loop
+         .          .    218:		// below doesn't allocate a useless empty location.
+         .          .    219:		return nil, 0
+         .          .    220:	}
+         .          .    221:
+         .          .    222:	symbolizeResult := lookupTried
+         .          .    223:	if frame.PC == 0 || frame.Function == "" || frame.File == "" || frame.Line == 0 {
+         .          .    224:		symbolizeResult |= lookupFailed
+         .          .    225:	}
+         .          .    226:
+         .          .    227:	if frame.PC == 0 {
+         .          .    228:		// If we failed to resolve the frame, at least make up
+         .          .    229:		// a reasonable call PC. This mostly happens in tests.
+         .          .    230:		frame.PC = addr - 1
+         .          .    231:	}
+  512.05kB   512.05kB    232:	ret := []runtime.Frame{frame}
+         .          .    233:	for frame.Function != "runtime.goexit" && more {
+         .          .    234:		frame, more = frames.Next()
+         .          .    235:		ret = append(ret, frame)
+         .          .    236:	}
+         .          .    237:	return ret, symbolizeResult

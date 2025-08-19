@@ -1,0 +1,73 @@
+Total: 6.30MB
+ROUTINE ======================== runtime/pprof.(*profileBuilder).appendLocsForStack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/proto.go
+         0     1.14MB (flat, cum) 18.03% of Total
+         .          .    403:func (b *profileBuilder) appendLocsForStack(locs []uint64, stk []uintptr) (newLocs []uint64) {
+         .          .    404:	b.deck.reset()
+         .          .    405:
+         .          .    406:	// The last frame might be truncated. Recover lost inline frames.
+         .          .    407:	origStk := stk
+         .          .    408:	stk = runtime_expandFinalInlineFrame(stk)
+         .          .    409:
+         .          .    410:	for len(stk) > 0 {
+         .          .    411:		addr := stk[0]
+         .          .    412:		if l, ok := b.locs[addr]; ok {
+         .          .    413:			// When generating code for an inlined function, the compiler adds
+         .          .    414:			// NOP instructions to the outermost function as a placeholder for
+         .          .    415:			// each layer of inlining. When the runtime generates tracebacks for
+         .          .    416:			// stacks that include inlined functions, it uses the addresses of
+         .          .    417:			// those NOPs as "fake" PCs on the stack as if they were regular
+         .          .    418:			// function call sites. But if a profiling signal arrives while the
+         .          .    419:			// CPU is executing one of those NOPs, its PC will show up as a leaf
+         .          .    420:			// in the profile with its own Location entry. So, always check
+         .          .    421:			// whether addr is a "fake" PC in the context of the current call
+         .          .    422:			// stack by trying to add it to the inlining deck before assuming
+         .          .    423:			// that the deck is complete.
+         .          .    424:			if len(b.deck.pcs) > 0 {
+         .          .    425:				if added := b.deck.tryAdd(addr, l.firstPCFrames, l.firstPCSymbolizeResult); added {
+         .          .    426:					stk = stk[1:]
+         .          .    427:					continue
+         .          .    428:				}
+         .          .    429:			}
+         .          .    430:
+         .          .    431:			// first record the location if there is any pending accumulated info.
+         .          .    432:			if id := b.emitLocation(); id > 0 {
+         .          .    433:				locs = append(locs, id)
+         .          .    434:			}
+         .          .    435:
+         .          .    436:			// then, record the cached location.
+         .          .    437:			locs = append(locs, l.id)
+         .          .    438:
+         .          .    439:			// Skip the matching pcs.
+         .          .    440:			//
+         .          .    441:			// Even if stk was truncated due to the stack depth
+         .          .    442:			// limit, expandFinalInlineFrame above has already
+         .          .    443:			// fixed the truncation, ensuring it is long enough.
+         .          .    444:			if len(l.pcs) > len(stk) {
+         .          .    445:				panic(fmt.Sprintf("stack too short to match cached location; stk = %#x, l.pcs = %#x, original stk = %#x", stk, l.pcs, origStk))
+         .          .    446:			}
+         .          .    447:			stk = stk[len(l.pcs):]
+         .          .    448:			continue
+         .          .    449:		}
+         .          .    450:
+         .   512.05kB    451:		frames, symbolizeResult := allFrames(addr)
+         .          .    452:		if len(frames) == 0 { // runtime.goexit.
+         .          .    453:			if id := b.emitLocation(); id > 0 {
+         .          .    454:				locs = append(locs, id)
+         .          .    455:			}
+         .          .    456:			stk = stk[1:]
+         .          .    457:			continue
+         .          .    458:		}
+         .          .    459:
+         .          .    460:		if added := b.deck.tryAdd(addr, frames, symbolizeResult); added {
+         .          .    461:			stk = stk[1:]
+         .          .    462:			continue
+         .          .    463:		}
+         .          .    464:		// add failed because this addr is not inlined with the
+         .          .    465:		// existing PCs in the deck. Flush the deck and retry handling
+         .          .    466:		// this pc.
+         .   650.62kB    467:		if id := b.emitLocation(); id > 0 {
+         .          .    468:			locs = append(locs, id)
+         .          .    469:		}
+         .          .    470:
+         .          .    471:		// check cache again - previous emitLocation added a new entry
+         .          .    472:		if l, ok := b.locs[addr]; ok {

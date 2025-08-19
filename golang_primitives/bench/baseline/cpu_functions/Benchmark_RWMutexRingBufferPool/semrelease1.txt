@@ -1,0 +1,65 @@
+Total: 48.01s
+ROUTINE ======================== runtime.semrelease1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      50ms     16.38s (flat, cum) 34.12% of Total
+         .          .    203:func semrelease1(addr *uint32, handoff bool, skipframes int) {
+         .          .    204:	root := semtable.rootFor(addr)
+      50ms       50ms    205:	atomic.Xadd(addr, 1)
+         .          .    206:
+         .          .    207:	// Easy case: no waiters?
+         .          .    208:	// This check must happen after the xadd, to avoid a missed wakeup
+         .          .    209:	// (see loop in semacquire).
+         .       20ms    210:	if root.nwait.Load() == 0 {
+         .          .    211:		return
+         .          .    212:	}
+         .          .    213:
+         .          .    214:	// Harder case: search for a waiter and wake it.
+         .     12.15s    215:	lockWithRank(&root.lock, lockRankRoot)
+         .          .    216:	if root.nwait.Load() == 0 {
+         .          .    217:		// The count is already consumed by another goroutine,
+         .          .    218:		// so no need to wake up another goroutine.
+         .      2.13s    219:		unlock(&root.lock)
+         .          .    220:		return
+         .          .    221:	}
+         .       60ms    222:	s, t0, tailtime := root.dequeue(addr)
+         .          .    223:	if s != nil {
+         .       30ms    224:		root.nwait.Add(-1)
+         .          .    225:	}
+         .      1.56s    226:	unlock(&root.lock)
+         .          .    227:	if s != nil { // May be slow or even yield, so unlock first
+         .          .    228:		acquiretime := s.acquiretime
+         .          .    229:		if acquiretime != 0 {
+         .          .    230:			// Charge contention that this (delayed) unlock caused.
+         .          .    231:			// If there are N more goroutines waiting beyond the
+         .          .    232:			// one that's waking up, charge their delay as well, so that
+         .          .    233:			// contention holding up many goroutines shows up as
+         .          .    234:			// more costly than contention holding up a single goroutine.
+         .          .    235:			// It would take O(N) time to calculate how long each goroutine
+         .          .    236:			// has been waiting, so instead we charge avg(head-wait, tail-wait)*N.
+         .          .    237:			// head-wait is the longest wait and tail-wait is the shortest.
+         .          .    238:			// (When we do a lifo insertion, we preserve this property by
+         .          .    239:			// copying the old head's acquiretime into the inserted new head.
+         .          .    240:			// In that case the overall average may be slightly high, but that's fine:
+         .          .    241:			// the average of the ends is only an approximation to the actual
+         .          .    242:			// average anyway.)
+         .          .    243:			// The root.dequeue above changed the head and tail acquiretime
+         .          .    244:			// to the current time, so the next unlock will not re-count this contention.
+         .          .    245:			dt0 := t0 - acquiretime
+         .          .    246:			dt := dt0
+         .          .    247:			if s.waiters != 0 {
+         .          .    248:				dtail := t0 - tailtime
+         .          .    249:				dt += (dtail + dt0) / 2 * int64(s.waiters)
+         .          .    250:			}
+         .      340ms    251:			mutexevent(dt, 3+skipframes)
+         .          .    252:		}
+         .          .    253:		if s.ticket != 0 {
+         .          .    254:			throw("corrupted semaphore ticket")
+         .          .    255:		}
+         .          .    256:		if handoff && cansemacquire(addr) {
+         .          .    257:			s.ticket = 1
+         .          .    258:		}
+         .       40ms    259:		readyWithTime(s, 5+skipframes)
+         .          .    260:		if s.ticket == 1 && getg().m.locks == 0 {
+         .          .    261:			// Direct G handoff
+         .          .    262:			// readyWithTime has added the waiter G as runnext in the
+         .          .    263:			// current P; we now call the scheduler so that we start running
+         .          .    264:			// the waiter G immediately.

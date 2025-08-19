@@ -1,0 +1,10 @@
+Total: 52.38s
+ROUTINE ======================== primitives_performance.(*RingBuffer[go.shape.*uint8]).IsEmpty in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+      30ms       30ms (flat, cum) 0.057% of Total
+         .          .     56:func (rb *RingBuffer[T]) IsEmpty() bool {
+      30ms       30ms     57:	return rb.size == 0
+         .          .     58:}
+         .          .     59:
+         .          .     60:func (rb *RingBuffer[T]) IsFull() bool {
+         .          .     61:	return rb.size == rb.capacity
+         .          .     62:}

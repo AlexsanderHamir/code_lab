@@ -1,0 +1,11 @@
+File: primitives_performance.test
+Type: delay
+Time: 2025-08-19 12:51:39 PDT
+Showing nodes accounting for 49.16s, 100% of 49.16s total
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%     34.68s 70.54%  primitives_performance.Benchmark_RingBufferCond.func1
+    34.68s 70.54% 70.54%     34.68s 70.54%  sync.(*Mutex).Unlock
+         0     0% 70.54%     34.68s 70.54%  testing.(*B).RunParallel.func1
+         0     0% 70.54%     18.72s 38.08%  primitives_performance.(*RingBufferCondPool).Get
+         0     0% 70.54%     15.96s 32.46%  primitives_performance.(*RingBufferCondPool).Put
+    14.48s 29.46%   100%     14.48s 29.46%  runtime._LostContendedRuntimeLock

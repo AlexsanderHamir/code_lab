@@ -1,0 +1,19 @@
+Total: 108.20s
+ROUTINE ======================== runtime.goready in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    454:func goready(gp *g, traceskip int) {
+         .       10ms    455:	systemstack(func() {
+         .          .    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+ROUTINE ======================== runtime.goroutineReady.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    455:	systemstack(func() {
+         .       10ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {

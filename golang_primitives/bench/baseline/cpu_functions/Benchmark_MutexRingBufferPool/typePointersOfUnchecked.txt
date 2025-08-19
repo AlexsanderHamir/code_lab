@@ -1,0 +1,22 @@
+Total: 52.53s
+ROUTINE ======================== runtime.(*mspan).typePointersOfUnchecked in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mbitmap.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .    171:func (span *mspan) typePointersOfUnchecked(addr uintptr) typePointers {
+         .          .    172:	const doubleCheck = false
+         .          .    173:	if doubleCheck && span.objBase(addr) != addr {
+         .          .    174:		print("runtime: addr=", addr, " base=", span.objBase(addr), "\n")
+         .          .    175:		throw("typePointersOfUnchecked consisting of non-base-address for object")
+         .          .    176:	}
+         .          .    177:
+         .          .    178:	spc := span.spanclass
+         .          .    179:	if spc.noscan() {
+         .          .    180:		return typePointers{}
+         .          .    181:	}
+         .          .    182:	if heapBitsInSpan(span.elemsize) {
+         .          .    183:		// Handle header-less objects.
+         .       10ms    184:		return typePointers{elem: addr, addr: addr, mask: span.heapBitsSmallForAddr(addr)}
+         .          .    185:	}
+         .          .    186:
+         .          .    187:	// All of these objects have a header.
+         .          .    188:	var typ *_type
+         .          .    189:	if spc.sizeclass() != 0 {

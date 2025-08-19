@@ -1,0 +1,60 @@
+Total: 52.53s
+ROUTINE ======================== runtime.park_m in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      40ms     25.62s (flat, cum) 48.77% of Total
+         .          .   4093:func park_m(gp *g) {
+         .          .   4094:	mp := getg().m
+         .          .   4095:
+      10ms       10ms   4096:	trace := traceAcquire()
+         .          .   4097:
+         .          .   4098:	// If g is in a synctest group, we don't want to let the group
+         .          .   4099:	// become idle until after the waitunlockf (if any) has confirmed
+         .          .   4100:	// that the park is happening.
+         .          .   4101:	// We need to record gp.syncGroup here, since waitunlockf can change it.
+      10ms       10ms   4102:	sg := gp.syncGroup
+         .          .   4103:	if sg != nil {
+         .          .   4104:		sg.incActive()
+         .          .   4105:	}
+         .          .   4106:
+         .          .   4107:	if trace.ok() {
+         .          .   4108:		// Trace the event before the transition. It may take a
+         .          .   4109:		// stack trace, but we won't own the stack after the
+         .          .   4110:		// transition anymore.
+         .          .   4111:		trace.GoPark(mp.waitTraceBlockReason, mp.waitTraceSkip)
+         .          .   4112:	}
+         .          .   4113:	// N.B. Not using casGToWaiting here because the waitreason is
+         .          .   4114:	// set by park_m's caller.
+         .       30ms   4115:	casgstatus(gp, _Grunning, _Gwaiting)
+      10ms       10ms   4116:	if trace.ok() {
+         .          .   4117:		traceRelease(trace)
+         .          .   4118:	}
+         .          .   4119:
+         .          .   4120:	dropg()
+         .          .   4121:
+         .          .   4122:	if fn := mp.waitunlockf; fn != nil {
+      10ms      460ms   4123:		ok := fn(gp, mp.waitlock)
+         .          .   4124:		mp.waitunlockf = nil
+         .          .   4125:		mp.waitlock = nil
+         .          .   4126:		if !ok {
+         .          .   4127:			trace := traceAcquire()
+         .          .   4128:			casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   4129:			if sg != nil {
+         .          .   4130:				sg.decActive()
+         .          .   4131:			}
+         .          .   4132:			if trace.ok() {
+         .          .   4133:				trace.GoUnpark(gp, 2)
+         .          .   4134:				traceRelease(trace)
+         .          .   4135:			}
+         .          .   4136:			execute(gp, true) // Schedule it back, never returns.
+         .          .   4137:		}
+         .          .   4138:	}
+         .          .   4139:
+         .          .   4140:	if sg != nil {
+         .          .   4141:		sg.decActive()
+         .          .   4142:	}
+         .          .   4143:
+         .     25.10s   4144:	schedule()
+         .          .   4145:}
+         .          .   4146:
+         .          .   4147:func goschedImpl(gp *g, preempted bool) {
+         .          .   4148:	trace := traceAcquire()
+         .          .   4149:	status := readgstatus(gp)

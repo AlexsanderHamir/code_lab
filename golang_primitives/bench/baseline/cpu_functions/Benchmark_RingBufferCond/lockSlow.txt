@@ -1,0 +1,117 @@
+Total: 52.38s
+ROUTINE ======================== internal/sync.(*Mutex).lockSlow in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/sync/mutex.go
+     2.41s      9.66s (flat, cum) 18.44% of Total
+         .          .     95:func (m *Mutex) lockSlow() {
+         .          .     96:	var waitStartTime int64
+         .          .     97:	starving := false
+         .          .     98:	awoke := false
+         .          .     99:	iter := 0
+     820ms      820ms    100:	old := m.state
+         .          .    101:	for {
+         .          .    102:		// Don't spin in starvation mode, ownership is handed off to waiters
+         .          .    103:		// so we won't be able to acquire the mutex anyway.
+     470ms      510ms    104:		if old&(mutexLocked|mutexStarving) == mutexLocked && runtime_canSpin(iter) {
+         .          .    105:			// Active spinning makes sense.
+         .          .    106:			// Try to set mutexWoken flag to inform Unlock
+         .          .    107:			// to not wake other blocked goroutines.
+         .          .    108:			if !awoke && old&mutexWoken == 0 && old>>mutexWaiterShift != 0 &&
+      30ms       30ms    109:				atomic.CompareAndSwapInt32(&m.state, old, old|mutexWoken) {
+         .          .    110:				awoke = true
+         .          .    111:			}
+         .      120ms    112:			runtime_doSpin()
+      10ms       10ms    113:			iter++
+         .          .    114:			old = m.state
+         .          .    115:			continue
+         .          .    116:		}
+         .          .    117:		new := old
+         .          .    118:		// Don't try to acquire starving mutex, new arriving goroutines must queue.
+         .          .    119:		if old&mutexStarving == 0 {
+         .          .    120:			new |= mutexLocked
+         .          .    121:		}
+         .          .    122:		if old&(mutexLocked|mutexStarving) != 0 {
+         .          .    123:			new += 1 << mutexWaiterShift
+         .          .    124:		}
+         .          .    125:		// The current goroutine switches mutex to starvation mode.
+         .          .    126:		// But if the mutex is currently unlocked, don't do the switch.
+         .          .    127:		// Unlock expects that starving mutex has waiters, which will not
+         .          .    128:		// be true in this case.
+      50ms       50ms    129:		if starving && old&mutexLocked != 0 {
+         .          .    130:			new |= mutexStarving
+         .          .    131:		}
+      10ms       10ms    132:		if awoke {
+         .          .    133:			// The goroutine has been woken from sleep,
+         .          .    134:			// so we need to reset the flag in either case.
+         .          .    135:			if new&mutexWoken == 0 {
+         .          .    136:				throw("sync: inconsistent mutex state")
+         .          .    137:			}
+         .          .    138:			new &^= mutexWoken
+         .          .    139:		}
+     830ms      830ms    140:		if atomic.CompareAndSwapInt32(&m.state, old, new) {
+      10ms       10ms    141:			if old&(mutexLocked|mutexStarving) == 0 {
+         .          .    142:				break // locked the mutex with CAS
+         .          .    143:			}
+         .          .    144:			// If we were already waiting before, queue at the front of the queue.
+      10ms       10ms    145:			queueLifo := waitStartTime != 0
+         .          .    146:			if waitStartTime == 0 {
+         .       50ms    147:				waitStartTime = runtime_nanotime()
+         .          .    148:			}
+         .      7.01s    149:			runtime_SemacquireMutex(&m.sema, queueLifo, 2)
+         .       30ms    150:			starving = starving || runtime_nanotime()-waitStartTime > starvationThresholdNs
+         .          .    151:			old = m.state
+         .          .    152:			if old&mutexStarving != 0 {
+         .          .    153:				// If this goroutine was woken and mutex is in starvation mode,
+         .          .    154:				// ownership was handed off to us but mutex is in somewhat
+         .          .    155:				// inconsistent state: mutexLocked is not set and we are still
+         .          .    156:				// accounted as waiter. Fix that.
+         .          .    157:				if old&(mutexLocked|mutexWoken) != 0 || old>>mutexWaiterShift == 0 {
+         .          .    158:					throw("sync: inconsistent mutex state")
+         .          .    159:				}
+         .          .    160:				delta := int32(mutexLocked - 1<<mutexWaiterShift)
+         .          .    161:				if !starving || old>>mutexWaiterShift == 1 {
+         .          .    162:					// Exit starvation mode.
+         .          .    163:					// Critical to do it here and consider wait time.
+         .          .    164:					// Starvation mode is so inefficient, that two goroutines
+         .          .    165:					// can go lock-step infinitely once they switch mutex
+         .          .    166:					// to starvation mode.
+         .          .    167:					delta -= mutexStarving
+         .          .    168:				}
+         .          .    169:				atomic.AddInt32(&m.state, delta)
+         .          .    170:				break
+         .          .    171:			}
+         .          .    172:			awoke = true
+         .          .    173:			iter = 0
+         .          .    174:		} else {
+     170ms      170ms    175:			old = m.state
+         .          .    176:		}
+         .          .    177:	}
+         .          .    178:
+         .          .    179:	if race.Enabled {
+         .          .    180:		race.Acquire(unsafe.Pointer(m))
+ROUTINE ======================== internal/sync.(*Mutex).unlockSlow in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/sync/mutex.go
+      30ms     15.37s (flat, cum) 29.34% of Total
+      10ms       10ms    202:func (m *Mutex) unlockSlow(new int32) {
+         .          .    203:	if (new+mutexLocked)&mutexLocked == 0 {
+         .          .    204:		fatal("sync: unlock of unlocked mutex")
+         .          .    205:	}
+         .          .    206:	if new&mutexStarving == 0 {
+         .          .    207:		old := new
+         .          .    208:		for {
+         .          .    209:			// If there are no waiters or a goroutine has already
+         .          .    210:			// been woken or grabbed the lock, no need to wake anyone.
+         .          .    211:			// In starvation mode ownership is directly handed off from unlocking
+         .          .    212:			// goroutine to the next waiter. We are not part of this chain,
+         .          .    213:			// since we did not observe mutexStarving when we unlocked the mutex above.
+         .          .    214:			// So get off the way.
+         .          .    215:			if old>>mutexWaiterShift == 0 || old&(mutexLocked|mutexWoken|mutexStarving) != 0 {
+         .          .    216:				return
+         .          .    217:			}
+         .          .    218:			// Grab the right to wake someone.
+         .          .    219:			new = (old - 1<<mutexWaiterShift) | mutexWoken
+      10ms       10ms    220:			if atomic.CompareAndSwapInt32(&m.state, old, new) {
+         .     15.34s    221:				runtime_Semrelease(&m.sema, false, 2)
+      10ms       10ms    222:				return
+         .          .    223:			}
+         .          .    224:			old = m.state
+         .          .    225:		}
+         .          .    226:	} else {
+         .          .    227:		// Starving mode: handoff mutex ownership to the next waiter, and yield

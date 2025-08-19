@@ -1,0 +1,7 @@
+Total: 30.68s
+ROUTINE ======================== runtime.cputicks in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/os_darwin_arm64.go
+      20ms      1.11s (flat, cum)  3.62% of Total
+         .          .      8:func cputicks() int64 {
+         .          .      9:	// runtime·nanotime() is a poor approximation of CPU ticks that is enough for the profiler.
+      20ms      1.11s     10:	return nanotime()
+         .          .     11:}

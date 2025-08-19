@@ -1,0 +1,13 @@
+Total: 8.43MB
+ROUTINE ======================== runtime/pprof.(*profileBuilder).pbLine in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/proto.go
+         0      513kB (flat, cum)  5.94% of Total
+         .          .    181:func (b *profileBuilder) pbLine(tag int, funcID uint64, line int64) {
+         .          .    182:	start := b.pb.startMessage()
+         .          .    183:	b.pb.uint64Opt(tagLine_FunctionID, funcID)
+         .          .    184:	b.pb.int64Opt(tagLine_Line, line)
+         .      513kB    185:	b.pb.endMessage(tag, start)
+         .          .    186:}
+         .          .    187:
+         .          .    188:// pbMapping encodes a Mapping message to b.pb.
+         .          .    189:func (b *profileBuilder) pbMapping(tag int, id, base, limit, offset uint64, file, buildID string, hasFuncs bool) {
+         .          .    190:	start := b.pb.startMessage()

@@ -1,0 +1,20 @@
+Total: 48.01s
+ROUTINE ======================== testing.(*PB).Next in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+      10ms       10ms (flat, cum) 0.021% of Total
+         .          .    902:func (pb *PB) Next() bool {
+         .          .    903:	if pb.cache == 0 {
+         .          .    904:		n := pb.globalN.Add(pb.grain)
+         .          .    905:		if n <= pb.bN {
+         .          .    906:			pb.cache = pb.grain
+         .          .    907:		} else if n < pb.bN+pb.grain {
+         .          .    908:			pb.cache = pb.bN + pb.grain - n
+         .          .    909:		} else {
+         .          .    910:			return false
+         .          .    911:		}
+         .          .    912:	}
+      10ms       10ms    913:	pb.cache--
+         .          .    914:	return true
+         .          .    915:}
+         .          .    916:
+         .          .    917:// RunParallel runs a benchmark in parallel.
+         .          .    918:// It creates multiple goroutines and distributes b.N iterations among them.

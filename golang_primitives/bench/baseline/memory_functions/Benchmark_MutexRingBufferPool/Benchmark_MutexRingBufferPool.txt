@@ -1,0 +1,13 @@
+Total: 9.28MB
+ROUTINE ======================== primitives_performance.Benchmark_MutexRingBufferPool in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0        1MB (flat, cum) 10.78% of Total
+         .          .      9:func Benchmark_MutexRingBufferPool(b *testing.B) {
+         .          .     10:	debug.SetGCPercent(-1)
+         .          .     11:	b.ReportAllocs()
+         .          .     12:
+         .        1MB     13:	pool := NewMutexRingBufferPool(1000, testAllocator, testCleaner)
+         .          .     14:
+         .          .     15:	b.ResetTimer()
+         .          .     16:	b.RunParallel(func(pb *testing.PB) {
+         .          .     17:		for pb.Next() {
+         .          .     18:			obj := pool.Get()

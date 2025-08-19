@@ -1,0 +1,26 @@
+Total: 26.57s
+ROUTINE ======================== sync.(*Once).Do in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/once.go
+         0      181ms (flat, cum)  0.68% of Total
+         .          .     52:func (o *Once) Do(f func()) {
+         .          .     53:	// Note: Here is an incorrect implementation of Do:
+         .          .     54:	//
+         .          .     55:	//	if o.done.CompareAndSwap(0, 1) {
+         .          .     56:	//		f()
+         .          .     57:	//	}
+         .          .     58:	//
+         .          .     59:	// Do guarantees that when it returns, f has finished.
+         .          .     60:	// This implementation would not implement that guarantee:
+         .          .     61:	// given two simultaneous calls, the winner of the cas would
+         .          .     62:	// call f, and the second would return immediately, without
+         .          .     63:	// waiting for the first's call to f to complete.
+         .          .     64:	// This is why the slow path falls back to a mutex, and why
+         .          .     65:	// the o.done.Store must be delayed until after f returns.
+         .          .     66:
+         .          .     67:	if o.done.Load() == 0 {
+         .          .     68:		// Outlined slow-path to allow inlining of the fast-path.
+         .      181ms     69:		o.doSlow(f)
+         .          .     70:	}
+         .          .     71:}
+         .          .     72:
+         .          .     73:func (o *Once) doSlow(f func()) {
+         .          .     74:	o.m.Lock()

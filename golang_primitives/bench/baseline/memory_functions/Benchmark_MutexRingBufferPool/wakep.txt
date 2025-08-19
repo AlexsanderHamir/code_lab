@@ -1,0 +1,40 @@
+Total: 9.28MB
+ROUTINE ======================== runtime.wakep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0     1.50MB (flat, cum) 16.20% of Total
+         .          .   3114:func wakep() {
+         .          .   3115:	// Be conservative about spinning threads, only start one if none exist
+         .          .   3116:	// already.
+         .          .   3117:	if sched.nmspinning.Load() != 0 || !sched.nmspinning.CompareAndSwap(0, 1) {
+         .          .   3118:		return
+         .          .   3119:	}
+         .          .   3120:
+         .          .   3121:	// Disable preemption until ownership of pp transfers to the next M in
+         .          .   3122:	// startm. Otherwise preemption here would leave pp stuck waiting to
+         .          .   3123:	// enter _Pgcstop.
+         .          .   3124:	//
+         .          .   3125:	// See preemption comment on acquirem in startm for more details.
+         .          .   3126:	mp := acquirem()
+         .          .   3127:
+         .          .   3128:	var pp *p
+         .          .   3129:	lock(&sched.lock)
+         .          .   3130:	pp, _ = pidlegetSpinning(0)
+         .          .   3131:	if pp == nil {
+         .          .   3132:		if sched.nmspinning.Add(-1) < 0 {
+         .          .   3133:			throw("wakep: negative nmspinning")
+         .          .   3134:		}
+         .          .   3135:		unlock(&sched.lock)
+         .          .   3136:		releasem(mp)
+         .          .   3137:		return
+         .          .   3138:	}
+         .          .   3139:	// Since we always have a P, the race in the "No M is available"
+         .          .   3140:	// comment in startm doesn't apply during the small window between the
+         .          .   3141:	// unlock here and lock in startm. A checkdead in between will always
+         .          .   3142:	// see at least one running M (ours).
+         .          .   3143:	unlock(&sched.lock)
+         .          .   3144:
+         .     1.50MB   3145:	startm(pp, true, false)
+         .          .   3146:
+         .          .   3147:	releasem(mp)
+         .          .   3148:}
+         .          .   3149:
+         .          .   3150:// Stops execution of the current m that is locked to a g until the g is runnable again.

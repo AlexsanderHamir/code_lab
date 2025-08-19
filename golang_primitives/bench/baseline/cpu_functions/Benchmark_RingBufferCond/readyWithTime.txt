@@ -1,0 +1,22 @@
+Total: 52.38s
+ROUTINE ======================== runtime.readyWithTime in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      10ms      160ms (flat, cum)  0.31% of Total
+      10ms       10ms    123:func readyWithTime(s *sudog, traceskip int) {
+         .          .    124:	if s.releasetime != 0 {
+         .       70ms    125:		s.releasetime = cputicks()
+         .          .    126:	}
+         .       80ms    127:	goready(s.g, traceskip)
+         .          .    128:}
+         .          .    129:
+         .          .    130:type semaProfileFlags int
+         .          .    131:
+         .          .    132:const (
+ROUTINE ======================== runtime.readyWithTime.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      700ms (flat, cum)  1.34% of Total
+         .          .    455:	systemstack(func() {
+         .      700ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {

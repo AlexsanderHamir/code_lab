@@ -1,0 +1,97 @@
+Total: 8.43MB
+ROUTINE ======================== compress/flate.NewWriter in /opt/homebrew/Cellar/go/1.24.3/libexec/src/compress/flate/deflate.go
+  902.59kB     1.41MB (flat, cum) 16.76% of Total
+         .          .    662:func NewWriter(w io.Writer, level int) (*Writer, error) {
+  902.59kB   902.59kB    663:	var dw Writer
+         .   544.67kB    664:	if err := dw.d.init(w, level); err != nil {
+         .          .    665:		return nil, err
+         .          .    666:	}
+         .          .    667:	return &dw, nil
+         .          .    668:}
+         .          .    669:
+ROUTINE ======================== compress/gzip.(*Writer).Write in /opt/homebrew/Cellar/go/1.24.3/libexec/src/compress/gzip/gzip.go
+         0     1.41MB (flat, cum) 16.76% of Total
+         .          .    139:func (z *Writer) Write(p []byte) (int, error) {
+         .          .    140:	if z.err != nil {
+         .          .    141:		return 0, z.err
+         .          .    142:	}
+         .          .    143:	var n int
+         .          .    144:	// Write the GZIP header lazily.
+         .          .    145:	if !z.wroteHeader {
+         .          .    146:		z.wroteHeader = true
+         .          .    147:		z.buf = [10]byte{0: gzipID1, 1: gzipID2, 2: gzipDeflate}
+         .          .    148:		if z.Extra != nil {
+         .          .    149:			z.buf[3] |= 0x04
+         .          .    150:		}
+         .          .    151:		if z.Name != "" {
+         .          .    152:			z.buf[3] |= 0x08
+         .          .    153:		}
+         .          .    154:		if z.Comment != "" {
+         .          .    155:			z.buf[3] |= 0x10
+         .          .    156:		}
+         .          .    157:		if z.ModTime.After(time.Unix(0, 0)) {
+         .          .    158:			// Section 2.3.1, the zero value for MTIME means that the
+         .          .    159:			// modified time is not set.
+         .          .    160:			le.PutUint32(z.buf[4:8], uint32(z.ModTime.Unix()))
+         .          .    161:		}
+         .          .    162:		if z.level == BestCompression {
+         .          .    163:			z.buf[8] = 2
+         .          .    164:		} else if z.level == BestSpeed {
+         .          .    165:			z.buf[8] = 4
+         .          .    166:		}
+         .          .    167:		z.buf[9] = z.OS
+         .          .    168:		_, z.err = z.w.Write(z.buf[:10])
+         .          .    169:		if z.err != nil {
+         .          .    170:			return 0, z.err
+         .          .    171:		}
+         .          .    172:		if z.Extra != nil {
+         .          .    173:			z.err = z.writeBytes(z.Extra)
+         .          .    174:			if z.err != nil {
+         .          .    175:				return 0, z.err
+         .          .    176:			}
+         .          .    177:		}
+         .          .    178:		if z.Name != "" {
+         .          .    179:			z.err = z.writeString(z.Name)
+         .          .    180:			if z.err != nil {
+         .          .    181:				return 0, z.err
+         .          .    182:			}
+         .          .    183:		}
+         .          .    184:		if z.Comment != "" {
+         .          .    185:			z.err = z.writeString(z.Comment)
+         .          .    186:			if z.err != nil {
+         .          .    187:				return 0, z.err
+         .          .    188:			}
+         .          .    189:		}
+         .          .    190:		if z.compressor == nil {
+         .     1.41MB    191:			z.compressor, _ = flate.NewWriter(z.w, z.level)
+         .          .    192:		}
+         .          .    193:	}
+         .          .    194:	z.size += uint32(len(p))
+         .          .    195:	z.digest = crc32.Update(z.digest, crc32.IEEETable, p)
+         .          .    196:	n, z.err = z.compressor.Write(p)
+ROUTINE ======================== runtime/pprof.profileWriter in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/pprof.go
+         0     2.42MB (flat, cum) 28.68% of Total
+         .          .    867:func profileWriter(w io.Writer) {
+         .          .    868:	b := newProfileBuilder(w)
+         .          .    869:	var err error
+         .          .    870:	for {
+         .          .    871:		time.Sleep(100 * time.Millisecond)
+         .          .    872:		data, tags, eof := readProfile()
+         .          .    873:		if e := b.addCPUData(data, tags); e != nil && err == nil {
+         .          .    874:			err = e
+         .          .    875:		}
+         .          .    876:		if eof {
+         .          .    877:			break
+         .          .    878:		}
+         .          .    879:	}
+         .          .    880:	if err != nil {
+         .          .    881:		// The runtime should never produce an invalid or truncated profile.
+         .          .    882:		// It drops records that can't fit into its log buffers.
+         .          .    883:		panic("runtime/pprof: converting profile: " + err.Error())
+         .          .    884:	}
+         .     2.42MB    885:	b.build()
+         .          .    886:	cpu.done <- true
+         .          .    887:}
+         .          .    888:
+         .          .    889:// StopCPUProfile stops the current CPU profile, if any.
+         .          .    890:// StopCPUProfile only returns after all the writes for the

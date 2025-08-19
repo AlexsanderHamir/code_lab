@@ -1,0 +1,21 @@
+Total: 7.05MB
+ROUTINE ======================== runtime.(*timers).addHeap in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+  512.01kB   512.01kB (flat, cum)  7.10% of Total
+         .          .    425:func (ts *timers) addHeap(t *timer) {
+         .          .    426:	assertWorldStoppedOrLockHeld(&ts.mu)
+         .          .    427:	// Timers rely on the network poller, so make sure the poller
+         .          .    428:	// has started.
+         .          .    429:	if netpollInited.Load() == 0 {
+         .          .    430:		netpollGenericInit()
+         .          .    431:	}
+         .          .    432:
+         .          .    433:	if t.ts != nil {
+         .          .    434:		throw("ts set in timer")
+         .          .    435:	}
+         .          .    436:	t.ts = ts
+  512.01kB   512.01kB    437:	ts.heap = append(ts.heap, timerWhen{t, t.when})
+         .          .    438:	ts.siftUp(len(ts.heap) - 1)
+         .          .    439:	if t == ts.heap[0].timer {
+         .          .    440:		ts.updateMinWhenHeap()
+         .          .    441:	}
+         .          .    442:}

@@ -1,0 +1,19 @@
+Total: 6.30MB
+ROUTINE ======================== primitives_performance.NewRingBufferCondPool in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+         0   512.01kB (flat, cum)  7.94% of Total
+         .          .    408:func NewRingBufferCondPool(capacity int, allocator func() *testObject, cleaner func(*testObject)) *RingBufferCondPool {
+         .          .    409:	pool := &RingBufferCondPool{
+         .          .    410:		ringBuffer: NewRingBuffer[*testObject](capacity),
+         .          .    411:		allocator:  allocator,
+         .          .    412:		cleaner:    cleaner,
+         .          .    413:	}
+         .          .    414:	pool.cond = sync.NewCond(&pool.mu)
+         .          .    415:
+         .          .    416:	// Pre-populate the pool
+         .          .    417:	for range capacity {
+         .   512.01kB    418:		pool.ringBuffer.Push(allocator())
+         .          .    419:	}
+         .          .    420:
+         .          .    421:	return pool
+         .          .    422:}
+         .          .    423:

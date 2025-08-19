@@ -1,0 +1,23 @@
+Total: 108.20s
+ROUTINE ======================== runtime.nanotime in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time_nofake.go
+         0       90ms (flat, cum) 0.083% of Total
+         .          .     32:func nanotime() int64 {
+         .       90ms     33:	return nanotime1()
+         .          .     34:}
+         .          .     35:
+         .          .     36:// overrideWrite allows write to be redirected externally, by
+         .          .     37:// linkname'ing this and set it to a write function.
+         .          .     38://
+ROUTINE ======================== runtime.nanotime1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+      80ms       90ms (flat, cum) 0.083% of Total
+      10ms       10ms    363:func nanotime1() int64 {
+         .          .    364:	var r struct {
+         .          .    365:		t            int64  // raw timer
+         .          .    366:		numer, denom uint32 // conversion factors. nanoseconds = t * numer / denom.
+         .          .    367:	}
+      70ms       80ms    368:	libcCall(unsafe.Pointer(abi.FuncPCABI0(nanotime_trampoline)), unsafe.Pointer(&r))
+         .          .    369:	// Note: Apple seems unconcerned about overflow here. See
+         .          .    370:	// https://developer.apple.com/library/content/qa/qa1398/_index.html
+         .          .    371:	// Note also, numer == denom == 1 is common.
+         .          .    372:	t := r.t
+         .          .    373:	if r.numer != 1 {

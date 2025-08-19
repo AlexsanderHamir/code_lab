@@ -1,0 +1,45 @@
+Total: 52.53s
+ROUTINE ======================== runtime.gcBgMarkWorker.func2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgc.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .   1483:		systemstack(func() {
+         .          .   1484:			// Mark our goroutine preemptible so its stack
+         .          .   1485:			// can be scanned. This lets two mark workers
+         .          .   1486:			// scan each other (otherwise, they would
+         .          .   1487:			// deadlock). We must not modify anything on
+         .          .   1488:			// the G stack. However, stack shrinking is
+         .          .   1489:			// disabled for mark workers, so it is safe to
+         .          .   1490:			// read from the G stack.
+         .          .   1491:			//
+         .          .   1492:			// N.B. The execution tracer is not aware of this status
+         .          .   1493:			// transition and handles it specially based on the
+         .          .   1494:			// wait reason.
+         .          .   1495:			casGToWaitingForGC(gp, _Grunning, waitReasonGCWorkerActive)
+         .          .   1496:			switch pp.gcMarkWorkerMode {
+         .          .   1497:			default:
+         .          .   1498:				throw("gcBgMarkWorker: unexpected gcMarkWorkerMode")
+         .          .   1499:			case gcMarkWorkerDedicatedMode:
+         .          .   1500:				gcDrainMarkWorkerDedicated(&pp.gcw, true)
+         .          .   1501:				if gp.preempt {
+         .          .   1502:					// We were preempted. This is
+         .          .   1503:					// a useful signal to kick
+         .          .   1504:					// everything out of the run
+         .          .   1505:					// queue so it can run
+         .          .   1506:					// somewhere else.
+         .          .   1507:					if drainQ, n := runqdrain(pp); n > 0 {
+         .          .   1508:						lock(&sched.lock)
+         .          .   1509:						globrunqputbatch(&drainQ, int32(n))
+         .          .   1510:						unlock(&sched.lock)
+         .          .   1511:					}
+         .          .   1512:				}
+         .          .   1513:				// Go back to draining, this time
+         .          .   1514:				// without preemption.
+         .          .   1515:				gcDrainMarkWorkerDedicated(&pp.gcw, false)
+         .          .   1516:			case gcMarkWorkerFractionalMode:
+         .          .   1517:				gcDrainMarkWorkerFractional(&pp.gcw)
+         .          .   1518:			case gcMarkWorkerIdleMode:
+         .       10ms   1519:				gcDrainMarkWorkerIdle(&pp.gcw)
+         .          .   1520:			}
+         .          .   1521:			casgstatus(gp, _Gwaiting, _Grunning)
+         .          .   1522:		})
+         .          .   1523:
+         .          .   1524:		// Account for time and mark us as stopped.

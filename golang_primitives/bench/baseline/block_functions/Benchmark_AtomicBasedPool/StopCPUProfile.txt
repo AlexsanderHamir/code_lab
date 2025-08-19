@@ -1,0 +1,27 @@
+Total: 37.13s
+ROUTINE ======================== runtime/pprof.StopCPUProfile in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/pprof.go
+         0   162.79ms (flat, cum)  0.44% of Total
+         .          .    892:func StopCPUProfile() {
+         .          .    893:	cpu.Lock()
+         .          .    894:	defer cpu.Unlock()
+         .          .    895:
+         .          .    896:	if !cpu.profiling {
+         .          .    897:		return
+         .          .    898:	}
+         .          .    899:	cpu.profiling = false
+         .          .    900:	runtime.SetCPUProfileRate(0)
+         .   162.79ms    901:	<-cpu.done
+         .          .    902:}
+         .          .    903:
+         .          .    904:// countBlock returns the number of records in the blocking profile.
+         .          .    905:func countBlock() int {
+         .          .    906:	n, _ := runtime.BlockProfile(nil)
+ROUTINE ======================== testing/internal/testdeps.TestDeps.StopCPUProfile in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/internal/testdeps/deps.go
+         0   162.79ms (flat, cum)  0.44% of Total
+         .          .     54:func (TestDeps) StopCPUProfile() {
+         .   162.79ms     55:	pprof.StopCPUProfile()
+         .          .     56:}
+         .          .     57:
+         .          .     58:func (TestDeps) WriteProfileTo(name string, w io.Writer, debug int) error {
+         .          .     59:	return pprof.Lookup(name).WriteTo(w, debug)
+         .          .     60:}

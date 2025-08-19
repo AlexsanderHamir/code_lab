@@ -1,0 +1,41 @@
+Total: 52.53s
+ROUTINE ======================== runtime.semasleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/os_darwin.go
+         0     11.90s (flat, cum) 22.65% of Total
+         .          .     40:func semasleep(ns int64) int32 {
+         .          .     41:	var start int64
+         .          .     42:	if ns >= 0 {
+         .          .     43:		start = nanotime()
+         .          .     44:	}
+         .          .     45:	g := getg()
+         .          .     46:	mp := g.m
+         .          .     47:	if g == mp.gsignal {
+         .          .     48:		// sema sleep/wakeup are implemented with pthreads, which are not async-signal-safe on Darwin.
+         .          .     49:		throw("semasleep on Darwin signal stack")
+         .          .     50:	}
+         .          .     51:	pthread_mutex_lock(&mp.mutex)
+         .          .     52:	for {
+         .          .     53:		if mp.count > 0 {
+         .          .     54:			mp.count--
+         .       30ms     55:			pthread_mutex_unlock(&mp.mutex)
+         .          .     56:			return 0
+         .          .     57:		}
+         .          .     58:		if ns >= 0 {
+         .          .     59:			spent := nanotime() - start
+         .          .     60:			if spent >= ns {
+         .          .     61:				pthread_mutex_unlock(&mp.mutex)
+         .          .     62:				return -1
+         .          .     63:			}
+         .          .     64:			var t timespec
+         .          .     65:			t.setNsec(ns - spent)
+         .          .     66:			err := pthread_cond_timedwait_relative_np(&mp.cond, &mp.mutex, &t)
+         .          .     67:			if err == _ETIMEDOUT {
+         .          .     68:				pthread_mutex_unlock(&mp.mutex)
+         .          .     69:				return -1
+         .          .     70:			}
+         .          .     71:		} else {
+         .     11.87s     72:			pthread_cond_wait(&mp.cond, &mp.mutex)
+         .          .     73:		}
+         .          .     74:	}
+         .          .     75:}
+         .          .     76:
+         .          .     77://go:nosplit

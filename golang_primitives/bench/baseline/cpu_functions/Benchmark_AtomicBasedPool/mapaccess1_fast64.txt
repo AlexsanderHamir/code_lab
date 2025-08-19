@@ -1,0 +1,60 @@
+Total: 108.20s
+ROUTINE ======================== runtime.mapaccess1_fast64 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/maps/runtime_fast64_swiss.go
+         0       20ms (flat, cum) 0.018% of Total
+         .          .     17:func runtime_mapaccess1_fast64(typ *abi.SwissMapType, m *Map, key uint64) unsafe.Pointer {
+         .          .     18:	if race.Enabled && m != nil {
+         .          .     19:		callerpc := sys.GetCallerPC()
+         .          .     20:		pc := abi.FuncPCABIInternal(runtime_mapaccess1_fast64)
+         .          .     21:		race.ReadPC(unsafe.Pointer(m), callerpc, pc)
+         .          .     22:	}
+         .          .     23:
+         .          .     24:	if m == nil || m.Used() == 0 {
+         .          .     25:		return unsafe.Pointer(&zeroVal[0])
+         .          .     26:	}
+         .          .     27:
+         .          .     28:	if m.writing != 0 {
+         .          .     29:		fatal("concurrent map read and map write")
+         .          .     30:		return nil
+         .          .     31:	}
+         .          .     32:
+         .          .     33:	if m.dirLen == 0 {
+         .          .     34:		g := groupReference{
+         .          .     35:			data: m.dirPtr,
+         .          .     36:		}
+         .          .     37:		full := g.ctrls().matchFull()
+         .          .     38:		slotKey := g.key(typ, 0)
+         .          .     39:		slotSize := typ.SlotSize
+         .          .     40:		for full != 0 {
+         .          .     41:			if key == *(*uint64)(slotKey) && full.lowestSet() {
+         .          .     42:				slotElem := unsafe.Pointer(uintptr(slotKey) + 8)
+         .          .     43:				return slotElem
+         .          .     44:			}
+         .          .     45:			slotKey = unsafe.Pointer(uintptr(slotKey) + slotSize)
+         .          .     46:			full = full.shiftOutLowest()
+         .          .     47:		}
+         .          .     48:		return unsafe.Pointer(&zeroVal[0])
+         .          .     49:	}
+         .          .     50:
+         .          .     51:	k := key
+         .          .     52:	hash := typ.Hasher(abi.NoEscape(unsafe.Pointer(&k)), m.seed)
+         .          .     53:
+         .          .     54:	// Select table.
+         .          .     55:	idx := m.directoryIndex(hash)
+         .          .     56:	t := m.directoryAt(idx)
+         .          .     57:
+         .          .     58:	// Probe table.
+         .          .     59:	seq := makeProbeSeq(h1(hash), t.groups.lengthMask)
+         .          .     60:	for ; ; seq = seq.next() {
+         .       10ms     61:		g := t.groups.group(typ, seq.offset)
+         .          .     62:
+         .          .     63:		match := g.ctrls().matchH2(h2(hash))
+         .          .     64:
+         .          .     65:		for match != 0 {
+         .          .     66:			i := match.first()
+         .          .     67:
+         .       10ms     68:			slotKey := g.key(typ, i)
+         .          .     69:			if key == *(*uint64)(slotKey) {
+         .          .     70:				slotElem := unsafe.Pointer(uintptr(slotKey) + 8)
+         .          .     71:				return slotElem
+         .          .     72:			}
+         .          .     73:			match = match.removeFirst()

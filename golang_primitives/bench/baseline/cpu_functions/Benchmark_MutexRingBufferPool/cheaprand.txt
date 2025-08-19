@@ -1,0 +1,27 @@
+Total: 52.53s
+ROUTINE ======================== runtime.cheaprand in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/rand.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    227:func cheaprand() uint32 {
+         .          .    228:	mp := getg().m
+         .          .    229:	// Implement wyrand: https://github.com/wangyi-fudan/wyhash
+         .          .    230:	// Only the platform that math.Mul64 can be lowered
+         .          .    231:	// by the compiler should be in this list.
+         .          .    232:	if goarch.IsAmd64|goarch.IsArm64|goarch.IsPpc64|
+         .          .    233:		goarch.IsPpc64le|goarch.IsMips64|goarch.IsMips64le|
+         .          .    234:		goarch.IsS390x|goarch.IsRiscv64|goarch.IsLoong64 == 1 {
+      10ms       10ms    235:		mp.cheaprand += 0xa0761d6478bd642f
+         .          .    236:		hi, lo := math.Mul64(mp.cheaprand, mp.cheaprand^0xe7037ed1a0b428db)
+         .          .    237:		return uint32(hi ^ lo)
+         .          .    238:	}
+         .          .    239:
+         .          .    240:	// Implement xorshift64+: 2 32-bit xorshift sequences added together.
+ROUTINE ======================== runtime.cheaprandn in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/rand.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .    291:func cheaprandn(n uint32) uint32 {
+         .          .    292:	// See https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
+         .       10ms    293:	return uint32((uint64(cheaprand()) * uint64(n)) >> 32)
+         .          .    294:}
+         .          .    295:
+         .          .    296:// Too much legacy code has go:linkname references
+         .          .    297:// to runtime.fastrand and friends, so keep these around for now.
+         .          .    298:// Code should migrate to math/rand/v2.Uint64,

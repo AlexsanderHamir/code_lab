@@ -1,0 +1,13 @@
+Total: 52.53s
+ROUTINE ======================== runtime.pcdatavalue1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+         0      260ms (flat, cum)  0.49% of Total
+         .          .   1211:func pcdatavalue1(f funcInfo, table uint32, targetpc uintptr, strict bool) int32 {
+         .          .   1212:	if table >= f.npcdata {
+         .          .   1213:		return -1
+         .          .   1214:	}
+         .      260ms   1215:	r, _ := pcvalue(f, pcdatastart(f, table), targetpc, strict)
+         .          .   1216:	return r
+         .          .   1217:}
+         .          .   1218:
+         .          .   1219:// Like pcdatavalue, but also return the start PC of this PCData value.
+         .          .   1220:func pcdatavalue2(f funcInfo, table uint32, targetpc uintptr) (int32, uintptr) {

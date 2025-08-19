@@ -1,0 +1,37 @@
+Total: 48.01s
+ROUTINE ======================== runtime.goschedImpl in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.021% of Total
+         .          .   4147:func goschedImpl(gp *g, preempted bool) {
+         .          .   4148:	trace := traceAcquire()
+         .          .   4149:	status := readgstatus(gp)
+         .          .   4150:	if status&^_Gscan != _Grunning {
+         .          .   4151:		dumpgstatus(gp)
+         .          .   4152:		throw("bad g status")
+         .          .   4153:	}
+         .          .   4154:	if trace.ok() {
+         .          .   4155:		// Trace the event before the transition. It may take a
+         .          .   4156:		// stack trace, but we won't own the stack after the
+         .          .   4157:		// transition anymore.
+         .          .   4158:		if preempted {
+         .          .   4159:			trace.GoPreempt()
+         .          .   4160:		} else {
+         .          .   4161:			trace.GoSched()
+         .          .   4162:		}
+         .          .   4163:	}
+         .          .   4164:	casgstatus(gp, _Grunning, _Grunnable)
+         .          .   4165:	if trace.ok() {
+         .          .   4166:		traceRelease(trace)
+         .          .   4167:	}
+         .          .   4168:
+         .          .   4169:	dropg()
+         .          .   4170:	lock(&sched.lock)
+         .          .   4171:	globrunqput(gp)
+         .          .   4172:	unlock(&sched.lock)
+         .          .   4173:
+         .          .   4174:	if mainStarted {
+         .       10ms   4175:		wakep()
+         .          .   4176:	}
+         .          .   4177:
+         .          .   4178:	schedule()
+         .          .   4179:}
+         .          .   4180:

@@ -1,0 +1,35 @@
+Total: 10.13MB
+ROUTINE ======================== compress/flate.(*compressor).init in /opt/homebrew/Cellar/go/1.24.3/libexec/src/compress/flate/deflate.go
+         0   583.01kB (flat, cum)  5.62% of Total
+         .          .    569:func (d *compressor) init(w io.Writer, level int) (err error) {
+         .          .    570:	d.w = newHuffmanBitWriter(w)
+         .          .    571:
+         .          .    572:	switch {
+         .          .    573:	case level == NoCompression:
+         .          .    574:		d.window = make([]byte, maxStoreBlockSize)
+         .          .    575:		d.fill = (*compressor).fillStore
+         .          .    576:		d.step = (*compressor).store
+         .          .    577:	case level == HuffmanOnly:
+         .          .    578:		d.window = make([]byte, maxStoreBlockSize)
+         .          .    579:		d.fill = (*compressor).fillStore
+         .          .    580:		d.step = (*compressor).storeHuff
+         .          .    581:	case level == BestSpeed:
+         .          .    582:		d.compressionLevel = levels[level]
+         .          .    583:		d.window = make([]byte, maxStoreBlockSize)
+         .          .    584:		d.fill = (*compressor).fillStore
+         .          .    585:		d.step = (*compressor).encSpeed
+         .   583.01kB    586:		d.bestSpeed = newDeflateFast()
+         .          .    587:		d.tokens = make([]token, maxStoreBlockSize)
+         .          .    588:	case level == DefaultCompression:
+         .          .    589:		level = 6
+         .          .    590:		fallthrough
+         .          .    591:	case 2 <= level && level <= 9:
+ROUTINE ======================== primitives_performance.init.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+       1MB        1MB (flat, cum)  9.87% of Total
+         .          .    448:var testAllocator = func() *testObject {
+       1MB        1MB    449:	return &testObject{
+         .          .    450:		ID:   0,
+         .          .    451:		Data: "test",
+         .          .    452:	}
+         .          .    453:}
+         .          .    454:

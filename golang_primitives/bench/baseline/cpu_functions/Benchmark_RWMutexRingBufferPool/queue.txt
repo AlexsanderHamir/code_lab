@@ -1,0 +1,61 @@
+Total: 48.01s
+ROUTINE ======================== runtime.(*semaRoot).dequeue in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      20ms       60ms (flat, cum)  0.12% of Total
+         .          .    393:func (root *semaRoot) dequeue(addr *uint32) (found *sudog, now, tailtime int64) {
+         .          .    394:	ps := &root.treap
+         .          .    395:	s := *ps
+         .          .    396:	for ; s != nil; s = *ps {
+         .          .    397:		if s.elem == unsafe.Pointer(addr) {
+         .          .    398:			goto Found
+         .          .    399:		}
+         .          .    400:		if uintptr(unsafe.Pointer(addr)) < uintptr(s.elem) {
+         .          .    401:			ps = &s.prev
+         .          .    402:		} else {
+         .          .    403:			ps = &s.next
+         .          .    404:		}
+         .          .    405:	}
+         .          .    406:	return nil, 0, 0
+         .          .    407:
+         .          .    408:Found:
+         .          .    409:	now = int64(0)
+      10ms       10ms    410:	if s.acquiretime != 0 {
+         .       40ms    411:		now = cputicks()
+         .          .    412:	}
+         .          .    413:	if t := s.waitlink; t != nil {
+         .          .    414:		// Substitute t, also waiting on addr, for s in root tree of unique addrs.
+         .          .    415:		*ps = t
+         .          .    416:		t.ticket = s.ticket
+         .          .    417:		t.parent = s.parent
+         .          .    418:		t.prev = s.prev
+         .          .    419:		if t.prev != nil {
+         .          .    420:			t.prev.parent = t
+         .          .    421:		}
+         .          .    422:		t.next = s.next
+         .          .    423:		if t.next != nil {
+         .          .    424:			t.next.parent = t
+         .          .    425:		}
+         .          .    426:		if t.waitlink != nil {
+      10ms       10ms    427:			t.waittail = s.waittail
+         .          .    428:		} else {
+         .          .    429:			t.waittail = nil
+         .          .    430:		}
+         .          .    431:		t.waiters = s.waiters
+         .          .    432:		if t.waiters > 1 {
+ROUTINE ======================== runtime.(*semaRoot).queue in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      10ms       10ms (flat, cum) 0.021% of Total
+         .          .    295:func (root *semaRoot) queue(addr *uint32, s *sudog, lifo bool) {
+         .          .    296:	s.g = getg()
+         .          .    297:	s.elem = unsafe.Pointer(addr)
+         .          .    298:	s.next = nil
+         .          .    299:	s.prev = nil
+         .          .    300:	s.waiters = 0
+         .          .    301:
+         .          .    302:	var last *sudog
+         .          .    303:	pt := &root.treap
+         .          .    304:	for t := *pt; t != nil; t = *pt {
+      10ms       10ms    305:		if t.elem == unsafe.Pointer(addr) {
+         .          .    306:			// Already have addr in list.
+         .          .    307:			if lifo {
+         .          .    308:				// Substitute s in t's place in treap.
+         .          .    309:				*pt = s
+         .          .    310:				s.ticket = t.ticket

@@ -1,0 +1,37 @@
+Total: 52.53s
+ROUTINE ======================== runtime.(*mspan).heapBitsSmallForAddr in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mbitmap.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    601:func (span *mspan) heapBitsSmallForAddr(addr uintptr) uintptr {
+         .          .    602:	spanSize := span.npages * pageSize
+         .          .    603:	bitmapSize := spanSize / goarch.PtrSize / 8
+         .          .    604:	hbits := (*byte)(unsafe.Pointer(span.base() + spanSize - bitmapSize))
+         .          .    605:
+         .          .    606:	// These objects are always small enough that their bitmaps
+         .          .    607:	// fit in a single word, so just load the word or two we need.
+         .          .    608:	//
+         .          .    609:	// Mirrors mspan.writeHeapBitsSmall.
+         .          .    610:	//
+         .          .    611:	// We should be using heapBits(), but unfortunately it introduces
+         .          .    612:	// both bounds checks panics and throw which causes us to exceed
+         .          .    613:	// the nosplit limit in quite a few cases.
+         .          .    614:	i := (addr - span.base()) / goarch.PtrSize / ptrBits
+         .          .    615:	j := (addr - span.base()) / goarch.PtrSize % ptrBits
+         .          .    616:	bits := span.elemsize / goarch.PtrSize
+         .          .    617:	word0 := (*uintptr)(unsafe.Pointer(addb(hbits, goarch.PtrSize*(i+0))))
+         .          .    618:	word1 := (*uintptr)(unsafe.Pointer(addb(hbits, goarch.PtrSize*(i+1))))
+         .          .    619:
+         .          .    620:	var read uintptr
+         .          .    621:	if j+bits > ptrBits {
+         .          .    622:		// Two reads.
+         .          .    623:		bits0 := ptrBits - j
+         .          .    624:		bits1 := bits - bits0
+         .          .    625:		read = *word0 >> j
+         .          .    626:		read |= (*word1 & ((1 << bits1) - 1)) << bits0
+         .          .    627:	} else {
+         .          .    628:		// One read.
+      10ms       10ms    629:		read = (*word0 >> j) & ((1 << bits) - 1)
+         .          .    630:	}
+         .          .    631:	return read
+         .          .    632:}
+         .          .    633:
+         .          .    634:// writeHeapBitsSmall writes the heap bits for small objects whose ptr/scalar data is

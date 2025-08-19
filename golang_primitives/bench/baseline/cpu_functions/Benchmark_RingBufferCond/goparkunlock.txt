@@ -1,0 +1,10 @@
+Total: 52.38s
+ROUTINE ======================== runtime.goparkunlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .    440:func goparkunlock(lock *mutex, reason waitReason, traceReason traceBlockReason, traceskip int) {
+         .       10ms    441:	gopark(parkunlock_c, unsafe.Pointer(lock), reason, traceReason, traceskip)
+         .          .    442:}
+         .          .    443:
+         .          .    444:// goready should be an internal detail,
+         .          .    445:// but widely used packages access it using linkname.
+         .          .    446:// Notable members of the hall of shame include:

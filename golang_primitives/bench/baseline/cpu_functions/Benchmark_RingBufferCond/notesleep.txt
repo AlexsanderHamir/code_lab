@@ -1,0 +1,25 @@
+Total: 52.38s
+ROUTINE ======================== runtime.notesleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_sema.go
+         0      4.41s (flat, cum)  8.42% of Total
+         .          .     46:func notesleep(n *note) {
+         .          .     47:	gp := getg()
+         .          .     48:	if gp != gp.m.g0 {
+         .          .     49:		throw("notesleep not on g0")
+         .          .     50:	}
+         .          .     51:	semacreate(gp.m)
+         .          .     52:	if !atomic.Casuintptr(&n.key, 0, uintptr(unsafe.Pointer(gp.m))) {
+         .          .     53:		// Must be locked (got wakeup).
+         .          .     54:		if n.key != locked {
+         .          .     55:			throw("notesleep - waitm out of sync")
+         .          .     56:		}
+         .          .     57:		return
+         .          .     58:	}
+         .          .     59:	// Queued. Sleep.
+         .          .     60:	gp.m.blocked = true
+         .          .     61:	if *cgo_yield == nil {
+         .      4.41s     62:		semasleep(-1)
+         .          .     63:	} else {
+         .          .     64:		// Sleep for an arbitrary-but-moderate interval to poll libc interceptors.
+         .          .     65:		const ns = 10e6
+         .          .     66:		for atomic.Loaduintptr(&n.key) == 0 {
+         .          .     67:			semasleep(ns)

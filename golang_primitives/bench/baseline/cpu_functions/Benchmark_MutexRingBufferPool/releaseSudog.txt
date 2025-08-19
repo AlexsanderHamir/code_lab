@@ -1,0 +1,22 @@
+Total: 52.53s
+ROUTINE ======================== runtime.releaseSudog in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      30ms       30ms (flat, cum) 0.057% of Total
+         .          .    499:func releaseSudog(s *sudog) {
+         .          .    500:	if s.elem != nil {
+         .          .    501:		throw("runtime: sudog with non-nil elem")
+         .          .    502:	}
+      10ms       10ms    503:	if s.isSelect {
+         .          .    504:		throw("runtime: sudog with non-false isSelect")
+         .          .    505:	}
+         .          .    506:	if s.next != nil {
+         .          .    507:		throw("runtime: sudog with non-nil next")
+         .          .    508:	}
+         .          .    509:	if s.prev != nil {
+         .          .    510:		throw("runtime: sudog with non-nil prev")
+         .          .    511:	}
+      20ms       20ms    512:	if s.waitlink != nil {
+         .          .    513:		throw("runtime: sudog with non-nil waitlink")
+         .          .    514:	}
+         .          .    515:	if s.c != nil {
+         .          .    516:		throw("runtime: sudog with non-nil c")
+         .          .    517:	}

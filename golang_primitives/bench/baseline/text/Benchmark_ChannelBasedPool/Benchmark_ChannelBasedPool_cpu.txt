@@ -1,0 +1,75 @@
+File: primitives_performance.test
+Type: cpu
+Time: 2025-08-19 12:50:46 PDT
+Duration: 13.38s, Total samples = 30.68s (229.25%)
+Showing nodes accounting for 30.68s, 100% of 30.68s total
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%     30.63s 99.84%  primitives_performance.Benchmark_ChannelBasedPool.func1
+         0     0%     0%     30.63s 99.84%  testing.(*B).RunParallel.func1
+         0     0%     0%     19.94s 64.99%  runtime.lock (inline)
+     0.23s  0.75%  0.75%     19.94s 64.99%  runtime.lock2
+         0     0%  0.75%     19.94s 64.99%  runtime.lockWithRank (inline)
+         0     0%  0.75%     15.44s 50.33%  primitives_performance.(*ChannelBasedPool).Put (inline)
+     0.01s 0.033%  0.78%     15.44s 50.33%  runtime.chansend
+         0     0%  0.78%     15.44s 50.33%  runtime.chansend1
+     0.01s 0.033%  0.81%     15.19s 49.51%  primitives_performance.(*ChannelBasedPool).Get (inline)
+     0.02s 0.065%  0.88%     15.18s 49.48%  runtime.chanrecv
+         0     0%  0.88%     15.18s 49.48%  runtime.selectnbrecv
+         0     0%  0.88%     14.24s 46.41%  runtime.semasleep
+    14.19s 46.25% 47.13%     14.19s 46.25%  runtime.pthread_cond_wait
+         0     0% 47.13%      9.60s 31.29%  runtime.unlock (inline)
+     0.15s  0.49% 47.62%      9.60s 31.29%  runtime.unlock2
+         0     0% 47.62%      9.60s 31.29%  runtime.unlockWithRank (inline)
+     0.04s  0.13% 47.75%      9.35s 30.48%  runtime.unlock2Wake
+         0     0% 47.75%      9.32s 30.38%  runtime.semawakeup
+     9.24s 30.12% 77.87%      9.24s 30.12%  runtime.pthread_cond_signal
+         0     0% 77.87%      5.33s 17.37%  runtime.osyield (inline)
+     5.33s 17.37% 95.24%      5.33s 17.37%  runtime.usleep
+         0     0% 95.24%      1.16s  3.78%  runtime.nanotime (inline)
+     1.15s  3.75% 98.99%      1.16s  3.78%  runtime.nanotime1
+     0.02s 0.065% 99.05%      1.11s  3.62%  runtime.cputicks (inline)
+     0.02s 0.065% 99.12%      0.12s  0.39%  runtime.(*mLockProfile).recordUnlock
+         0     0% 99.12%      0.10s  0.33%  runtime.(*lockTimer).end
+     0.01s 0.033% 99.15%      0.10s  0.33%  runtime.saveBlockEventStack
+         0     0% 99.15%      0.09s  0.29%  runtime.(*mLockProfile).store
+     0.07s  0.23% 99.38%      0.08s  0.26%  runtime.pthread_mutex_unlock
+         0     0% 99.38%      0.04s  0.13%  runtime.(*lockTimer).begin
+     0.04s  0.13% 99.51%      0.04s  0.13%  runtime.pthread_mutex_lock
+     0.02s 0.065% 99.58%      0.03s 0.098%  runtime.stkbucket
+         0     0% 99.58%      0.03s 0.098%  runtime.systemstack
+     0.02s 0.065% 99.64%      0.02s 0.065%  runtime.(*waitq).dequeue (inline)
+     0.02s 0.065% 99.71%      0.02s 0.065%  runtime.libcCall
+     0.01s 0.033% 99.74%      0.02s 0.065%  runtime.typedmemmove
+     0.01s 0.033% 99.77%      0.01s 0.033%  internal/runtime/atomic.(*UnsafePointer).Load (inline)
+         0     0% 99.77%      0.01s 0.033%  primitives_performance.Benchmark_ChannelBasedPool
+     0.01s 0.033% 99.80%      0.01s 0.033%  runtime.(*mLockProfile).captureStack
+     0.01s 0.033% 99.84%      0.01s 0.033%  runtime.(*mLockProfile).recordLock
+         0     0% 99.84%      0.01s 0.033%  runtime.blockevent
+         0     0% 99.84%      0.01s 0.033%  runtime.gcMarkTermination.func3
+         0     0% 99.84%      0.01s 0.033%  runtime.gcStart.func2
+         0     0% 99.84%      0.01s 0.033%  runtime.gopreempt_m (inline)
+         0     0% 99.84%      0.01s 0.033%  runtime.goschedImpl
+     0.01s 0.033% 99.87%      0.01s 0.033%  runtime.kevent
+     0.01s 0.033% 99.90%      0.01s 0.033%  runtime.memmove
+         0     0% 99.90%      0.01s 0.033%  runtime.morestack
+         0     0% 99.90%      0.01s 0.033%  runtime.netpoll
+         0     0% 99.90%      0.01s 0.033%  runtime.newstack
+         0     0% 99.90%      0.01s 0.033%  runtime.notetsleep
+         0     0% 99.90%      0.01s 0.033%  runtime.notetsleep_internal
+         0     0% 99.90%      0.01s 0.033%  runtime.notewakeup
+     0.01s 0.033% 99.93%      0.01s 0.033%  runtime.procyield
+     0.01s 0.033%   100%      0.01s 0.033%  runtime.pthread_cond_timedwait_relative_np
+         0     0%   100%      0.01s 0.033%  runtime.ready
+         0     0%   100%      0.01s 0.033%  runtime.readyWithTime.goready.func1
+         0     0%   100%      0.01s 0.033%  runtime.saveblockevent
+         0     0%   100%      0.01s 0.033%  runtime.semacquire1
+         0     0%   100%      0.01s 0.033%  runtime.startTheWorldWithSema
+         0     0%   100%      0.01s 0.033%  runtime.startm
+         0     0%   100%      0.01s 0.033%  runtime.stopTheWorldWithSema
+     0.01s 0.033%   100%      0.01s 0.033%  runtime.typedmemclr
+         0     0%   100%      0.01s 0.033%  runtime.wakep
+         0     0%   100%      0.01s 0.033%  sync.(*WaitGroup).Wait
+         0     0%   100%      0.01s 0.033%  sync.runtime_SemacquireWaitGroup
+         0     0%   100%      0.01s 0.033%  testing.(*B).RunParallel
+         0     0%   100%      0.01s 0.033%  testing.(*B).run1.func1
+         0     0%   100%      0.01s 0.033%  testing.(*B).runN

@@ -1,0 +1,130 @@
+Total: 7.05MB
+ROUTINE ======================== runtime.sysmon in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      513kB (flat, cum)  7.11% of Total
+         .          .   6092:func sysmon() {
+         .          .   6093:	lock(&sched.lock)
+         .          .   6094:	sched.nmsys++
+         .          .   6095:	checkdead()
+         .          .   6096:	unlock(&sched.lock)
+         .          .   6097:
+         .          .   6098:	lasttrace := int64(0)
+         .          .   6099:	idle := 0 // how many cycles in succession we had not wokeup somebody
+         .          .   6100:	delay := uint32(0)
+         .          .   6101:
+         .          .   6102:	for {
+         .          .   6103:		if idle == 0 { // start with 20us sleep...
+         .          .   6104:			delay = 20
+         .          .   6105:		} else if idle > 50 { // start doubling the sleep after 1ms...
+         .          .   6106:			delay *= 2
+         .          .   6107:		}
+         .          .   6108:		if delay > 10*1000 { // up to 10ms
+         .          .   6109:			delay = 10 * 1000
+         .          .   6110:		}
+         .          .   6111:		usleep(delay)
+         .          .   6112:
+         .          .   6113:		// sysmon should not enter deep sleep if schedtrace is enabled so that
+         .          .   6114:		// it can print that information at the right time.
+         .          .   6115:		//
+         .          .   6116:		// It should also not enter deep sleep if there are any active P's so
+         .          .   6117:		// that it can retake P's from syscalls, preempt long running G's, and
+         .          .   6118:		// poll the network if all P's are busy for long stretches.
+         .          .   6119:		//
+         .          .   6120:		// It should wakeup from deep sleep if any P's become active either due
+         .          .   6121:		// to exiting a syscall or waking up due to a timer expiring so that it
+         .          .   6122:		// can resume performing those duties. If it wakes from a syscall it
+         .          .   6123:		// resets idle and delay as a bet that since it had retaken a P from a
+         .          .   6124:		// syscall before, it may need to do it again shortly after the
+         .          .   6125:		// application starts work again. It does not reset idle when waking
+         .          .   6126:		// from a timer to avoid adding system load to applications that spend
+         .          .   6127:		// most of their time sleeping.
+         .          .   6128:		now := nanotime()
+         .          .   6129:		if debug.schedtrace <= 0 && (sched.gcwaiting.Load() || sched.npidle.Load() == gomaxprocs) {
+         .          .   6130:			lock(&sched.lock)
+         .          .   6131:			if sched.gcwaiting.Load() || sched.npidle.Load() == gomaxprocs {
+         .          .   6132:				syscallWake := false
+         .          .   6133:				next := timeSleepUntil()
+         .          .   6134:				if next > now {
+         .          .   6135:					sched.sysmonwait.Store(true)
+         .          .   6136:					unlock(&sched.lock)
+         .          .   6137:					// Make wake-up period small enough
+         .          .   6138:					// for the sampling to be correct.
+         .          .   6139:					sleep := forcegcperiod / 2
+         .          .   6140:					if next-now < sleep {
+         .          .   6141:						sleep = next - now
+         .          .   6142:					}
+         .          .   6143:					shouldRelax := sleep >= osRelaxMinNS
+         .          .   6144:					if shouldRelax {
+         .          .   6145:						osRelax(true)
+         .          .   6146:					}
+         .          .   6147:					syscallWake = notetsleep(&sched.sysmonnote, sleep)
+         .          .   6148:					if shouldRelax {
+         .          .   6149:						osRelax(false)
+         .          .   6150:					}
+         .          .   6151:					lock(&sched.lock)
+         .          .   6152:					sched.sysmonwait.Store(false)
+         .          .   6153:					noteclear(&sched.sysmonnote)
+         .          .   6154:				}
+         .          .   6155:				if syscallWake {
+         .          .   6156:					idle = 0
+         .          .   6157:					delay = 20
+         .          .   6158:				}
+         .          .   6159:			}
+         .          .   6160:			unlock(&sched.lock)
+         .          .   6161:		}
+         .          .   6162:
+         .          .   6163:		lock(&sched.sysmonlock)
+         .          .   6164:		// Update now in case we blocked on sysmonnote or spent a long time
+         .          .   6165:		// blocked on schedlock or sysmonlock above.
+         .          .   6166:		now = nanotime()
+         .          .   6167:
+         .          .   6168:		// trigger libc interceptors if needed
+         .          .   6169:		if *cgo_yield != nil {
+         .          .   6170:			asmcgocall(*cgo_yield, nil)
+         .          .   6171:		}
+         .          .   6172:		// poll network if not polled for more than 10ms
+         .          .   6173:		lastpoll := sched.lastpoll.Load()
+         .          .   6174:		if netpollinited() && lastpoll != 0 && lastpoll+10*1000*1000 < now {
+         .          .   6175:			sched.lastpoll.CompareAndSwap(lastpoll, now)
+         .          .   6176:			list, delta := netpoll(0) // non-blocking - returns list of goroutines
+         .          .   6177:			if !list.empty() {
+         .          .   6178:				// Need to decrement number of idle locked M's
+         .          .   6179:				// (pretending that one more is running) before injectglist.
+         .          .   6180:				// Otherwise it can lead to the following situation:
+         .          .   6181:				// injectglist grabs all P's but before it starts M's to run the P's,
+         .          .   6182:				// another M returns from syscall, finishes running its G,
+         .          .   6183:				// observes that there is no work to do and no other running M's
+         .          .   6184:				// and reports deadlock.
+         .          .   6185:				incidlelocked(-1)
+         .          .   6186:				injectglist(&list)
+         .          .   6187:				incidlelocked(1)
+         .          .   6188:				netpollAdjustWaiters(delta)
+         .          .   6189:			}
+         .          .   6190:		}
+         .          .   6191:		if GOOS == "netbsd" && needSysmonWorkaround {
+         .          .   6192:			// netpoll is responsible for waiting for timer
+         .          .   6193:			// expiration, so we typically don't have to worry
+         .          .   6194:			// about starting an M to service timers. (Note that
+         .          .   6195:			// sleep for timeSleepUntil above simply ensures sysmon
+         .          .   6196:			// starts running again when that timer expiration may
+         .          .   6197:			// cause Go code to run again).
+         .          .   6198:			//
+         .          .   6199:			// However, netbsd has a kernel bug that sometimes
+         .          .   6200:			// misses netpollBreak wake-ups, which can lead to
+         .          .   6201:			// unbounded delays servicing timers. If we detect this
+         .          .   6202:			// overrun, then startm to get something to handle the
+         .          .   6203:			// timer.
+         .          .   6204:			//
+         .          .   6205:			// See issue 42515 and
+         .          .   6206:			// https://gnats.netbsd.org/cgi-bin/query-pr-single.pl?number=50094.
+         .          .   6207:			if next := timeSleepUntil(); next < now {
+         .          .   6208:				startm(nil, false, false)
+         .          .   6209:			}
+         .          .   6210:		}
+         .          .   6211:		if scavenger.sysmonWake.Load() != 0 {
+         .          .   6212:			// Kick the scavenger awake if someone requested it.
+         .      513kB   6213:			scavenger.wake()
+         .          .   6214:		}
+         .          .   6215:		// retake P's blocked in syscalls
+         .          .   6216:		// and preempt long running G's
+         .          .   6217:		if retake(now) != 0 {
+         .          .   6218:			idle = 0

@@ -1,0 +1,12 @@
+Total: 52.38s
+ROUTINE ======================== runtime.pidleput in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .   6640:func pidleput(pp *p, now int64) int64 {
+         .          .   6641:	assertLockHeld(&sched.lock)
+         .          .   6642:
+         .       10ms   6643:	if !runqempty(pp) {
+         .          .   6644:		throw("pidleput: P has non-empty run queue")
+         .          .   6645:	}
+         .          .   6646:	if now == 0 {
+         .          .   6647:		now = nanotime()
+         .          .   6648:	}

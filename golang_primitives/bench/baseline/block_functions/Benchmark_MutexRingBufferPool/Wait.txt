@@ -1,0 +1,34 @@
+Total: 63.70s
+ROUTINE ======================== sync.(*WaitGroup).Wait in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/waitgroup.go
+    13.88s     13.88s (flat, cum) 21.80% of Total
+         .          .     93:func (wg *WaitGroup) Wait() {
+         .          .     94:	if race.Enabled {
+         .          .     95:		race.Disable()
+         .          .     96:	}
+         .          .     97:	for {
+         .          .     98:		state := wg.state.Load()
+         .          .     99:		v := int32(state >> 32)
+         .          .    100:		w := uint32(state)
+         .          .    101:		if v == 0 {
+         .          .    102:			// Counter is 0, no need to wait.
+         .          .    103:			if race.Enabled {
+         .          .    104:				race.Enable()
+         .          .    105:				race.Acquire(unsafe.Pointer(wg))
+         .          .    106:			}
+         .          .    107:			return
+         .          .    108:		}
+         .          .    109:		// Increment waiters count.
+         .          .    110:		if wg.state.CompareAndSwap(state, state+1) {
+         .          .    111:			if race.Enabled && w == 0 {
+         .          .    112:				// Wait must be synchronized with the first Add.
+         .          .    113:				// Need to model this is as a write to race with the read in Add.
+         .          .    114:				// As a consequence, can do the write only for the first waiter,
+         .          .    115:				// otherwise concurrent Waits will race with each other.
+         .          .    116:				race.Write(unsafe.Pointer(&wg.sema))
+         .          .    117:			}
+    13.88s     13.88s    118:			runtime_SemacquireWaitGroup(&wg.sema)
+         .          .    119:			if wg.state.Load() != 0 {
+         .          .    120:				panic("sync: WaitGroup is reused before previous Wait has returned")
+         .          .    121:			}
+         .          .    122:			if race.Enabled {
+         .          .    123:				race.Enable()

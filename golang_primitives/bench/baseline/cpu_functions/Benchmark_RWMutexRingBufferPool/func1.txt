@@ -1,0 +1,51 @@
+Total: 48.01s
+ROUTINE ======================== primitives_performance.Benchmark_RWMutexRingBufferPool.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     30.29s (flat, cum) 63.09% of Total
+         .          .     32:	b.RunParallel(func(pb *testing.PB) {
+         .       10ms     33:		for pb.Next() {
+         .     14.88s     34:			obj := pool.Get()
+         .     15.40s     35:			pool.Put(obj)
+         .          .     36:		}
+         .          .     37:	})
+         .          .     38:}
+         .          .     39:
+         .          .     40:// Benchmark: Channel-based pool
+ROUTINE ======================== runtime.fpTracebackPartialExpand.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      40ms       40ms (flat, cum) 0.083% of Total
+         .          .    581:	skipOrAdd := func(retPC uintptr) bool {
+      20ms       20ms    582:		if skip > 0 {
+         .          .    583:			skip--
+         .          .    584:		} else if n < len(pcBuf) {
+      10ms       10ms    585:			pcBuf[n] = retPC
+         .          .    586:			n++
+         .          .    587:		}
+      10ms       10ms    588:		return n < len(pcBuf)
+         .          .    589:	}
+         .          .    590:	for n < len(pcBuf) && fp != nil {
+         .          .    591:		// return addr sits one word above the frame pointer
+         .          .    592:		pc := *(*uintptr)(unsafe.Pointer(uintptr(fp) + goarch.PtrSize))
+         .          .    593:
+ROUTINE ======================== runtime.readyWithTime.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      180ms (flat, cum)  0.37% of Total
+         .          .    455:	systemstack(func() {
+         .      180ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {
+ROUTINE ======================== testing.(*B).RunParallel.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     30.29s (flat, cum) 63.09% of Total
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+         .          .    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .     30.29s    962:			body(pb)
+         .          .    963:		}()
+         .          .    964:	}
+         .          .    965:	wg.Wait()
+         .          .    966:	if n.Load() <= uint64(b.N) && !b.Failed() {
+         .          .    967:		b.Fatal("RunParallel: body exited without pb.Next() == false")

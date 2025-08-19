@@ -1,0 +1,10 @@
+Total: 30.68s
+ROUTINE ======================== runtime.gopreempt_m in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .   4194:func gopreempt_m(gp *g) {
+         .       10ms   4195:	goschedImpl(gp, true)
+         .          .   4196:}
+         .          .   4197:
+         .          .   4198:// preemptPark parks gp and puts it in _Gpreempted.
+         .          .   4199://
+         .          .   4200://go:systemstack

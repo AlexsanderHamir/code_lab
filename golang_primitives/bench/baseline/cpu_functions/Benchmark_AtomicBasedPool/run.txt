@@ -1,0 +1,2187 @@
+Total: 108.20s
+ROUTINE ======================== internal/runtime/maps.(*groupReference).key in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/maps/group.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    278:func (g *groupReference) key(typ *abi.SwissMapType, i uintptr) unsafe.Pointer {
+      10ms       10ms    279:	offset := groupSlotsOffset + i*typ.SlotSize
+         .          .    280:
+         .          .    281:	return unsafe.Pointer(uintptr(g.data) + offset)
+         .          .    282:}
+         .          .    283:
+         .          .    284:// elem returns a pointer to the element at index i.
+ROUTINE ======================== internal/runtime/maps.(*groupsReference).group in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/maps/group.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    316:func (g *groupsReference) group(typ *abi.SwissMapType, i uint64) groupReference {
+         .          .    317:	// TODO(prattmic): Do something here about truncation on cast to
+         .          .    318:	// uintptr on 32-bit systems?
+      10ms       10ms    319:	offset := uintptr(i) * typ.GroupSize
+         .          .    320:
+         .          .    321:	return groupReference{
+         .          .    322:		data: unsafe.Pointer(uintptr(g.data) + offset),
+         .          .    323:	}
+         .          .    324:}
+ROUTINE ======================== runtime.(*gQueue).pop in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .   7057:func (q *gQueue) pop() *g {
+         .          .   7058:	gp := q.head.ptr()
+         .          .   7059:	if gp != nil {
+      10ms       10ms   7060:		q.head = gp.schedlink
+         .          .   7061:		if q.head == 0 {
+         .          .   7062:			q.tail = 0
+         .          .   7063:		}
+         .          .   7064:	}
+         .          .   7065:	return gp
+ROUTINE ======================== runtime.(*guintptr).cas in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/runtime2.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    246:func (gp *guintptr) cas(old, new guintptr) bool {
+      10ms       10ms    247:	return atomic.Casuintptr((*uintptr)(unsafe.Pointer(gp)), uintptr(old), uintptr(new))
+         .          .    248:}
+         .          .    249:
+         .          .    250://go:nosplit
+         .          .    251:func (gp *g) guintptr() guintptr {
+         .          .    252:	return guintptr(unsafe.Pointer(gp))
+ROUTINE ======================== runtime.(*lockTimer).begin in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    685:func (lt *lockTimer) begin() {
+         .          .    686:	rate := int64(atomic.Load64(&mutexprofilerate))
+         .          .    687:
+         .          .    688:	lt.timeRate = gTrackingPeriod
+         .          .    689:	if rate != 0 && rate < lt.timeRate {
+         .          .    690:		lt.timeRate = rate
+         .          .    691:	}
+         .          .    692:	if int64(cheaprand())%lt.timeRate == 0 {
+         .       10ms    693:		lt.timeStart = nanotime()
+         .          .    694:	}
+         .          .    695:
+         .          .    696:	if rate > 0 && int64(cheaprand())%rate == 0 {
+         .          .    697:		lt.tickStart = cputicks()
+         .          .    698:	}
+ROUTINE ======================== runtime.(*mLockProfile).recordUnlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      20ms       30ms (flat, cum) 0.028% of Total
+         .          .    772:func (prof *mLockProfile) recordUnlock(l *mutex) {
+         .          .    773:	if uintptr(unsafe.Pointer(l)) == prof.pending {
+         .          .    774:		prof.captureStack()
+         .          .    775:	}
+      10ms       10ms    776:	if gp := getg(); gp.m.locks == 1 && gp.m.mLockProfile.haveStack {
+         .       10ms    777:		prof.store()
+         .          .    778:	}
+      10ms       10ms    779:}
+         .          .    780:
+         .          .    781:func (prof *mLockProfile) captureStack() {
+         .          .    782:	if debug.profstackdepth == 0 {
+         .          .    783:		// profstackdepth is set to 0 by the user, so mp.profStack is nil and we
+         .          .    784:		// can't record a stack trace.
+ROUTINE ======================== runtime.(*mLockProfile).store in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    825:func (prof *mLockProfile) store() {
+         .          .    826:	// Report any contention we experience within this function as "lost"; it's
+         .          .    827:	// important that the act of reporting a contention event not lead to a
+         .          .    828:	// reportable contention event. This also means we can use prof.stack
+         .          .    829:	// without copying, since it won't change during this function.
+         .          .    830:	mp := acquirem()
+         .          .    831:	prof.disabled = true
+         .          .    832:
+         .          .    833:	nstk := int(debug.profstackdepth)
+         .          .    834:	for i := 0; i < nstk; i++ {
+         .          .    835:		if pc := prof.stack[i]; pc == 0 {
+         .          .    836:			nstk = i
+         .          .    837:			break
+         .          .    838:		}
+         .          .    839:	}
+         .          .    840:
+         .          .    841:	cycles, lost := prof.cycles, prof.cyclesLost
+         .          .    842:	prof.cycles, prof.cyclesLost = 0, 0
+         .          .    843:	prof.haveStack = false
+         .          .    844:
+         .          .    845:	rate := int64(atomic.Load64(&mutexprofilerate))
+         .       10ms    846:	saveBlockEventStack(cycles, rate, prof.stack[:nstk], mutexProfile)
+         .          .    847:	if lost > 0 {
+         .          .    848:		lostStk := [...]uintptr{
+         .          .    849:			logicalStackSentinel,
+         .          .    850:			abi.FuncPCABIInternal(_LostContendedRuntimeLock) + sys.PCQuantum,
+         .          .    851:		}
+ROUTINE ======================== runtime.(*profBuf).read in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/profbuf.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    429:func (b *profBuf) read(mode profBufReadMode) (data []uint64, tags []unsafe.Pointer, eof bool) {
+         .          .    430:	if b == nil {
+         .          .    431:		return nil, nil, true
+         .          .    432:	}
+         .          .    433:
+         .          .    434:	br := b.rNext
+         .          .    435:
+         .          .    436:	// Commit previous read, returning that part of the ring to the writer.
+         .          .    437:	// First clear tags that have now been read, both to avoid holding
+         .          .    438:	// up the memory they point at for longer than necessary
+         .          .    439:	// and so that b.write can assume it is always overwriting
+         .          .    440:	// nil tag entries (see comment in b.write).
+         .          .    441:	rPrev := b.r.load()
+         .          .    442:	if rPrev != br {
+         .          .    443:		ntag := countSub(br.tagCount(), rPrev.tagCount())
+         .          .    444:		ti := int(rPrev.tagCount() % uint32(len(b.tags)))
+         .          .    445:		for i := 0; i < ntag; i++ {
+         .          .    446:			b.tags[ti] = nil
+         .          .    447:			if ti++; ti == len(b.tags) {
+         .          .    448:				ti = 0
+         .          .    449:			}
+         .          .    450:		}
+         .          .    451:		b.r.store(br)
+         .          .    452:	}
+         .          .    453:
+         .          .    454:Read:
+      10ms       10ms    455:	bw := b.w.load()
+         .          .    456:	numData := countSub(bw.dataCount(), br.dataCount())
+         .          .    457:	if numData == 0 {
+         .          .    458:		if b.hasOverflow() {
+         .          .    459:			// No data to read, but there is overflow to report.
+         .          .    460:			// Racing with writer flushing b.overflow into a real record.
+ROUTINE ======================== runtime.(*timer).maybeAdd in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+      10ms       10ms    660:func (t *timer) maybeAdd() {
+         .          .    661:	// Note: Not holding any locks on entry to t.maybeAdd,
+         .          .    662:	// so the current g can be rescheduled to a different M and P
+         .          .    663:	// at any time, including between the ts := assignment and the
+         .          .    664:	// call to ts.lock. If a reschedule happened then, we would be
+         .          .    665:	// adding t to some other P's timers, perhaps even a P that the scheduler
+ROUTINE ======================== runtime.(*timer).modify in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    547:func (t *timer) modify(when, period int64, f func(arg any, seq uintptr, delay int64), arg any, seq uintptr) bool {
+         .          .    548:	if when <= 0 {
+         .          .    549:		throw("timer when must be positive")
+         .          .    550:	}
+         .          .    551:	if period < 0 {
+         .          .    552:		throw("timer period must be non-negative")
+         .          .    553:	}
+         .          .    554:	async := debug.asynctimerchan.Load() != 0
+         .          .    555:
+         .          .    556:	if !async && t.isChan {
+         .          .    557:		lock(&t.sendLock)
+         .          .    558:	}
+         .          .    559:
+         .          .    560:	t.lock()
+         .          .    561:	if async {
+         .          .    562:		t.maybeRunAsync()
+         .          .    563:	}
+         .          .    564:	t.trace("modify")
+         .          .    565:	oldPeriod := t.period
+         .          .    566:	t.period = period
+         .          .    567:	if f != nil {
+         .          .    568:		t.f = f
+         .          .    569:		t.arg = arg
+         .          .    570:		t.seq = seq
+         .          .    571:	}
+         .          .    572:
+         .          .    573:	wake := false
+         .          .    574:	pending := t.when > 0
+         .          .    575:	t.when = when
+         .          .    576:	if t.state&timerHeaped != 0 {
+         .          .    577:		t.state |= timerModified
+         .          .    578:		if t.state&timerZombie != 0 {
+         .          .    579:			// In the heap but marked for removal (by a Stop).
+         .          .    580:			// Unmark it, since it has been Reset and will be running again.
+         .          .    581:			t.ts.zombies.Add(-1)
+         .          .    582:			t.state &^= timerZombie
+         .          .    583:		}
+         .          .    584:		// The corresponding heap[i].when is updated later.
+         .          .    585:		// See comment in type timer above and in timers.adjust below.
+         .          .    586:		if min := t.ts.minWhenModified.Load(); min == 0 || when < min {
+         .          .    587:			wake = true
+         .          .    588:			// Force timerModified bit out to t.astate before updating t.minWhenModified,
+         .          .    589:			// to synchronize with t.ts.adjust. See comment in adjust.
+         .          .    590:			t.astate.Store(t.state)
+         .          .    591:			t.ts.updateMinWhenModified(when)
+         .          .    592:		}
+         .          .    593:	}
+         .          .    594:
+         .          .    595:	add := t.needsAdd()
+         .          .    596:
+         .          .    597:	if !async && t.isChan {
+         .          .    598:		// Stop any future sends with stale values.
+         .          .    599:		// See timer.unlockAndRun.
+         .          .    600:		t.seq++
+         .          .    601:
+         .          .    602:		// If there is currently a send in progress,
+         .          .    603:		// incrementing seq is going to prevent that
+         .          .    604:		// send from actually happening. That means
+         .          .    605:		// that we should return true: the timer was
+         .          .    606:		// stopped, even though t.when may be zero.
+         .          .    607:		if oldPeriod == 0 && t.isSending.Load() > 0 {
+         .          .    608:			pending = true
+         .          .    609:		}
+         .          .    610:	}
+         .          .    611:	t.unlock()
+         .          .    612:	if !async && t.isChan {
+         .          .    613:		if timerchandrain(t.hchan()) {
+         .          .    614:			pending = true
+         .          .    615:		}
+         .          .    616:		unlock(&t.sendLock)
+         .          .    617:	}
+         .          .    618:
+         .          .    619:	if add {
+         .       10ms    620:		t.maybeAdd()
+         .          .    621:	}
+         .          .    622:	if wake {
+         .          .    623:		wakeNetPoller(when)
+         .          .    624:	}
+         .          .    625:
+ROUTINE ======================== runtime.(*timer).reset in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    705:func (t *timer) reset(when, period int64) bool {
+         .       10ms    706:	return t.modify(when, period, nil, nil, 0)
+         .          .    707:}
+         .          .    708:
+         .          .    709:// cleanHead cleans up the head of the timer queue. This speeds up
+         .          .    710:// programs that create and delete timers; leaving them in the heap
+         .          .    711:// slows down heap operations.
+ROUTINE ======================== runtime.(*timer).unlockAndRun in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      10ms       30ms (flat, cum) 0.028% of Total
+         .          .   1062:func (t *timer) unlockAndRun(now int64) {
+         .          .   1063:	t.trace("unlockAndRun")
+         .          .   1064:	assertLockHeld(&t.mu)
+         .          .   1065:	if t.ts != nil {
+         .          .   1066:		assertLockHeld(&t.ts.mu)
+         .          .   1067:	}
+         .          .   1068:	if raceenabled {
+         .          .   1069:		// Note that we are running on a system stack,
+         .          .   1070:		// so there is no chance of getg().m being reassigned
+         .          .   1071:		// out from under us while this function executes.
+         .          .   1072:		tsLocal := &getg().m.p.ptr().timers
+         .          .   1073:		if tsLocal.raceCtx == 0 {
+         .          .   1074:			tsLocal.raceCtx = racegostart(abi.FuncPCABIInternal((*timers).run) + sys.PCQuantum)
+         .          .   1075:		}
+         .          .   1076:		raceacquirectx(tsLocal.raceCtx, unsafe.Pointer(t))
+         .          .   1077:	}
+         .          .   1078:
+         .          .   1079:	if t.state&(timerModified|timerZombie) != 0 {
+         .          .   1080:		badTimer()
+         .          .   1081:	}
+         .          .   1082:
+         .          .   1083:	f := t.f
+         .          .   1084:	arg := t.arg
+         .          .   1085:	seq := t.seq
+         .          .   1086:	var next int64
+         .          .   1087:	delay := now - t.when
+         .          .   1088:	if t.period > 0 {
+         .          .   1089:		// Leave in heap but adjust next time to fire.
+         .          .   1090:		next = t.when + t.period*(1+delay/t.period)
+      10ms       10ms   1091:		if next < 0 { // check for overflow.
+         .          .   1092:			next = maxWhen
+         .          .   1093:		}
+         .          .   1094:	} else {
+         .          .   1095:		next = 0
+         .          .   1096:	}
+         .          .   1097:	ts := t.ts
+         .          .   1098:	t.when = next
+         .          .   1099:	if t.state&timerHeaped != 0 {
+         .          .   1100:		t.state |= timerModified
+         .          .   1101:		if next == 0 {
+         .          .   1102:			t.state |= timerZombie
+         .          .   1103:			t.ts.zombies.Add(1)
+         .          .   1104:		}
+         .       10ms   1105:		t.updateHeap()
+         .          .   1106:	}
+         .          .   1107:
+         .          .   1108:	async := debug.asynctimerchan.Load() != 0
+         .          .   1109:	if !async && t.isChan && t.period == 0 {
+         .          .   1110:		// Tell Stop/Reset that we are sending a value.
+         .          .   1111:		if t.isSending.Add(1) < 0 {
+         .          .   1112:			throw("too many concurrent timer firings")
+         .          .   1113:		}
+         .          .   1114:	}
+         .          .   1115:
+         .          .   1116:	t.unlock()
+         .          .   1117:
+         .          .   1118:	if raceenabled {
+         .          .   1119:		// Temporarily use the current P's racectx for g0.
+         .          .   1120:		gp := getg()
+         .          .   1121:		if gp.racectx != 0 {
+         .          .   1122:			throw("unexpected racectx")
+         .          .   1123:		}
+         .          .   1124:		gp.racectx = gp.m.p.ptr().timers.raceCtx
+         .          .   1125:	}
+         .          .   1126:
+         .          .   1127:	if ts != nil {
+         .          .   1128:		ts.unlock()
+         .          .   1129:	}
+         .          .   1130:
+         .          .   1131:	if ts != nil && ts.syncGroup != nil {
+         .          .   1132:		// Temporarily use the timer's synctest group for the G running this timer.
+         .          .   1133:		gp := getg()
+         .          .   1134:		if gp.syncGroup != nil {
+         .          .   1135:			throw("unexpected syncgroup set")
+         .          .   1136:		}
+         .          .   1137:		gp.syncGroup = ts.syncGroup
+         .          .   1138:		ts.syncGroup.changegstatus(gp, _Gdead, _Grunning)
+         .          .   1139:	}
+         .          .   1140:
+         .          .   1141:	if !async && t.isChan {
+         .          .   1142:		// For a timer channel, we want to make sure that no stale sends
+         .          .   1143:		// happen after a t.stop or t.modify, but we cannot hold t.mu
+         .          .   1144:		// during the actual send (which f does) due to lock ordering.
+         .          .   1145:		// It can happen that we are holding t's lock above, we decide
+         .          .   1146:		// it's time to send a time value (by calling f), grab the parameters,
+         .          .   1147:		// unlock above, and then a t.stop or t.modify changes the timer
+         .          .   1148:		// and returns. At that point, the send needs not to happen after all.
+         .          .   1149:		// The way we arrange for it not to happen is that t.stop and t.modify
+         .          .   1150:		// both increment t.seq while holding both t.mu and t.sendLock.
+         .          .   1151:		// We copied the seq value above while holding t.mu.
+         .          .   1152:		// Now we can acquire t.sendLock (which will be held across the send)
+         .          .   1153:		// and double-check that t.seq is still the seq value we saw above.
+         .          .   1154:		// If not, the timer has been updated and we should skip the send.
+         .          .   1155:		// We skip the send by reassigning f to a no-op function.
+         .          .   1156:		//
+         .          .   1157:		// The isSending field tells t.stop or t.modify that we have
+         .          .   1158:		// started to send the value. That lets them correctly return
+         .          .   1159:		// true meaning that no value was sent.
+         .          .   1160:		lock(&t.sendLock)
+         .          .   1161:
+         .          .   1162:		if t.period == 0 {
+         .          .   1163:			// We are committed to possibly sending a value
+         .          .   1164:			// based on seq, so no need to keep telling
+         .          .   1165:			// stop/modify that we are sending.
+         .          .   1166:			if t.isSending.Add(-1) < 0 {
+         .          .   1167:				throw("mismatched isSending updates")
+         .          .   1168:			}
+         .          .   1169:		}
+         .          .   1170:
+         .          .   1171:		if t.seq != seq {
+         .          .   1172:			f = func(any, uintptr, int64) {}
+         .          .   1173:		}
+         .          .   1174:	}
+         .          .   1175:
+         .       10ms   1176:	f(arg, seq, delay)
+         .          .   1177:
+         .          .   1178:	if !async && t.isChan {
+         .          .   1179:		unlock(&t.sendLock)
+         .          .   1180:	}
+         .          .   1181:
+ROUTINE ======================== runtime.(*timer).updateHeap in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    262:func (t *timer) updateHeap() (updated bool) {
+         .          .    263:	assertWorldStoppedOrLockHeld(&t.mu)
+         .          .    264:	t.trace("updateHeap")
+         .          .    265:	ts := t.ts
+         .          .    266:	if ts == nil || t != ts.heap[0].timer {
+         .          .    267:		badTimer()
+         .          .    268:	}
+         .          .    269:	assertLockHeld(&ts.mu)
+         .          .    270:	if t.state&timerZombie != 0 {
+         .          .    271:		// Take timer out of heap.
+         .          .    272:		t.state &^= timerHeaped | timerZombie | timerModified
+         .          .    273:		ts.zombies.Add(-1)
+         .       10ms    274:		ts.deleteMin()
+         .          .    275:		return true
+         .          .    276:	}
+         .          .    277:
+         .          .    278:	if t.state&timerModified != 0 {
+         .          .    279:		// Update ts.heap[0].when and move within heap.
+ROUTINE ======================== runtime.(*timers).check in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      30ms      110ms (flat, cum)   0.1% of Total
+      10ms       10ms    952:func (ts *timers) check(now int64) (rnow, pollUntil int64, ran bool) {
+         .          .    953:	ts.trace("check")
+         .          .    954:	// If it's not yet time for the first timer, or the first adjusted
+         .          .    955:	// timer, then there is nothing to do.
+         .          .    956:	next := ts.wakeTime()
+         .          .    957:	if next == 0 {
+         .          .    958:		// No timers to run or adjust.
+      10ms       10ms    959:		return now, 0, false
+         .          .    960:	}
+         .          .    961:
+         .          .    962:	if now == 0 {
+         .       30ms    963:		now = nanotime()
+         .          .    964:	}
+         .          .    965:
+         .          .    966:	// If this is the local P, and there are a lot of deleted timers,
+         .          .    967:	// clear them out. We only do this for the local P to reduce
+         .          .    968:	// lock contention on timersLock.
+         .          .    969:	zombies := ts.zombies.Load()
+         .          .    970:	if zombies < 0 {
+         .          .    971:		badTimer()
+         .          .    972:	}
+         .          .    973:	force := ts == &getg().m.p.ptr().timers && int(zombies) > int(ts.len.Load())/4
+         .          .    974:
+      10ms       10ms    975:	if now < next && !force {
+         .          .    976:		// Next timer is not ready to run, and we don't need to clear deleted timers.
+         .          .    977:		return now, next, false
+         .          .    978:	}
+         .          .    979:
+         .          .    980:	ts.lock()
+         .          .    981:	if len(ts.heap) > 0 {
+         .          .    982:		ts.adjust(now, false)
+         .          .    983:		for len(ts.heap) > 0 {
+         .          .    984:			// Note that runtimer may temporarily unlock ts.
+         .       50ms    985:			if tw := ts.run(now); tw != 0 {
+         .          .    986:				if tw > 0 {
+         .          .    987:					pollUntil = tw
+         .          .    988:				}
+         .          .    989:				break
+         .          .    990:			}
+ROUTINE ======================== runtime.(*timers).deleteMin in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    520:func (ts *timers) deleteMin() {
+         .          .    521:	assertLockHeld(&ts.mu)
+         .          .    522:	t := ts.heap[0].timer
+         .          .    523:	if t.ts != ts {
+         .          .    524:		throw("wrong timers")
+         .          .    525:	}
+         .          .    526:	t.ts = nil
+      10ms       10ms    527:	last := len(ts.heap) - 1
+         .          .    528:	if last > 0 {
+         .          .    529:		ts.heap[0] = ts.heap[last]
+         .          .    530:	}
+         .          .    531:	ts.heap[last] = timerWhen{}
+         .          .    532:	ts.heap = ts.heap[:last]
+ROUTINE ======================== runtime.(*timers).run in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      20ms       50ms (flat, cum) 0.046% of Total
+      10ms       10ms   1017:func (ts *timers) run(now int64) int64 {
+         .          .   1018:	ts.trace("run")
+         .          .   1019:	assertLockHeld(&ts.mu)
+         .          .   1020:Redo:
+         .          .   1021:	if len(ts.heap) == 0 {
+         .          .   1022:		return -1
+         .          .   1023:	}
+         .          .   1024:	tw := ts.heap[0]
+         .          .   1025:	t := tw.timer
+         .          .   1026:	if t.ts != ts {
+         .          .   1027:		throw("bad ts")
+         .          .   1028:	}
+         .          .   1029:
+         .          .   1030:	if t.astate.Load()&(timerModified|timerZombie) == 0 && tw.when > now {
+         .          .   1031:		// Fast path: not ready to run.
+         .          .   1032:		return tw.when
+         .          .   1033:	}
+         .          .   1034:
+         .          .   1035:	t.lock()
+         .          .   1036:	if t.updateHeap() {
+         .          .   1037:		t.unlock()
+         .          .   1038:		goto Redo
+         .          .   1039:	}
+         .          .   1040:
+         .          .   1041:	if t.state&timerHeaped == 0 || t.state&timerModified != 0 {
+         .          .   1042:		badTimer()
+         .          .   1043:	}
+         .          .   1044:
+         .          .   1045:	if t.when > now {
+         .          .   1046:		// Not ready to run.
+         .          .   1047:		t.unlock()
+         .          .   1048:		return t.when
+         .          .   1049:	}
+         .          .   1050:
+      10ms       40ms   1051:	t.unlockAndRun(now)
+         .          .   1052:	assertLockHeld(&ts.mu) // t is unlocked now, but not ts
+         .          .   1053:	return 0
+         .          .   1054:}
+         .          .   1055:
+         .          .   1056:// unlockAndRun unlocks and runs the timer t (which must be locked).
+ROUTINE ======================== runtime.asyncPreempt in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/preempt_arm64.s
+     200ms      200ms (flat, cum)  0.18% of Total
+         .          .      6:TEXT ·asyncPreempt(SB),NOSPLIT|NOFRAME,$0-0
+     200ms      200ms      7:	MOVD R30, -496(RSP)
+         .          .      8:	SUB $496, RSP
+         .          .      9:	MOVD R29, -8(RSP)
+         .          .     10:	SUB $8, RSP, R29
+         .          .     11:	#ifdef GOOS_ios
+         .          .     12:	MOVD R30, (RSP)
+ROUTINE ======================== runtime.casgstatus in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      50ms      100ms (flat, cum) 0.092% of Total
+         .          .   1193:func casgstatus(gp *g, oldval, newval uint32) {
+         .          .   1194:	if (oldval&_Gscan != 0) || (newval&_Gscan != 0) || oldval == newval {
+         .          .   1195:		systemstack(func() {
+         .          .   1196:			// Call on the systemstack to prevent print and throw from counting
+         .          .   1197:			// against the nosplit stack reservation.
+         .          .   1198:			print("runtime: casgstatus: oldval=", hex(oldval), " newval=", hex(newval), "\n")
+         .          .   1199:			throw("casgstatus: bad incoming values")
+         .          .   1200:		})
+         .          .   1201:	}
+         .          .   1202:
+         .          .   1203:	lockWithRankMayAcquire(nil, lockRankGscan)
+         .          .   1204:
+         .          .   1205:	// See https://golang.org/cl/21503 for justification of the yield delay.
+         .          .   1206:	const yieldDelay = 5 * 1000
+         .          .   1207:	var nextYield int64
+         .          .   1208:
+         .          .   1209:	// loop if gp->atomicstatus is in a scan state giving
+         .          .   1210:	// GC time to finish and change the state to oldval.
+      20ms       20ms   1211:	for i := 0; !gp.atomicstatus.CompareAndSwap(oldval, newval); i++ {
+         .          .   1212:		if oldval == _Gwaiting && gp.atomicstatus.Load() == _Grunnable {
+         .          .   1213:			systemstack(func() {
+         .          .   1214:				// Call on the systemstack to prevent throw from counting
+         .          .   1215:				// against the nosplit stack reservation.
+         .          .   1216:				throw("casgstatus: waiting for Gwaiting but is Grunnable")
+         .          .   1217:			})
+         .          .   1218:		}
+         .          .   1219:		if i == 0 {
+         .          .   1220:			nextYield = nanotime() + yieldDelay
+         .          .   1221:		}
+         .          .   1222:		if nanotime() < nextYield {
+         .          .   1223:			for x := 0; x < 10 && gp.atomicstatus.Load() != oldval; x++ {
+         .          .   1224:				procyield(1)
+         .          .   1225:			}
+         .          .   1226:		} else {
+         .          .   1227:			osyield()
+         .          .   1228:			nextYield = nanotime() + yieldDelay/2
+         .          .   1229:		}
+         .          .   1230:	}
+         .          .   1231:
+         .          .   1232:	if gp.syncGroup != nil {
+         .          .   1233:		systemstack(func() {
+         .          .   1234:			gp.syncGroup.changegstatus(gp, oldval, newval)
+         .          .   1235:		})
+         .          .   1236:	}
+         .          .   1237:
+      10ms       10ms   1238:	if oldval == _Grunning {
+         .          .   1239:		// Track every gTrackingPeriod time a goroutine transitions out of running.
+         .          .   1240:		if casgstatusAlwaysTrack || gp.trackingSeq%gTrackingPeriod == 0 {
+      10ms       10ms   1241:			gp.tracking = true
+         .          .   1242:		}
+         .          .   1243:		gp.trackingSeq++
+         .          .   1244:	}
+         .          .   1245:	if !gp.tracking {
+      10ms       10ms   1246:		return
+         .          .   1247:	}
+         .          .   1248:
+         .          .   1249:	// Handle various kinds of tracking.
+         .          .   1250:	//
+         .          .   1251:	// Currently:
+         .          .   1252:	// - Time spent in runnable.
+         .          .   1253:	// - Time spent blocked on a sync.Mutex or sync.RWMutex.
+         .          .   1254:	switch oldval {
+         .          .   1255:	case _Grunnable:
+         .          .   1256:		// We transitioned out of runnable, so measure how much
+         .          .   1257:		// time we spent in this state and add it to
+         .          .   1258:		// runnableTime.
+         .       30ms   1259:		now := nanotime()
+         .          .   1260:		gp.runnableTime += now - gp.trackingStamp
+         .          .   1261:		gp.trackingStamp = 0
+         .          .   1262:	case _Gwaiting:
+         .          .   1263:		if !gp.waitreason.isMutexWait() {
+         .          .   1264:			// Not blocking on a lock.
+         .          .   1265:			break
+         .          .   1266:		}
+         .          .   1267:		// Blocking on a lock, measure it. Note that because we're
+         .          .   1268:		// sampling, we have to multiply by our sampling period to get
+         .          .   1269:		// a more representative estimate of the absolute value.
+         .          .   1270:		// gTrackingPeriod also represents an accurate sampling period
+         .          .   1271:		// because we can only enter this state from _Grunning.
+         .          .   1272:		now := nanotime()
+         .          .   1273:		sched.totalMutexWaitTime.Add((now - gp.trackingStamp) * gTrackingPeriod)
+         .          .   1274:		gp.trackingStamp = 0
+         .          .   1275:	}
+         .          .   1276:	switch newval {
+         .          .   1277:	case _Gwaiting:
+         .          .   1278:		if !gp.waitreason.isMutexWait() {
+         .          .   1279:			// Not blocking on a lock.
+         .          .   1280:			break
+         .          .   1281:		}
+         .          .   1282:		// Blocking on a lock. Write down the timestamp.
+         .          .   1283:		now := nanotime()
+         .          .   1284:		gp.trackingStamp = now
+         .          .   1285:	case _Grunnable:
+         .          .   1286:		// We just transitioned into runnable, so record what
+         .          .   1287:		// time that happened.
+         .       20ms   1288:		now := nanotime()
+         .          .   1289:		gp.trackingStamp = now
+         .          .   1290:	case _Grunning:
+         .          .   1291:		// We're transitioning into running, so turn off
+         .          .   1292:		// tracking and record how much time we spent in
+         .          .   1293:		// runnable.
+ROUTINE ======================== runtime.execute in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      40ms      110ms (flat, cum)   0.1% of Total
+      10ms       10ms   3233:func execute(gp *g, inheritTime bool) {
+         .          .   3234:	mp := getg().m
+         .          .   3235:
+         .          .   3236:	if goroutineProfile.active {
+         .          .   3237:		// Make sure that gp has had its stack written out to the goroutine
+         .          .   3238:		// profile, exactly as it was when the goroutine profiler first stopped
+         .          .   3239:		// the world.
+         .          .   3240:		tryRecordGoroutineProfile(gp, nil, osyield)
+         .          .   3241:	}
+         .          .   3242:
+         .          .   3243:	// Assign gp.m before entering _Grunning so running Gs have an
+         .          .   3244:	// M.
+      30ms       30ms   3245:	mp.curg = gp
+         .          .   3246:	gp.m = mp
+         .       60ms   3247:	casgstatus(gp, _Grunnable, _Grunning)
+         .          .   3248:	gp.waitsince = 0
+         .          .   3249:	gp.preempt = false
+         .          .   3250:	gp.stackguard0 = gp.stack.lo + stackGuard
+         .          .   3251:	if !inheritTime {
+         .          .   3252:		mp.p.ptr().schedtick++
+         .          .   3253:	}
+         .          .   3254:
+         .          .   3255:	// Check whether the profiler needs to be turned on or off.
+         .          .   3256:	hz := sched.profilehz
+         .          .   3257:	if mp.profilehz != hz {
+         .          .   3258:		setThreadCPUProfiler(hz)
+         .          .   3259:	}
+         .          .   3260:
+         .       10ms   3261:	trace := traceAcquire()
+         .          .   3262:	if trace.ok() {
+         .          .   3263:		trace.GoStart()
+         .          .   3264:		traceRelease(trace)
+         .          .   3265:	}
+         .          .   3266:
+ROUTINE ======================== runtime.findRunnable in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      70ms      550ms (flat, cum)  0.51% of Total
+      40ms       40ms   3274:func findRunnable() (gp *g, inheritTime, tryWakeP bool) {
+         .          .   3275:	mp := getg().m
+         .          .   3276:
+         .          .   3277:	// The conditions here and in handoffp must agree: if
+         .          .   3278:	// findrunnable would return a G to run, handoffp must start
+         .          .   3279:	// an M.
+         .          .   3280:
+         .          .   3281:top:
+         .       30ms   3282:	pp := mp.p.ptr()
+         .          .   3283:	if sched.gcwaiting.Load() {
+         .          .   3284:		gcstopm()
+         .          .   3285:		goto top
+         .          .   3286:	}
+         .          .   3287:	if pp.runSafePointFn != 0 {
+         .          .   3288:		runSafePointFn()
+         .          .   3289:	}
+         .          .   3290:
+         .          .   3291:	// now and pollUntil are saved for work stealing later,
+         .          .   3292:	// which may steal timers. It's important that between now
+         .          .   3293:	// and then, nothing blocks, so these numbers remain mostly
+         .          .   3294:	// relevant.
+      20ms      130ms   3295:	now, pollUntil, _ := pp.timers.check(0)
+         .          .   3296:
+         .          .   3297:	// Try to schedule the trace reader.
+         .          .   3298:	if traceEnabled() || traceShuttingDown() {
+         .          .   3299:		gp := traceReader()
+         .          .   3300:		if gp != nil {
+         .          .   3301:			trace := traceAcquire()
+         .          .   3302:			casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   3303:			if trace.ok() {
+         .          .   3304:				trace.GoUnpark(gp, 0)
+         .          .   3305:				traceRelease(trace)
+         .          .   3306:			}
+         .          .   3307:			return gp, false, true
+         .          .   3308:		}
+         .          .   3309:	}
+         .          .   3310:
+         .          .   3311:	// Try to schedule a GC worker.
+         .          .   3312:	if gcBlackenEnabled != 0 {
+         .          .   3313:		gp, tnow := gcController.findRunnableGCWorker(pp, now)
+         .          .   3314:		if gp != nil {
+         .          .   3315:			return gp, false, true
+         .          .   3316:		}
+         .          .   3317:		now = tnow
+         .          .   3318:	}
+         .          .   3319:
+         .          .   3320:	// Check the global runnable queue once in a while to ensure fairness.
+         .          .   3321:	// Otherwise two goroutines can completely occupy the local runqueue
+         .          .   3322:	// by constantly respawning each other.
+         .          .   3323:	if pp.schedtick%61 == 0 && sched.runqsize > 0 {
+         .          .   3324:		lock(&sched.lock)
+         .          .   3325:		gp := globrunqget(pp, 1)
+         .          .   3326:		unlock(&sched.lock)
+         .          .   3327:		if gp != nil {
+         .          .   3328:			return gp, false, false
+         .          .   3329:		}
+         .          .   3330:	}
+         .          .   3331:
+         .          .   3332:	// Wake up the finalizer G.
+         .          .   3333:	if fingStatus.Load()&(fingWait|fingWake) == fingWait|fingWake {
+         .          .   3334:		if gp := wakefing(); gp != nil {
+         .          .   3335:			ready(gp, 0, true)
+         .          .   3336:		}
+         .          .   3337:	}
+         .          .   3338:	if *cgo_yield != nil {
+         .          .   3339:		asmcgocall(*cgo_yield, nil)
+         .          .   3340:	}
+         .          .   3341:
+         .          .   3342:	// local runq
+         .       20ms   3343:	if gp, inheritTime := runqget(pp); gp != nil {
+         .          .   3344:		return gp, inheritTime, false
+         .          .   3345:	}
+         .          .   3346:
+         .          .   3347:	// global runq
+         .          .   3348:	if sched.runqsize != 0 {
+         .       50ms   3349:		lock(&sched.lock)
+         .       30ms   3350:		gp := globrunqget(pp, 0)
+         .       40ms   3351:		unlock(&sched.lock)
+      10ms       10ms   3352:		if gp != nil {
+         .          .   3353:			return gp, false, false
+         .          .   3354:		}
+         .          .   3355:	}
+         .          .   3356:
+         .          .   3357:	// Poll network.
+         .          .   3358:	// This netpoll is only an optimization before we resort to stealing.
+         .          .   3359:	// We can safely skip it if there are no waiters or a thread is blocked
+         .          .   3360:	// in netpoll already. If there is any kind of logical race with that
+         .          .   3361:	// blocked thread (e.g. it has already returned from netpoll, but does
+         .          .   3362:	// not set lastpoll yet), this thread will do blocking netpoll below
+         .          .   3363:	// anyway.
+         .          .   3364:	if netpollinited() && netpollAnyWaiters() && sched.lastpoll.Load() != 0 {
+         .          .   3365:		if list, delta := netpoll(0); !list.empty() { // non-blocking
+         .          .   3366:			gp := list.pop()
+         .          .   3367:			injectglist(&list)
+         .          .   3368:			netpollAdjustWaiters(delta)
+         .          .   3369:			trace := traceAcquire()
+         .          .   3370:			casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   3371:			if trace.ok() {
+         .          .   3372:				trace.GoUnpark(gp, 0)
+         .          .   3373:				traceRelease(trace)
+         .          .   3374:			}
+         .          .   3375:			return gp, false, false
+         .          .   3376:		}
+         .          .   3377:	}
+         .          .   3378:
+         .          .   3379:	// Spinning Ms: steal work from other Ps.
+         .          .   3380:	//
+         .          .   3381:	// Limit the number of spinning Ms to half the number of busy Ps.
+         .          .   3382:	// This is necessary to prevent excessive CPU consumption when
+         .          .   3383:	// GOMAXPROCS>>1 but the program parallelism is low.
+         .          .   3384:	if mp.spinning || 2*sched.nmspinning.Load() < gomaxprocs-sched.npidle.Load() {
+         .          .   3385:		if !mp.spinning {
+         .          .   3386:			mp.becomeSpinning()
+         .          .   3387:		}
+         .          .   3388:
+         .       10ms   3389:		gp, inheritTime, tnow, w, newWork := stealWork(now)
+         .          .   3390:		if gp != nil {
+         .          .   3391:			// Successfully stole.
+         .          .   3392:			return gp, inheritTime, false
+         .          .   3393:		}
+         .          .   3394:		if newWork {
+         .          .   3395:			// There may be new timer or GC work; restart to
+         .          .   3396:			// discover.
+         .          .   3397:			goto top
+         .          .   3398:		}
+         .          .   3399:
+         .          .   3400:		now = tnow
+         .          .   3401:		if w != 0 && (pollUntil == 0 || w < pollUntil) {
+         .          .   3402:			// Earlier timer to wait for.
+         .          .   3403:			pollUntil = w
+         .          .   3404:		}
+         .          .   3405:	}
+         .          .   3406:
+         .          .   3407:	// We have nothing to do.
+         .          .   3408:	//
+         .          .   3409:	// If we're in the GC mark phase, can safely scan and blacken objects,
+         .          .   3410:	// and have work to do, run idle-time marking rather than give up the P.
+         .          .   3411:	if gcBlackenEnabled != 0 && gcMarkWorkAvailable(pp) && gcController.addIdleMarkWorker() {
+         .          .   3412:		node := (*gcBgMarkWorkerNode)(gcBgMarkWorkerPool.pop())
+         .          .   3413:		if node != nil {
+         .          .   3414:			pp.gcMarkWorkerMode = gcMarkWorkerIdleMode
+         .          .   3415:			gp := node.gp.ptr()
+         .          .   3416:
+         .          .   3417:			trace := traceAcquire()
+         .          .   3418:			casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   3419:			if trace.ok() {
+         .          .   3420:				trace.GoUnpark(gp, 0)
+         .          .   3421:				traceRelease(trace)
+         .          .   3422:			}
+         .          .   3423:			return gp, false, false
+         .          .   3424:		}
+         .          .   3425:		gcController.removeIdleMarkWorker()
+         .          .   3426:	}
+         .          .   3427:
+         .          .   3428:	// wasm only:
+         .          .   3429:	// If a callback returned and no other goroutine is awake,
+         .          .   3430:	// then wake event handler goroutine which pauses execution
+         .          .   3431:	// until a callback was triggered.
+         .          .   3432:	gp, otherReady := beforeIdle(now, pollUntil)
+         .          .   3433:	if gp != nil {
+         .          .   3434:		trace := traceAcquire()
+         .          .   3435:		casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   3436:		if trace.ok() {
+         .          .   3437:			trace.GoUnpark(gp, 0)
+         .          .   3438:			traceRelease(trace)
+         .          .   3439:		}
+         .          .   3440:		return gp, false, false
+         .          .   3441:	}
+         .          .   3442:	if otherReady {
+         .          .   3443:		goto top
+         .          .   3444:	}
+         .          .   3445:
+         .          .   3446:	// Before we drop our P, make a snapshot of the allp slice,
+         .          .   3447:	// which can change underfoot once we no longer block
+         .          .   3448:	// safe-points. We don't need to snapshot the contents because
+         .          .   3449:	// everything up to cap(allp) is immutable.
+         .          .   3450:	allpSnapshot := allp
+         .          .   3451:	// Also snapshot masks. Value changes are OK, but we can't allow
+         .          .   3452:	// len to change out from under us.
+         .          .   3453:	idlepMaskSnapshot := idlepMask
+         .          .   3454:	timerpMaskSnapshot := timerpMask
+         .          .   3455:
+         .          .   3456:	// return P and block
+         .          .   3457:	lock(&sched.lock)
+         .          .   3458:	if sched.gcwaiting.Load() || pp.runSafePointFn != 0 {
+         .          .   3459:		unlock(&sched.lock)
+         .          .   3460:		goto top
+         .          .   3461:	}
+         .          .   3462:	if sched.runqsize != 0 {
+         .          .   3463:		gp := globrunqget(pp, 0)
+         .          .   3464:		unlock(&sched.lock)
+         .          .   3465:		return gp, false, false
+         .          .   3466:	}
+         .          .   3467:	if !mp.spinning && sched.needspinning.Load() == 1 {
+         .          .   3468:		// See "Delicate dance" comment below.
+         .          .   3469:		mp.becomeSpinning()
+         .          .   3470:		unlock(&sched.lock)
+         .          .   3471:		goto top
+         .          .   3472:	}
+         .          .   3473:	if releasep() != pp {
+         .          .   3474:		throw("findrunnable: wrong p")
+         .          .   3475:	}
+         .          .   3476:	now = pidleput(pp, now)
+         .          .   3477:	unlock(&sched.lock)
+         .          .   3478:
+         .          .   3479:	// Delicate dance: thread transitions from spinning to non-spinning
+         .          .   3480:	// state, potentially concurrently with submission of new work. We must
+         .          .   3481:	// drop nmspinning first and then check all sources again (with
+         .          .   3482:	// #StoreLoad memory barrier in between). If we do it the other way
+         .          .   3483:	// around, another thread can submit work after we've checked all
+         .          .   3484:	// sources but before we drop nmspinning; as a result nobody will
+         .          .   3485:	// unpark a thread to run the work.
+         .          .   3486:	//
+         .          .   3487:	// This applies to the following sources of work:
+         .          .   3488:	//
+         .          .   3489:	// * Goroutines added to the global or a per-P run queue.
+         .          .   3490:	// * New/modified-earlier timers on a per-P timer heap.
+         .          .   3491:	// * Idle-priority GC work (barring golang.org/issue/19112).
+         .          .   3492:	//
+         .          .   3493:	// If we discover new work below, we need to restore m.spinning as a
+         .          .   3494:	// signal for resetspinning to unpark a new worker thread (because
+         .          .   3495:	// there can be more than one starving goroutine).
+         .          .   3496:	//
+         .          .   3497:	// However, if after discovering new work we also observe no idle Ps
+         .          .   3498:	// (either here or in resetspinning), we have a problem. We may be
+         .          .   3499:	// racing with a non-spinning M in the block above, having found no
+         .          .   3500:	// work and preparing to release its P and park. Allowing that P to go
+         .          .   3501:	// idle will result in loss of work conservation (idle P while there is
+         .          .   3502:	// runnable work). This could result in complete deadlock in the
+         .          .   3503:	// unlikely event that we discover new work (from netpoll) right as we
+         .          .   3504:	// are racing with _all_ other Ps going idle.
+         .          .   3505:	//
+         .          .   3506:	// We use sched.needspinning to synchronize with non-spinning Ms going
+         .          .   3507:	// idle. If needspinning is set when they are about to drop their P,
+         .          .   3508:	// they abort the drop and instead become a new spinning M on our
+         .          .   3509:	// behalf. If we are not racing and the system is truly fully loaded
+         .          .   3510:	// then no spinning threads are required, and the next thread to
+         .          .   3511:	// naturally become spinning will clear the flag.
+         .          .   3512:	//
+         .          .   3513:	// Also see "Worker thread parking/unparking" comment at the top of the
+         .          .   3514:	// file.
+         .          .   3515:	wasSpinning := mp.spinning
+         .          .   3516:	if mp.spinning {
+         .          .   3517:		mp.spinning = false
+         .          .   3518:		if sched.nmspinning.Add(-1) < 0 {
+         .          .   3519:			throw("findrunnable: negative nmspinning")
+         .          .   3520:		}
+         .          .   3521:
+         .          .   3522:		// Note the for correctness, only the last M transitioning from
+         .          .   3523:		// spinning to non-spinning must perform these rechecks to
+         .          .   3524:		// ensure no missed work. However, the runtime has some cases
+         .          .   3525:		// of transient increments of nmspinning that are decremented
+         .          .   3526:		// without going through this path, so we must be conservative
+         .          .   3527:		// and perform the check on all spinning Ms.
+         .          .   3528:		//
+         .          .   3529:		// See https://go.dev/issue/43997.
+         .          .   3530:
+         .          .   3531:		// Check global and P runqueues again.
+         .          .   3532:
+         .          .   3533:		lock(&sched.lock)
+         .          .   3534:		if sched.runqsize != 0 {
+         .          .   3535:			pp, _ := pidlegetSpinning(0)
+         .          .   3536:			if pp != nil {
+         .          .   3537:				gp := globrunqget(pp, 0)
+         .          .   3538:				if gp == nil {
+         .          .   3539:					throw("global runq empty with non-zero runqsize")
+         .          .   3540:				}
+         .          .   3541:				unlock(&sched.lock)
+         .          .   3542:				acquirep(pp)
+         .          .   3543:				mp.becomeSpinning()
+         .          .   3544:				return gp, false, false
+         .          .   3545:			}
+         .          .   3546:		}
+         .          .   3547:		unlock(&sched.lock)
+         .          .   3548:
+         .          .   3549:		pp := checkRunqsNoP(allpSnapshot, idlepMaskSnapshot)
+         .          .   3550:		if pp != nil {
+         .          .   3551:			acquirep(pp)
+         .          .   3552:			mp.becomeSpinning()
+         .          .   3553:			goto top
+         .          .   3554:		}
+         .          .   3555:
+         .          .   3556:		// Check for idle-priority GC work again.
+         .          .   3557:		pp, gp := checkIdleGCNoP()
+         .          .   3558:		if pp != nil {
+         .          .   3559:			acquirep(pp)
+         .          .   3560:			mp.becomeSpinning()
+         .          .   3561:
+         .          .   3562:			// Run the idle worker.
+         .          .   3563:			pp.gcMarkWorkerMode = gcMarkWorkerIdleMode
+         .          .   3564:			trace := traceAcquire()
+         .          .   3565:			casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   3566:			if trace.ok() {
+         .          .   3567:				trace.GoUnpark(gp, 0)
+         .          .   3568:				traceRelease(trace)
+         .          .   3569:			}
+         .          .   3570:			return gp, false, false
+         .          .   3571:		}
+         .          .   3572:
+         .          .   3573:		// Finally, check for timer creation or expiry concurrently with
+         .          .   3574:		// transitioning from spinning to non-spinning.
+         .          .   3575:		//
+         .          .   3576:		// Note that we cannot use checkTimers here because it calls
+         .          .   3577:		// adjusttimers which may need to allocate memory, and that isn't
+         .          .   3578:		// allowed when we don't have an active P.
+         .          .   3579:		pollUntil = checkTimersNoP(allpSnapshot, timerpMaskSnapshot, pollUntil)
+         .          .   3580:	}
+         .          .   3581:
+         .          .   3582:	// Poll network until next timer.
+         .          .   3583:	if netpollinited() && (netpollAnyWaiters() || pollUntil != 0) && sched.lastpoll.Swap(0) != 0 {
+         .          .   3584:		sched.pollUntil.Store(pollUntil)
+         .          .   3585:		if mp.p != 0 {
+         .          .   3586:			throw("findrunnable: netpoll with p")
+         .          .   3587:		}
+         .          .   3588:		if mp.spinning {
+         .          .   3589:			throw("findrunnable: netpoll with spinning")
+         .          .   3590:		}
+         .          .   3591:		delay := int64(-1)
+         .          .   3592:		if pollUntil != 0 {
+         .          .   3593:			if now == 0 {
+         .          .   3594:				now = nanotime()
+         .          .   3595:			}
+         .          .   3596:			delay = pollUntil - now
+         .          .   3597:			if delay < 0 {
+         .          .   3598:				delay = 0
+         .          .   3599:			}
+         .          .   3600:		}
+         .          .   3601:		if faketime != 0 {
+         .          .   3602:			// When using fake time, just poll.
+         .          .   3603:			delay = 0
+         .          .   3604:		}
+         .          .   3605:		list, delta := netpoll(delay) // block until new work is available
+         .          .   3606:		// Refresh now again, after potentially blocking.
+         .          .   3607:		now = nanotime()
+         .          .   3608:		sched.pollUntil.Store(0)
+         .          .   3609:		sched.lastpoll.Store(now)
+         .          .   3610:		if faketime != 0 && list.empty() {
+         .          .   3611:			// Using fake time and nothing is ready; stop M.
+         .          .   3612:			// When all M's stop, checkdead will call timejump.
+         .          .   3613:			stopm()
+         .          .   3614:			goto top
+         .          .   3615:		}
+         .          .   3616:		lock(&sched.lock)
+         .          .   3617:		pp, _ := pidleget(now)
+         .          .   3618:		unlock(&sched.lock)
+         .          .   3619:		if pp == nil {
+         .          .   3620:			injectglist(&list)
+         .          .   3621:			netpollAdjustWaiters(delta)
+         .          .   3622:		} else {
+         .          .   3623:			acquirep(pp)
+         .          .   3624:			if !list.empty() {
+         .          .   3625:				gp := list.pop()
+         .          .   3626:				injectglist(&list)
+         .          .   3627:				netpollAdjustWaiters(delta)
+         .          .   3628:				trace := traceAcquire()
+         .          .   3629:				casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   3630:				if trace.ok() {
+         .          .   3631:					trace.GoUnpark(gp, 0)
+         .          .   3632:					traceRelease(trace)
+         .          .   3633:				}
+         .          .   3634:				return gp, false, false
+         .          .   3635:			}
+         .          .   3636:			if wasSpinning {
+         .          .   3637:				mp.becomeSpinning()
+         .          .   3638:			}
+         .          .   3639:			goto top
+         .          .   3640:		}
+         .          .   3641:	} else if pollUntil != 0 && netpollinited() {
+         .          .   3642:		pollerPollUntil := sched.pollUntil.Load()
+         .          .   3643:		if pollerPollUntil == 0 || pollerPollUntil > pollUntil {
+         .          .   3644:			netpollBreak()
+         .          .   3645:		}
+         .          .   3646:	}
+         .      190ms   3647:	stopm()
+         .          .   3648:	goto top
+         .          .   3649:}
+         .          .   3650:
+         .          .   3651:// pollWork reports whether there is non-background work this P could
+         .          .   3652:// be doing. This is a fairly lightweight check to be used for
+ROUTINE ======================== runtime.globrunqget in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      20ms       30ms (flat, cum) 0.028% of Total
+         .          .   6576:func globrunqget(pp *p, max int32) *g {
+         .          .   6577:	assertLockHeld(&sched.lock)
+         .          .   6578:
+         .          .   6579:	if sched.runqsize == 0 {
+         .          .   6580:		return nil
+         .          .   6581:	}
+         .          .   6582:
+      10ms       10ms   6583:	n := sched.runqsize/gomaxprocs + 1
+         .          .   6584:	if n > sched.runqsize {
+         .          .   6585:		n = sched.runqsize
+         .          .   6586:	}
+         .          .   6587:	if max > 0 && n > max {
+         .          .   6588:		n = max
+         .          .   6589:	}
+         .          .   6590:	if n > int32(len(pp.runq))/2 {
+         .          .   6591:		n = int32(len(pp.runq)) / 2
+         .          .   6592:	}
+         .          .   6593:
+         .          .   6594:	sched.runqsize -= n
+         .          .   6595:
+         .       10ms   6596:	gp := sched.runq.pop()
+         .          .   6597:	n--
+         .          .   6598:	for ; n > 0; n-- {
+         .          .   6599:		gp1 := sched.runq.pop()
+         .          .   6600:		runqput(pp, gp1, false)
+         .          .   6601:	}
+      10ms       10ms   6602:	return gp
+         .          .   6603:}
+         .          .   6604:
+         .          .   6605:// pMask is an atomic bitstring with one bit per P.
+         .          .   6606:type pMask []uint32
+         .          .   6607:
+ROUTINE ======================== runtime.goexit0 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      200ms (flat, cum)  0.18% of Total
+         .          .   4311:func goexit0(gp *g) {
+         .          .   4312:	gdestroy(gp)
+         .      200ms   4313:	schedule()
+         .          .   4314:}
+         .          .   4315:
+         .          .   4316:func gdestroy(gp *g) {
+         .          .   4317:	mp := getg().m
+         .          .   4318:	pp := mp.p.ptr()
+ROUTINE ======================== runtime.gopreempt_m in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      800ms (flat, cum)  0.74% of Total
+         .          .   4194:func gopreempt_m(gp *g) {
+         .      800ms   4195:	goschedImpl(gp, true)
+         .          .   4196:}
+         .          .   4197:
+         .          .   4198:// preemptPark parks gp and puts it in _Gpreempted.
+         .          .   4199://
+         .          .   4200://go:systemstack
+ROUTINE ======================== runtime.goready in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    454:func goready(gp *g, traceskip int) {
+         .       10ms    455:	systemstack(func() {
+         .          .    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+ROUTINE ======================== runtime.goroutineReady in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    416:func goroutineReady(arg any, _ uintptr, _ int64) {
+         .       10ms    417:	goready(arg.(*g), 0)
+         .          .    418:}
+         .          .    419:
+         .          .    420:// addHeap adds t to the timers heap.
+         .          .    421:// The caller must hold ts.lock or the world must be stopped.
+         .          .    422:// The caller must also have checked that t belongs in the heap.
+ROUTINE ======================== runtime.goroutineReady.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    455:	systemstack(func() {
+         .       10ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {
+ROUTINE ======================== runtime.goschedImpl in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      800ms (flat, cum)  0.74% of Total
+         .          .   4147:func goschedImpl(gp *g, preempted bool) {
+         .       10ms   4148:	trace := traceAcquire()
+         .          .   4149:	status := readgstatus(gp)
+         .          .   4150:	if status&^_Gscan != _Grunning {
+         .          .   4151:		dumpgstatus(gp)
+         .          .   4152:		throw("bad g status")
+         .          .   4153:	}
+         .          .   4154:	if trace.ok() {
+         .          .   4155:		// Trace the event before the transition. It may take a
+         .          .   4156:		// stack trace, but we won't own the stack after the
+         .          .   4157:		// transition anymore.
+         .          .   4158:		if preempted {
+         .          .   4159:			trace.GoPreempt()
+         .          .   4160:		} else {
+         .          .   4161:			trace.GoSched()
+         .          .   4162:		}
+         .          .   4163:	}
+         .       40ms   4164:	casgstatus(gp, _Grunning, _Grunnable)
+         .          .   4165:	if trace.ok() {
+         .          .   4166:		traceRelease(trace)
+         .          .   4167:	}
+         .          .   4168:
+         .          .   4169:	dropg()
+         .       80ms   4170:	lock(&sched.lock)
+         .          .   4171:	globrunqput(gp)
+         .       40ms   4172:	unlock(&sched.lock)
+         .          .   4173:
+         .          .   4174:	if mainStarted {
+         .      130ms   4175:		wakep()
+         .          .   4176:	}
+         .          .   4177:
+         .      500ms   4178:	schedule()
+         .          .   4179:}
+         .          .   4180:
+         .          .   4181:// Gosched continuation on g0.
+         .          .   4182:func gosched_m(gp *g) {
+         .          .   4183:	goschedImpl(gp, false)
+ROUTINE ======================== runtime.libcCall in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_libc.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .     20:func libcCall(fn, arg unsafe.Pointer) int32 {
+         .          .     21:	// Leave caller's PC/SP/G around for traceback.
+         .          .     22:	gp := getg()
+         .          .     23:	var mp *m
+         .          .     24:	if gp != nil {
+         .          .     25:		mp = gp.m
+         .          .     26:	}
+         .          .     27:	if mp != nil && mp.libcallsp == 0 {
+         .          .     28:		mp.libcallg.set(gp)
+      10ms       10ms     29:		mp.libcallpc = sys.GetCallerPC()
+         .          .     30:		// sp must be the last, because once async cpu profiler finds
+         .          .     31:		// all three values to be non-zero, it will use them
+         .          .     32:		mp.libcallsp = sys.GetCallerSP()
+         .          .     33:	} else {
+         .          .     34:		// Make sure we don't reset libcallsp. This makes
+ROUTINE ======================== runtime.lock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+         0      200ms (flat, cum)  0.18% of Total
+         .          .    149:func lock(l *mutex) {
+         .      200ms    150:	lockWithRank(l, getLockRank(l))
+         .          .    151:}
+         .          .    152:
+         .          .    153:func lock2(l *mutex) {
+         .          .    154:	gp := getg()
+         .          .    155:	if gp.m.locks < 0 {
+ROUTINE ======================== runtime.lock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+     120ms      200ms (flat, cum)  0.18% of Total
+         .          .    153:func lock2(l *mutex) {
+         .          .    154:	gp := getg()
+      10ms       10ms    155:	if gp.m.locks < 0 {
+         .          .    156:		throw("runtime·lock: lock count")
+         .          .    157:	}
+         .          .    158:	gp.m.locks++
+         .          .    159:
+      20ms       20ms    160:	k8 := key8(&l.key)
+         .          .    161:
+         .          .    162:	// Speculative grab for lock.
+      70ms       70ms    163:	v8 := atomic.Xchg8(k8, mutexLocked)
+         .          .    164:	if v8&mutexLocked == 0 {
+      10ms       10ms    165:		if v8&mutexSleeping != 0 {
+         .          .    166:			atomic.Or8(k8, mutexSleeping)
+         .          .    167:		}
+         .          .    168:		return
+         .          .    169:	}
+         .          .    170:	semacreate(gp.m)
+         .          .    171:
+         .          .    172:	timer := &lockTimer{lock: l}
+         .       10ms    173:	timer.begin()
+         .          .    174:	// On uniprocessors, no point spinning.
+         .          .    175:	// On multiprocessors, spin for mutexActiveSpinCount attempts.
+         .          .    176:	spin := 0
+         .          .    177:	if ncpu > 1 {
+         .          .    178:		spin = mutexActiveSpinCount
+         .          .    179:	}
+         .          .    180:
+         .          .    181:	var weSpin, atTail bool
+         .          .    182:	v := atomic.Loaduintptr(&l.key)
+         .          .    183:tryAcquire:
+         .          .    184:	for i := 0; ; i++ {
+         .          .    185:		if v&mutexLocked == 0 {
+         .          .    186:			if weSpin {
+         .          .    187:				next := (v &^ mutexSpinning) | mutexSleeping | mutexLocked
+         .          .    188:				if next&^mutexMMask == 0 {
+         .          .    189:					// The fast-path Xchg8 may have cleared mutexSleeping. Fix
+         .          .    190:					// the hint so unlock2 knows when to use its slow path.
+         .          .    191:					next = next &^ mutexSleeping
+         .          .    192:				}
+         .          .    193:				if atomic.Casuintptr(&l.key, v, next) {
+         .          .    194:					timer.end()
+         .          .    195:					return
+         .          .    196:				}
+         .          .    197:			} else {
+         .          .    198:				prev8 := atomic.Xchg8(k8, mutexLocked|mutexSleeping)
+         .          .    199:				if prev8&mutexLocked == 0 {
+         .          .    200:					timer.end()
+         .          .    201:					return
+         .          .    202:				}
+         .          .    203:			}
+         .          .    204:			v = atomic.Loaduintptr(&l.key)
+         .          .    205:			continue tryAcquire
+         .          .    206:		}
+         .          .    207:
+      10ms       10ms    208:		if !weSpin && v&mutexSpinning == 0 && atomic.Casuintptr(&l.key, v, v|mutexSpinning) {
+         .          .    209:			v |= mutexSpinning
+         .          .    210:			weSpin = true
+         .          .    211:		}
+         .          .    212:
+         .          .    213:		if weSpin || atTail || mutexPreferLowLatency(l) {
+         .          .    214:			if i < spin {
+         .          .    215:				procyield(mutexActiveSpinSize)
+         .          .    216:				v = atomic.Loaduintptr(&l.key)
+         .          .    217:				continue tryAcquire
+         .          .    218:			} else if i < spin+mutexPassiveSpinCount {
+         .       70ms    219:				osyield() // TODO: Consider removing this step. See https://go.dev/issue/69268.
+         .          .    220:				v = atomic.Loaduintptr(&l.key)
+         .          .    221:				continue tryAcquire
+         .          .    222:			}
+         .          .    223:		}
+         .          .    224:
+ROUTINE ======================== runtime.lockWithRank in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lockrank_off.go
+         0      200ms (flat, cum)  0.18% of Total
+         .          .     23:func lockWithRank(l *mutex, rank lockRank) {
+         .      200ms     24:	lock2(l)
+         .          .     25:}
+         .          .     26:
+         .          .     27:// This function may be called in nosplit context and thus must be nosplit.
+         .          .     28://
+         .          .     29://go:nosplit
+ROUTINE ======================== runtime.mPark in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      190ms (flat, cum)  0.18% of Total
+         .          .   1885:func mPark() {
+         .          .   1886:	gp := getg()
+         .      190ms   1887:	notesleep(&gp.m.park)
+         .          .   1888:	noteclear(&gp.m.park)
+         .          .   1889:}
+         .          .   1890:
+         .          .   1891:// mexit tears down and exits the current thread.
+         .          .   1892://
+ROUTINE ======================== runtime.mapaccess1_fast64 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/maps/runtime_fast64_swiss.go
+         0       20ms (flat, cum) 0.018% of Total
+         .          .     17:func runtime_mapaccess1_fast64(typ *abi.SwissMapType, m *Map, key uint64) unsafe.Pointer {
+         .          .     18:	if race.Enabled && m != nil {
+         .          .     19:		callerpc := sys.GetCallerPC()
+         .          .     20:		pc := abi.FuncPCABIInternal(runtime_mapaccess1_fast64)
+         .          .     21:		race.ReadPC(unsafe.Pointer(m), callerpc, pc)
+         .          .     22:	}
+         .          .     23:
+         .          .     24:	if m == nil || m.Used() == 0 {
+         .          .     25:		return unsafe.Pointer(&zeroVal[0])
+         .          .     26:	}
+         .          .     27:
+         .          .     28:	if m.writing != 0 {
+         .          .     29:		fatal("concurrent map read and map write")
+         .          .     30:		return nil
+         .          .     31:	}
+         .          .     32:
+         .          .     33:	if m.dirLen == 0 {
+         .          .     34:		g := groupReference{
+         .          .     35:			data: m.dirPtr,
+         .          .     36:		}
+         .          .     37:		full := g.ctrls().matchFull()
+         .          .     38:		slotKey := g.key(typ, 0)
+         .          .     39:		slotSize := typ.SlotSize
+         .          .     40:		for full != 0 {
+         .          .     41:			if key == *(*uint64)(slotKey) && full.lowestSet() {
+         .          .     42:				slotElem := unsafe.Pointer(uintptr(slotKey) + 8)
+         .          .     43:				return slotElem
+         .          .     44:			}
+         .          .     45:			slotKey = unsafe.Pointer(uintptr(slotKey) + slotSize)
+         .          .     46:			full = full.shiftOutLowest()
+         .          .     47:		}
+         .          .     48:		return unsafe.Pointer(&zeroVal[0])
+         .          .     49:	}
+         .          .     50:
+         .          .     51:	k := key
+         .          .     52:	hash := typ.Hasher(abi.NoEscape(unsafe.Pointer(&k)), m.seed)
+         .          .     53:
+         .          .     54:	// Select table.
+         .          .     55:	idx := m.directoryIndex(hash)
+         .          .     56:	t := m.directoryAt(idx)
+         .          .     57:
+         .          .     58:	// Probe table.
+         .          .     59:	seq := makeProbeSeq(h1(hash), t.groups.lengthMask)
+         .          .     60:	for ; ; seq = seq.next() {
+         .       10ms     61:		g := t.groups.group(typ, seq.offset)
+         .          .     62:
+         .          .     63:		match := g.ctrls().matchH2(h2(hash))
+         .          .     64:
+         .          .     65:		for match != 0 {
+         .          .     66:			i := match.first()
+         .          .     67:
+         .       10ms     68:			slotKey := g.key(typ, i)
+         .          .     69:			if key == *(*uint64)(slotKey) {
+         .          .     70:				slotElem := unsafe.Pointer(uintptr(slotKey) + 8)
+         .          .     71:				return slotElem
+         .          .     72:			}
+         .          .     73:			match = match.removeFirst()
+ROUTINE ======================== runtime.mcall in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/asm_arm64.s
+         0      210ms (flat, cum)  0.19% of Total
+         .          .    167:TEXT runtime·mcall<ABIInternal>(SB), NOSPLIT|NOFRAME, $0-8
+         .          .    168:	MOVD	R0, R26				// context
+         .          .    169:
+         .          .    170:	// Save caller state in g->sched
+         .          .    171:	MOVD	RSP, R0
+         .          .    172:	MOVD	R0, (g_sched+gobuf_sp)(g)
+         .          .    173:	MOVD	R29, (g_sched+gobuf_bp)(g)
+         .          .    174:	MOVD	LR, (g_sched+gobuf_pc)(g)
+         .          .    175:	MOVD	$0, (g_sched+gobuf_lr)(g)
+         .          .    176:
+         .          .    177:	// Switch to m->g0 & its stack, call fn.
+         .          .    178:	MOVD	g, R3
+         .          .    179:	MOVD	g_m(g), R8
+         .          .    180:	MOVD	m_g0(R8), g
+         .          .    181:	BL	runtime·save_g(SB)
+         .          .    182:	CMP	g, R3
+         .          .    183:	BNE	2(PC)
+         .          .    184:	B	runtime·badmcall(SB)
+         .          .    185:
+         .          .    186:	MOVD	(g_sched+gobuf_sp)(g), R0
+         .          .    187:	MOVD	R0, RSP	// sp = m->g0->sched.sp
+         .          .    188:	MOVD	(g_sched+gobuf_bp)(g), R29
+         .          .    189:	MOVD	R3, R0				// arg = g
+         .          .    190:	MOVD	$0, -16(RSP)			// dummy LR
+         .          .    191:	SUB	$16, RSP
+         .          .    192:	MOVD	0(R26), R4			// code pointer
+         .      210ms    193:	BL	(R4)
+         .          .    194:	B	runtime·badmcall2(SB)
+         .          .    195:
+         .          .    196:// systemstack_switch is a dummy routine that systemstack leaves at the bottom
+         .          .    197:// of the G stack. We need to distinguish the routine that
+         .          .    198:// lives at the bottom of the G stack from the one that lives
+ROUTINE ======================== runtime.morestack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/asm_arm64.s
+         0      730ms (flat, cum)  0.67% of Total
+         .          .    302:TEXT runtime·morestack(SB),NOSPLIT|NOFRAME,$0-0
+         .          .    303:	// Cannot grow scheduler stack (m->g0).
+         .          .    304:	MOVD	g_m(g), R8
+         .          .    305:	MOVD	m_g0(R8), R4
+         .          .    306:
+         .          .    307:	// Called from f.
+         .          .    308:	// Set g->sched to context in f
+         .          .    309:	MOVD	RSP, R0
+         .          .    310:	MOVD	R0, (g_sched+gobuf_sp)(g)
+         .          .    311:	MOVD	R29, (g_sched+gobuf_bp)(g)
+         .          .    312:	MOVD	LR, (g_sched+gobuf_pc)(g)
+         .          .    313:	MOVD	R3, (g_sched+gobuf_lr)(g)
+         .          .    314:	MOVD	R26, (g_sched+gobuf_ctxt)(g)
+         .          .    315:
+         .          .    316:	CMP	g, R4
+         .          .    317:	BNE	3(PC)
+         .          .    318:	BL	runtime·badmorestackg0(SB)
+         .          .    319:	B	runtime·abort(SB)
+         .          .    320:
+         .          .    321:	// Cannot grow signal stack (m->gsignal).
+         .          .    322:	MOVD	m_gsignal(R8), R4
+         .          .    323:	CMP	g, R4
+         .          .    324:	BNE	3(PC)
+         .          .    325:	BL	runtime·badmorestackgsignal(SB)
+         .          .    326:	B	runtime·abort(SB)
+         .          .    327:
+         .          .    328:	// Called from f.
+         .          .    329:	// Set m->morebuf to f's callers.
+         .          .    330:	MOVD	R3, (m_morebuf+gobuf_pc)(R8)	// f's caller's PC
+         .          .    331:	MOVD	RSP, R0
+         .          .    332:	MOVD	R0, (m_morebuf+gobuf_sp)(R8)	// f's caller's RSP
+         .          .    333:	MOVD	g, (m_morebuf+gobuf_g)(R8)
+         .          .    334:
+         .          .    335:	// Call newstack on m->g0's stack.
+         .          .    336:	MOVD	m_g0(R8), g
+         .       10ms    337:	BL	runtime·save_g(SB)
+         .          .    338:	MOVD	(g_sched+gobuf_sp)(g), R0
+         .          .    339:	MOVD	R0, RSP
+         .          .    340:	MOVD	(g_sched+gobuf_bp)(g), R29
+         .          .    341:	MOVD.W	$0, -16(RSP)	// create a call frame on g0 (saved LR; keep 16-aligned)
+         .      720ms    342:	BL	runtime·newstack(SB)
+         .          .    343:
+         .          .    344:	// Not reached, but make sure the return PC from the call to newstack
+         .          .    345:	// is still in this function, and not the beginning of the next.
+         .          .    346:	UNDEF
+         .          .    347:
+ROUTINE ======================== runtime.nanotime in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time_nofake.go
+         0       90ms (flat, cum) 0.083% of Total
+         .          .     32:func nanotime() int64 {
+         .       90ms     33:	return nanotime1()
+         .          .     34:}
+         .          .     35:
+         .          .     36:// overrideWrite allows write to be redirected externally, by
+         .          .     37:// linkname'ing this and set it to a write function.
+         .          .     38://
+ROUTINE ======================== runtime.nanotime1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+      80ms       90ms (flat, cum) 0.083% of Total
+      10ms       10ms    363:func nanotime1() int64 {
+         .          .    364:	var r struct {
+         .          .    365:		t            int64  // raw timer
+         .          .    366:		numer, denom uint32 // conversion factors. nanoseconds = t * numer / denom.
+         .          .    367:	}
+      70ms       80ms    368:	libcCall(unsafe.Pointer(abi.FuncPCABI0(nanotime_trampoline)), unsafe.Pointer(&r))
+         .          .    369:	// Note: Apple seems unconcerned about overflow here. See
+         .          .    370:	// https://developer.apple.com/library/content/qa/qa1398/_index.html
+         .          .    371:	// Note also, numer == denom == 1 is common.
+         .          .    372:	t := r.t
+         .          .    373:	if r.numer != 1 {
+ROUTINE ======================== runtime.newstack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/stack.go
+      10ms      810ms (flat, cum)  0.75% of Total
+         .          .    966:func newstack() {
+         .          .    967:	thisg := getg()
+         .          .    968:	// TODO: double check all gp. shouldn't be getg().
+         .          .    969:	if thisg.m.morebuf.g.ptr().stackguard0 == stackFork {
+         .          .    970:		throw("stack growth after fork")
+         .          .    971:	}
+         .          .    972:	if thisg.m.morebuf.g.ptr() != thisg.m.curg {
+         .          .    973:		print("runtime: newstack called from g=", hex(thisg.m.morebuf.g), "\n"+"\tm=", thisg.m, " m->curg=", thisg.m.curg, " m->g0=", thisg.m.g0, " m->gsignal=", thisg.m.gsignal, "\n")
+         .          .    974:		morebuf := thisg.m.morebuf
+         .          .    975:		traceback(morebuf.pc, morebuf.sp, morebuf.lr, morebuf.g.ptr())
+         .          .    976:		throw("runtime: wrong goroutine in newstack")
+         .          .    977:	}
+         .          .    978:
+         .          .    979:	gp := thisg.m.curg
+         .          .    980:
+         .          .    981:	if thisg.m.curg.throwsplit {
+         .          .    982:		// Update syscallsp, syscallpc in case traceback uses them.
+         .          .    983:		morebuf := thisg.m.morebuf
+         .          .    984:		gp.syscallsp = morebuf.sp
+         .          .    985:		gp.syscallpc = morebuf.pc
+         .          .    986:		pcname, pcoff := "(unknown)", uintptr(0)
+         .          .    987:		f := findfunc(gp.sched.pc)
+         .          .    988:		if f.valid() {
+         .          .    989:			pcname = funcname(f)
+         .          .    990:			pcoff = gp.sched.pc - f.entry()
+         .          .    991:		}
+         .          .    992:		print("runtime: newstack at ", pcname, "+", hex(pcoff),
+         .          .    993:			" sp=", hex(gp.sched.sp), " stack=[", hex(gp.stack.lo), ", ", hex(gp.stack.hi), "]\n",
+         .          .    994:			"\tmorebuf={pc:", hex(morebuf.pc), " sp:", hex(morebuf.sp), " lr:", hex(morebuf.lr), "}\n",
+         .          .    995:			"\tsched={pc:", hex(gp.sched.pc), " sp:", hex(gp.sched.sp), " lr:", hex(gp.sched.lr), " ctxt:", gp.sched.ctxt, "}\n")
+         .          .    996:
+         .          .    997:		thisg.m.traceback = 2 // Include runtime frames
+         .          .    998:		traceback(morebuf.pc, morebuf.sp, morebuf.lr, gp)
+         .          .    999:		throw("runtime: stack split at bad time")
+         .          .   1000:	}
+         .          .   1001:
+         .          .   1002:	morebuf := thisg.m.morebuf
+         .          .   1003:	thisg.m.morebuf.pc = 0
+         .          .   1004:	thisg.m.morebuf.lr = 0
+         .          .   1005:	thisg.m.morebuf.sp = 0
+      10ms       10ms   1006:	thisg.m.morebuf.g = 0
+         .          .   1007:
+         .          .   1008:	// NOTE: stackguard0 may change underfoot, if another thread
+         .          .   1009:	// is about to try to preempt gp. Read it just once and use that same
+         .          .   1010:	// value now and below.
+         .          .   1011:	stackguard0 := atomic.Loaduintptr(&gp.stackguard0)
+         .          .   1012:
+         .          .   1013:	// Be conservative about where we preempt.
+         .          .   1014:	// We are interested in preempting user Go code, not runtime code.
+         .          .   1015:	// If we're holding locks, mallocing, or preemption is disabled, don't
+         .          .   1016:	// preempt.
+         .          .   1017:	// This check is very early in newstack so that even the status change
+         .          .   1018:	// from Grunning to Gwaiting and back doesn't happen in this case.
+         .          .   1019:	// That status change by itself can be viewed as a small preemption,
+         .          .   1020:	// because the GC might change Gwaiting to Gscanwaiting, and then
+         .          .   1021:	// this goroutine has to wait for the GC to finish before continuing.
+         .          .   1022:	// If the GC is in some way dependent on this goroutine (for example,
+         .          .   1023:	// it needs a lock held by the goroutine), that small preemption turns
+         .          .   1024:	// into a real deadlock.
+         .          .   1025:	preempt := stackguard0 == stackPreempt
+         .          .   1026:	if preempt {
+         .          .   1027:		if !canPreemptM(thisg.m) {
+         .          .   1028:			// Let the goroutine keep running for now.
+         .          .   1029:			// gp->preempt is set, so it will be preempted next time.
+         .          .   1030:			gp.stackguard0 = gp.stack.lo + stackGuard
+         .          .   1031:			gogo(&gp.sched) // never return
+         .          .   1032:		}
+         .          .   1033:	}
+         .          .   1034:
+         .          .   1035:	if gp.stack.lo == 0 {
+         .          .   1036:		throw("missing stack in newstack")
+         .          .   1037:	}
+         .          .   1038:	sp := gp.sched.sp
+         .          .   1039:	if goarch.ArchFamily == goarch.AMD64 || goarch.ArchFamily == goarch.I386 || goarch.ArchFamily == goarch.WASM {
+         .          .   1040:		// The call to morestack cost a word.
+         .          .   1041:		sp -= goarch.PtrSize
+         .          .   1042:	}
+         .          .   1043:	if stackDebug >= 1 || sp < gp.stack.lo {
+         .          .   1044:		print("runtime: newstack sp=", hex(sp), " stack=[", hex(gp.stack.lo), ", ", hex(gp.stack.hi), "]\n",
+         .          .   1045:			"\tmorebuf={pc:", hex(morebuf.pc), " sp:", hex(morebuf.sp), " lr:", hex(morebuf.lr), "}\n",
+         .          .   1046:			"\tsched={pc:", hex(gp.sched.pc), " sp:", hex(gp.sched.sp), " lr:", hex(gp.sched.lr), " ctxt:", gp.sched.ctxt, "}\n")
+         .          .   1047:	}
+         .          .   1048:	if sp < gp.stack.lo {
+         .          .   1049:		print("runtime: gp=", gp, ", goid=", gp.goid, ", gp->status=", hex(readgstatus(gp)), "\n ")
+         .          .   1050:		print("runtime: split stack overflow: ", hex(sp), " < ", hex(gp.stack.lo), "\n")
+         .          .   1051:		throw("runtime: split stack overflow")
+         .          .   1052:	}
+         .          .   1053:
+         .          .   1054:	if preempt {
+         .          .   1055:		if gp == thisg.m.g0 {
+         .          .   1056:			throw("runtime: preempt g0")
+         .          .   1057:		}
+         .          .   1058:		if thisg.m.p == 0 && thisg.m.locks == 0 {
+         .          .   1059:			throw("runtime: g is running but p is not")
+         .          .   1060:		}
+         .          .   1061:
+         .          .   1062:		if gp.preemptShrink {
+         .          .   1063:			// We're at a synchronous safe point now, so
+         .          .   1064:			// do the pending stack shrink.
+         .          .   1065:			gp.preemptShrink = false
+         .          .   1066:			shrinkstack(gp)
+         .          .   1067:		}
+         .          .   1068:
+         .          .   1069:		if gp.preemptStop {
+         .          .   1070:			preemptPark(gp) // never returns
+         .          .   1071:		}
+         .          .   1072:
+         .          .   1073:		// Act like goroutine called runtime.Gosched.
+         .      800ms   1074:		gopreempt_m(gp) // never return
+         .          .   1075:	}
+         .          .   1076:
+         .          .   1077:	// Allocate a bigger segment and move the stack.
+         .          .   1078:	oldsize := gp.stack.hi - gp.stack.lo
+         .          .   1079:	newsize := oldsize * 2
+ROUTINE ======================== runtime.notesleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_sema.go
+         0      190ms (flat, cum)  0.18% of Total
+         .          .     46:func notesleep(n *note) {
+         .          .     47:	gp := getg()
+         .          .     48:	if gp != gp.m.g0 {
+         .          .     49:		throw("notesleep not on g0")
+         .          .     50:	}
+         .          .     51:	semacreate(gp.m)
+         .          .     52:	if !atomic.Casuintptr(&n.key, 0, uintptr(unsafe.Pointer(gp.m))) {
+         .          .     53:		// Must be locked (got wakeup).
+         .          .     54:		if n.key != locked {
+         .          .     55:			throw("notesleep - waitm out of sync")
+         .          .     56:		}
+         .          .     57:		return
+         .          .     58:	}
+         .          .     59:	// Queued. Sleep.
+         .          .     60:	gp.m.blocked = true
+         .          .     61:	if *cgo_yield == nil {
+         .      190ms     62:		semasleep(-1)
+         .          .     63:	} else {
+         .          .     64:		// Sleep for an arbitrary-but-moderate interval to poll libc interceptors.
+         .          .     65:		const ns = 10e6
+         .          .     66:		for atomic.Loaduintptr(&n.key) == 0 {
+         .          .     67:			semasleep(ns)
+ROUTINE ======================== runtime.osyield in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/os_darwin.go
+         0       70ms (flat, cum) 0.065% of Total
+         .          .    361:func osyield() {
+         .       70ms    362:	usleep(1)
+         .          .    363:}
+         .          .    364:
+         .          .    365:const (
+         .          .    366:	_NSIG        = 32
+         .          .    367:	_SI_USER     = 0 /* empirically true, but not what headers say */
+ROUTINE ======================== runtime.park_m in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .   4093:func park_m(gp *g) {
+         .          .   4094:	mp := getg().m
+         .          .   4095:
+         .          .   4096:	trace := traceAcquire()
+         .          .   4097:
+         .          .   4098:	// If g is in a synctest group, we don't want to let the group
+         .          .   4099:	// become idle until after the waitunlockf (if any) has confirmed
+         .          .   4100:	// that the park is happening.
+         .          .   4101:	// We need to record gp.syncGroup here, since waitunlockf can change it.
+         .          .   4102:	sg := gp.syncGroup
+         .          .   4103:	if sg != nil {
+         .          .   4104:		sg.incActive()
+         .          .   4105:	}
+         .          .   4106:
+         .          .   4107:	if trace.ok() {
+         .          .   4108:		// Trace the event before the transition. It may take a
+         .          .   4109:		// stack trace, but we won't own the stack after the
+         .          .   4110:		// transition anymore.
+         .          .   4111:		trace.GoPark(mp.waitTraceBlockReason, mp.waitTraceSkip)
+         .          .   4112:	}
+         .          .   4113:	// N.B. Not using casGToWaiting here because the waitreason is
+         .          .   4114:	// set by park_m's caller.
+         .          .   4115:	casgstatus(gp, _Grunning, _Gwaiting)
+         .          .   4116:	if trace.ok() {
+         .          .   4117:		traceRelease(trace)
+         .          .   4118:	}
+         .          .   4119:
+         .          .   4120:	dropg()
+         .          .   4121:
+         .          .   4122:	if fn := mp.waitunlockf; fn != nil {
+         .       10ms   4123:		ok := fn(gp, mp.waitlock)
+         .          .   4124:		mp.waitunlockf = nil
+         .          .   4125:		mp.waitlock = nil
+         .          .   4126:		if !ok {
+         .          .   4127:			trace := traceAcquire()
+         .          .   4128:			casgstatus(gp, _Gwaiting, _Grunnable)
+ROUTINE ======================== runtime.pidlegetSpinning in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .   6697:func pidlegetSpinning(now int64) (*p, int64) {
+         .          .   6698:	assertLockHeld(&sched.lock)
+         .          .   6699:
+         .          .   6700:	pp, now := pidleget(now)
+         .          .   6701:	if pp == nil {
+         .          .   6702:		// See "Delicate dance" comment in findrunnable. We found work
+         .          .   6703:		// that we cannot take, we must synchronize with non-spinning
+         .          .   6704:		// Ms that may be preparing to drop their P.
+         .          .   6705:		sched.needspinning.Store(1)
+      10ms       10ms   6706:		return nil, now
+         .          .   6707:	}
+         .          .   6708:
+         .          .   6709:	return pp, now
+         .          .   6710:}
+         .          .   6711:
+ROUTINE ======================== runtime.pthread_cond_wait in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+     190ms      190ms (flat, cum)  0.18% of Total
+         .          .    546:func pthread_cond_wait(c *pthreadcond, m *pthreadmutex) int32 {
+     190ms      190ms    547:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_cond_wait_trampoline)), unsafe.Pointer(&c))
+         .          .    548:	KeepAlive(c)
+         .          .    549:	KeepAlive(m)
+         .          .    550:	return ret
+         .          .    551:}
+         .          .    552:func pthread_cond_wait_trampoline()
+ROUTINE ======================== runtime.puintptr.ptr in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/runtime2.go
+      30ms       30ms (flat, cum) 0.028% of Total
+      30ms       30ms    267:func (pp puintptr) ptr() *p { return (*p)(unsafe.Pointer(pp)) }
+         .          .    268:
+         .          .    269://go:nosplit
+         .          .    270:func (pp *puintptr) set(p *p) { *pp = puintptr(unsafe.Pointer(p)) }
+         .          .    271:
+         .          .    272:// muintptr is a *m that is not tracked by the garbage collector.
+ROUTINE ======================== runtime.ready in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .   1040:func ready(gp *g, traceskip int, next bool) {
+         .          .   1041:	status := readgstatus(gp)
+         .          .   1042:
+         .          .   1043:	// Mark runnable.
+         .          .   1044:	mp := acquirem() // disable preemption because it can be holding p in a local var
+         .          .   1045:	if status&^_Gscan != _Gwaiting {
+         .          .   1046:		dumpgstatus(gp)
+         .          .   1047:		throw("bad g->status in ready")
+         .          .   1048:	}
+         .          .   1049:
+         .          .   1050:	// status is Gwaiting or Gscanwaiting, make Grunnable and put on runq
+         .          .   1051:	trace := traceAcquire()
+         .          .   1052:	casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   1053:	if trace.ok() {
+         .          .   1054:		trace.GoUnpark(gp, traceskip)
+         .          .   1055:		traceRelease(trace)
+         .          .   1056:	}
+         .          .   1057:	runqput(mp.p.ptr(), gp, next)
+         .       10ms   1058:	wakep()
+         .          .   1059:	releasem(mp)
+         .          .   1060:}
+         .          .   1061:
+         .          .   1062:// freezeStopWait is a large value that freezetheworld sets
+         .          .   1063:// sched.stopwait to in order to request that all Gs permanently stop.
+ROUTINE ======================== runtime.resetForSleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    346:func resetForSleep(gp *g, _ unsafe.Pointer) bool {
+         .       10ms    347:	gp.timer.reset(gp.sleepWhen, 0)
+         .          .    348:	return true
+         .          .    349:}
+         .          .    350:
+         .          .    351:// A timeTimer is a runtime-allocated time.Timer or time.Ticker
+         .          .    352:// with the additional runtime state following it.
+ROUTINE ======================== runtime.runqget in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       20ms (flat, cum) 0.018% of Total
+         .          .   6868:func runqget(pp *p) (gp *g, inheritTime bool) {
+         .          .   6869:	// If there's a runnext, it's the next G to run.
+      10ms       10ms   6870:	next := pp.runnext
+         .          .   6871:	// If the runnext is non-0 and the CAS fails, it could only have been stolen by another P,
+         .          .   6872:	// because other Ps can race to set runnext to 0, but only the current P can set it to non-0.
+         .          .   6873:	// Hence, there's no need to retry this CAS if it fails.
+         .       10ms   6874:	if next != 0 && pp.runnext.cas(next, 0) {
+         .          .   6875:		return next.ptr(), true
+         .          .   6876:	}
+         .          .   6877:
+         .          .   6878:	for {
+         .          .   6879:		h := atomic.LoadAcq(&pp.runqhead) // load-acquire, synchronize with other consumers
+ROUTINE ======================== runtime.runqgrab in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .   6934:func runqgrab(pp *p, batch *[256]guintptr, batchHead uint32, stealRunNextG bool) uint32 {
+         .          .   6935:	for {
+         .          .   6936:		h := atomic.LoadAcq(&pp.runqhead) // load-acquire, synchronize with other consumers
+         .          .   6937:		t := atomic.LoadAcq(&pp.runqtail) // load-acquire, synchronize with the producer
+         .          .   6938:		n := t - h
+         .          .   6939:		n = n - n/2
+         .          .   6940:		if n == 0 {
+         .          .   6941:			if stealRunNextG {
+         .          .   6942:				// Try to steal from pp.runnext.
+         .          .   6943:				if next := pp.runnext; next != 0 {
+         .          .   6944:					if pp.status == _Prunning {
+         .          .   6945:						// Sleep to ensure that pp isn't about to run the g
+         .          .   6946:						// we are about to steal.
+         .          .   6947:						// The important use case here is when the g running
+         .          .   6948:						// on pp ready()s another g and then almost
+         .          .   6949:						// immediately blocks. Instead of stealing runnext
+         .          .   6950:						// in this window, back off to give pp a chance to
+         .          .   6951:						// schedule runnext. This will avoid thrashing gs
+         .          .   6952:						// between different Ps.
+         .          .   6953:						// A sync chan send/recv takes ~50ns as of time of
+         .          .   6954:						// writing, so 3us gives ~50x overshoot.
+         .          .   6955:						if !osHasLowResTimer {
+         .       10ms   6956:							usleep(3)
+         .          .   6957:						} else {
+         .          .   6958:							// On some platforms system timer granularity is
+         .          .   6959:							// 1-15ms, which is way too much for this
+         .          .   6960:							// optimization. So just yield.
+         .          .   6961:							osyield()
+ROUTINE ======================== runtime.runqsteal in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .   6989:func runqsteal(pp, p2 *p, stealRunNextG bool) *g {
+         .          .   6990:	t := pp.runqtail
+         .       10ms   6991:	n := runqgrab(p2, &pp.runq, t, stealRunNextG)
+         .          .   6992:	if n == 0 {
+         .          .   6993:		return nil
+         .          .   6994:	}
+         .          .   6995:	n--
+         .          .   6996:	gp := pp.runq[(t+n)%uint32(len(pp.runq))].ptr()
+ROUTINE ======================== runtime.saveBlockEventStack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    859:func saveBlockEventStack(cycles, rate int64, stk []uintptr, which bucketType) {
+         .       10ms    860:	b := stkbucket(which, 0, stk, true)
+         .          .    861:	bp := b.bp()
+         .          .    862:
+         .          .    863:	lock(&profBlockLock)
+         .          .    864:	// We want to up-scale the count and cycles according to the
+         .          .    865:	// probability that the event was sampled. For block profile events,
+ROUTINE ======================== runtime.save_g in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/tls_arm64.s
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .     32:TEXT runtime·save_g(SB),NOSPLIT,$0
+         .          .     33:#ifndef GOOS_darwin
+         .          .     34:#ifndef GOOS_openbsd
+         .          .     35:#ifndef GOOS_windows
+         .          .     36:	MOVB	runtime·iscgo(SB), R0
+         .          .     37:	CBZ	R0, nocgo
+         .          .     38:#endif
+         .          .     39:#endif
+         .          .     40:#endif
+         .          .     41:
+         .          .     42:	MRS_TPIDR_R0
+         .          .     43:#ifdef TLS_darwin
+         .          .     44:	// Darwin sometimes returns unaligned pointers
+         .          .     45:	AND	$0xfffffffffffffff8, R0
+         .          .     46:#endif
+         .          .     47:	MOVD	runtime·tls_g(SB), R27
+      10ms       10ms     48:	MOVD	g, (R0)(R27)
+         .          .     49:
+         .          .     50:nocgo:
+         .          .     51:	RET
+         .          .     52:
+         .          .     53:#ifdef TLSG_IS_VARIABLE
+ROUTINE ======================== runtime.schedule in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      40ms      700ms (flat, cum)  0.65% of Total
+         .          .   3991:func schedule() {
+      10ms       10ms   3992:	mp := getg().m
+         .          .   3993:
+         .          .   3994:	if mp.locks != 0 {
+         .          .   3995:		throw("schedule: holding locks")
+         .          .   3996:	}
+         .          .   3997:
+         .          .   3998:	if mp.lockedg != 0 {
+         .          .   3999:		stoplockedm()
+         .          .   4000:		execute(mp.lockedg.ptr(), false) // Never returns.
+         .          .   4001:	}
+         .          .   4002:
+         .          .   4003:	// We should not schedule away from a g that is executing a cgo call,
+         .          .   4004:	// since the cgo call is using the m's g0 stack.
+         .          .   4005:	if mp.incgo {
+         .          .   4006:		throw("schedule: in cgo")
+         .          .   4007:	}
+         .          .   4008:
+         .          .   4009:top:
+         .          .   4010:	pp := mp.p.ptr()
+         .          .   4011:	pp.preempt = false
+         .          .   4012:
+         .          .   4013:	// Safety check: if we are spinning, the run queue should be empty.
+         .          .   4014:	// Check this before calling checkTimers, as that might call
+         .          .   4015:	// goready to put a ready goroutine on the local run queue.
+         .          .   4016:	if mp.spinning && (pp.runnext != 0 || pp.runqhead != pp.runqtail) {
+         .          .   4017:		throw("schedule: spinning with local work")
+         .          .   4018:	}
+         .          .   4019:
+         .      550ms   4020:	gp, inheritTime, tryWakeP := findRunnable() // blocks until work is available
+         .          .   4021:
+         .          .   4022:	if debug.dontfreezetheworld > 0 && freezing.Load() {
+         .          .   4023:		// See comment in freezetheworld. We don't want to perturb
+         .          .   4024:		// scheduler state, so we didn't gcstopm in findRunnable, but
+         .          .   4025:		// also don't want to allow new goroutines to run.
+         .          .   4026:		//
+         .          .   4027:		// Deadlock here rather than in the findRunnable loop so if
+         .          .   4028:		// findRunnable is stuck in a loop we don't perturb that
+         .          .   4029:		// either.
+         .          .   4030:		lock(&deadlock)
+         .          .   4031:		lock(&deadlock)
+         .          .   4032:	}
+         .          .   4033:
+         .          .   4034:	// This thread is going to run a goroutine and is not spinning anymore,
+         .          .   4035:	// so if it was marked as spinning we need to reset it now and potentially
+         .          .   4036:	// start a new spinning M.
+         .          .   4037:	if mp.spinning {
+         .          .   4038:		resetspinning()
+         .          .   4039:	}
+         .          .   4040:
+      10ms       10ms   4041:	if sched.disable.user && !schedEnabled(gp) {
+         .          .   4042:		// Scheduling of this goroutine is disabled. Put it on
+         .          .   4043:		// the list of pending runnable goroutines for when we
+         .          .   4044:		// re-enable user scheduling and look again.
+         .          .   4045:		lock(&sched.lock)
+         .          .   4046:		if schedEnabled(gp) {
+         .          .   4047:			// Something re-enabled scheduling while we
+         .          .   4048:			// were acquiring the lock.
+         .          .   4049:			unlock(&sched.lock)
+         .          .   4050:		} else {
+         .          .   4051:			sched.disable.runnable.pushBack(gp)
+         .          .   4052:			sched.disable.n++
+         .          .   4053:			unlock(&sched.lock)
+         .          .   4054:			goto top
+         .          .   4055:		}
+         .          .   4056:	}
+         .          .   4057:
+         .          .   4058:	// If about to schedule a not-normal goroutine (a GCworker or tracereader),
+         .          .   4059:	// wake a P if there is one.
+      20ms       20ms   4060:	if tryWakeP {
+         .          .   4061:		wakep()
+         .          .   4062:	}
+         .          .   4063:	if gp.lockedm != 0 {
+         .          .   4064:		// Hands off own p to the locked m,
+         .          .   4065:		// then blocks waiting for a new p.
+         .          .   4066:		startlockedm(gp)
+         .          .   4067:		goto top
+         .          .   4068:	}
+         .          .   4069:
+         .      110ms   4070:	execute(gp, inheritTime)
+         .          .   4071:}
+         .          .   4072:
+         .          .   4073:// dropg removes the association between m and the current goroutine m->curg (gp for short).
+         .          .   4074:// Typically a caller sets gp's status away from Grunning and then
+         .          .   4075:// immediately calls dropg to finish the job. The caller is also responsible
+ROUTINE ======================== runtime.semasleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/os_darwin.go
+         0      190ms (flat, cum)  0.18% of Total
+         .          .     40:func semasleep(ns int64) int32 {
+         .          .     41:	var start int64
+         .          .     42:	if ns >= 0 {
+         .          .     43:		start = nanotime()
+         .          .     44:	}
+         .          .     45:	g := getg()
+         .          .     46:	mp := g.m
+         .          .     47:	if g == mp.gsignal {
+         .          .     48:		// sema sleep/wakeup are implemented with pthreads, which are not async-signal-safe on Darwin.
+         .          .     49:		throw("semasleep on Darwin signal stack")
+         .          .     50:	}
+         .          .     51:	pthread_mutex_lock(&mp.mutex)
+         .          .     52:	for {
+         .          .     53:		if mp.count > 0 {
+         .          .     54:			mp.count--
+         .          .     55:			pthread_mutex_unlock(&mp.mutex)
+         .          .     56:			return 0
+         .          .     57:		}
+         .          .     58:		if ns >= 0 {
+         .          .     59:			spent := nanotime() - start
+         .          .     60:			if spent >= ns {
+         .          .     61:				pthread_mutex_unlock(&mp.mutex)
+         .          .     62:				return -1
+         .          .     63:			}
+         .          .     64:			var t timespec
+         .          .     65:			t.setNsec(ns - spent)
+         .          .     66:			err := pthread_cond_timedwait_relative_np(&mp.cond, &mp.mutex, &t)
+         .          .     67:			if err == _ETIMEDOUT {
+         .          .     68:				pthread_mutex_unlock(&mp.mutex)
+         .          .     69:				return -1
+         .          .     70:			}
+         .          .     71:		} else {
+         .      190ms     72:			pthread_cond_wait(&mp.cond, &mp.mutex)
+         .          .     73:		}
+         .          .     74:	}
+         .          .     75:}
+         .          .     76:
+         .          .     77://go:nosplit
+ROUTINE ======================== runtime.stealWork in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .   3679:func stealWork(now int64) (gp *g, inheritTime bool, rnow, pollUntil int64, newWork bool) {
+         .          .   3680:	pp := getg().m.p.ptr()
+         .          .   3681:
+         .          .   3682:	ranTimer := false
+         .          .   3683:
+         .          .   3684:	const stealTries = 4
+         .          .   3685:	for i := 0; i < stealTries; i++ {
+         .          .   3686:		stealTimersOrRunNextG := i == stealTries-1
+         .          .   3687:
+         .          .   3688:		for enum := stealOrder.start(cheaprand()); !enum.done(); enum.next() {
+         .          .   3689:			if sched.gcwaiting.Load() {
+         .          .   3690:				// GC work may be available.
+         .          .   3691:				return nil, false, now, pollUntil, true
+         .          .   3692:			}
+         .          .   3693:			p2 := allp[enum.position()]
+         .          .   3694:			if pp == p2 {
+         .          .   3695:				continue
+         .          .   3696:			}
+         .          .   3697:
+         .          .   3698:			// Steal timers from p2. This call to checkTimers is the only place
+         .          .   3699:			// where we might hold a lock on a different P's timers. We do this
+         .          .   3700:			// once on the last pass before checking runnext because stealing
+         .          .   3701:			// from the other P's runnext should be the last resort, so if there
+         .          .   3702:			// are timers to steal do that first.
+         .          .   3703:			//
+         .          .   3704:			// We only check timers on one of the stealing iterations because
+         .          .   3705:			// the time stored in now doesn't change in this loop and checking
+         .          .   3706:			// the timers for each P more than once with the same value of now
+         .          .   3707:			// is probably a waste of time.
+         .          .   3708:			//
+         .          .   3709:			// timerpMask tells us whether the P may have timers at all. If it
+         .          .   3710:			// can't, no need to check at all.
+         .          .   3711:			if stealTimersOrRunNextG && timerpMask.read(enum.position()) {
+         .          .   3712:				tnow, w, ran := p2.timers.check(now)
+         .          .   3713:				now = tnow
+         .          .   3714:				if w != 0 && (pollUntil == 0 || w < pollUntil) {
+         .          .   3715:					pollUntil = w
+         .          .   3716:				}
+         .          .   3717:				if ran {
+         .          .   3718:					// Running the timers may have
+         .          .   3719:					// made an arbitrary number of G's
+         .          .   3720:					// ready and added them to this P's
+         .          .   3721:					// local run queue. That invalidates
+         .          .   3722:					// the assumption of runqsteal
+         .          .   3723:					// that it always has room to add
+         .          .   3724:					// stolen G's. So check now if there
+         .          .   3725:					// is a local G to run.
+         .          .   3726:					if gp, inheritTime := runqget(pp); gp != nil {
+         .          .   3727:						return gp, inheritTime, now, pollUntil, ranTimer
+         .          .   3728:					}
+         .          .   3729:					ranTimer = true
+         .          .   3730:				}
+         .          .   3731:			}
+         .          .   3732:
+         .          .   3733:			// Don't bother to attempt to steal if p2 is idle.
+         .          .   3734:			if !idlepMask.read(enum.position()) {
+         .       10ms   3735:				if gp := runqsteal(pp, p2, stealTimersOrRunNextG); gp != nil {
+         .          .   3736:					return gp, false, now, pollUntil, ranTimer
+         .          .   3737:				}
+         .          .   3738:			}
+         .          .   3739:		}
+         .          .   3740:	}
+ROUTINE ======================== runtime.stkbucket in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+      10ms       10ms    275:func stkbucket(typ bucketType, size uintptr, stk []uintptr, alloc bool) *bucket {
+         .          .    276:	bh := (*buckhashArray)(buckhash.Load())
+         .          .    277:	if bh == nil {
+         .          .    278:		lock(&profInsertLock)
+         .          .    279:		// check again under the lock
+         .          .    280:		bh = (*buckhashArray)(buckhash.Load())
+ROUTINE ======================== runtime.stopm in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      190ms (flat, cum)  0.18% of Total
+         .          .   2894:func stopm() {
+         .          .   2895:	gp := getg()
+         .          .   2896:
+         .          .   2897:	if gp.m.locks != 0 {
+         .          .   2898:		throw("stopm holding locks")
+         .          .   2899:	}
+         .          .   2900:	if gp.m.p != 0 {
+         .          .   2901:		throw("stopm holding p")
+         .          .   2902:	}
+         .          .   2903:	if gp.m.spinning {
+         .          .   2904:		throw("stopm spinning")
+         .          .   2905:	}
+         .          .   2906:
+         .          .   2907:	lock(&sched.lock)
+         .          .   2908:	mput(gp.m)
+         .          .   2909:	unlock(&sched.lock)
+         .      190ms   2910:	mPark()
+         .          .   2911:	acquirep(gp.m.nextp.ptr())
+         .          .   2912:	gp.m.nextp = 0
+         .          .   2913:}
+         .          .   2914:
+         .          .   2915:func mspinning() {
+ROUTINE ======================== runtime.traceAcquire in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/traceruntime.go
+      10ms       20ms (flat, cum) 0.018% of Total
+         .          .    186:func traceAcquire() traceLocker {
+      10ms       20ms    187:	if !traceEnabled() {
+         .          .    188:		return traceLocker{}
+         .          .    189:	}
+         .          .    190:	return traceAcquireEnabled()
+         .          .    191:}
+         .          .    192:
+ROUTINE ======================== runtime.traceEnabled in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/traceruntime.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    149:func traceEnabled() bool {
+      10ms       10ms    150:	return trace.enabled
+         .          .    151:}
+         .          .    152:
+         .          .    153:// traceAllocFreeEnabled returns true if the trace is currently enabled
+         .          .    154:// and alloc/free events are also enabled.
+         .          .    155://
+ROUTINE ======================== runtime.unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+         0      120ms (flat, cum)  0.11% of Total
+         .          .    252:func unlock(l *mutex) {
+         .      120ms    253:	unlockWithRank(l)
+         .          .    254:}
+         .          .    255:
+         .          .    256:// We might not be holding a p in this code.
+         .          .    257://
+         .          .    258://go:nowritebarrier
+ROUTINE ======================== runtime.unlock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+      90ms      120ms (flat, cum)  0.11% of Total
+      10ms       10ms    259:func unlock2(l *mutex) {
+         .          .    260:	gp := getg()
+         .          .    261:
+      10ms       10ms    262:	prev8 := atomic.Xchg8(key8(&l.key), 0)
+         .          .    263:	if prev8&mutexLocked == 0 {
+         .          .    264:		throw("unlock of unlocked lock")
+         .          .    265:	}
+         .          .    266:
+      30ms       30ms    267:	if prev8&mutexSleeping != 0 {
+         .          .    268:		unlock2Wake(l)
+         .          .    269:	}
+         .          .    270:
+         .       30ms    271:	gp.m.mLockProfile.recordUnlock(l)
+      10ms       10ms    272:	gp.m.locks--
+         .          .    273:	if gp.m.locks < 0 {
+         .          .    274:		throw("runtime·unlock: lock count")
+         .          .    275:	}
+      30ms       30ms    276:	if gp.m.locks == 0 && gp.preempt { // restore the preemption request in case we've cleared it in newstack
+         .          .    277:		gp.stackguard0 = stackPreempt
+         .          .    278:	}
+         .          .    279:}
+         .          .    280:
+         .          .    281:// unlock2Wake updates the list of Ms waiting on l, waking an M if necessary.
+ROUTINE ======================== runtime.unlockWithRank in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lockrank_off.go
+         0      120ms (flat, cum)  0.11% of Total
+         .          .     34:func unlockWithRank(l *mutex) {
+         .      120ms     35:	unlock2(l)
+         .          .     36:}
+         .          .     37:
+         .          .     38:// This function may be called in nosplit context and thus must be nosplit.
+         .          .     39://
+         .          .     40://go:nosplit
+ROUTINE ======================== runtime.usleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+      80ms       80ms (flat, cum) 0.074% of Total
+         .          .    332:func usleep(usec uint32) {
+      80ms       80ms    333:	libcCall(unsafe.Pointer(abi.FuncPCABI0(usleep_trampoline)), unsafe.Pointer(&usec))
+         .          .    334:}
+         .          .    335:func usleep_trampoline()
+         .          .    336:
+         .          .    337://go:nosplit
+         .          .    338://go:cgo_unsafe_args
+ROUTINE ======================== runtime.wakep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      20ms      140ms (flat, cum)  0.13% of Total
+      10ms       10ms   3114:func wakep() {
+         .          .   3115:	// Be conservative about spinning threads, only start one if none exist
+         .          .   3116:	// already.
+         .          .   3117:	if sched.nmspinning.Load() != 0 || !sched.nmspinning.CompareAndSwap(0, 1) {
+         .          .   3118:		return
+         .          .   3119:	}
+         .          .   3120:
+         .          .   3121:	// Disable preemption until ownership of pp transfers to the next M in
+         .          .   3122:	// startm. Otherwise preemption here would leave pp stuck waiting to
+         .          .   3123:	// enter _Pgcstop.
+         .          .   3124:	//
+         .          .   3125:	// See preemption comment on acquirem in startm for more details.
+         .          .   3126:	mp := acquirem()
+         .          .   3127:
+         .          .   3128:	var pp *p
+         .       70ms   3129:	lock(&sched.lock)
+         .       10ms   3130:	pp, _ = pidlegetSpinning(0)
+         .          .   3131:	if pp == nil {
+         .          .   3132:		if sched.nmspinning.Add(-1) < 0 {
+         .          .   3133:			throw("wakep: negative nmspinning")
+         .          .   3134:		}
+      10ms       50ms   3135:		unlock(&sched.lock)
+         .          .   3136:		releasem(mp)
+         .          .   3137:		return
+         .          .   3138:	}
+         .          .   3139:	// Since we always have a P, the race in the "No M is available"
+         .          .   3140:	// comment in startm doesn't apply during the small window between the
+ROUTINE ======================== runtime/pprof.(*profMap).lookup in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/map.go
+      20ms       40ms (flat, cum) 0.037% of Total
+      10ms       10ms     28:func (m *profMap) lookup(stk []uint64, tag unsafe.Pointer) *profMapEntry {
+         .          .     29:	// Compute hash of (stk, tag).
+         .          .     30:	h := uintptr(0)
+      10ms       10ms     31:	for _, x := range stk {
+         .          .     32:		h = h<<8 | (h >> (8 * (unsafe.Sizeof(h) - 1)))
+         .          .     33:		h += uintptr(x) * 41
+         .          .     34:	}
+         .          .     35:	h = h<<8 | (h >> (8 * (unsafe.Sizeof(h) - 1)))
+         .          .     36:	h += uintptr(tag) * 41
+         .          .     37:
+         .          .     38:	// Find entry if present.
+         .          .     39:	var last *profMapEntry
+         .          .     40:Search:
+         .       20ms     41:	for e := m.hash[h]; e != nil; last, e = e, e.nextHash {
+         .          .     42:		if len(e.stk) != len(stk) || e.tag != tag {
+         .          .     43:			continue
+         .          .     44:		}
+         .          .     45:		for j := range stk {
+         .          .     46:			if e.stk[j] != uintptr(stk[j]) {
+ROUTINE ======================== runtime/pprof.(*profileBuilder).addCPUData in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/proto.go
+         0       40ms (flat, cum) 0.037% of Total
+         .          .    278:func (b *profileBuilder) addCPUData(data []uint64, tags []unsafe.Pointer) error {
+         .          .    279:	if !b.havePeriod {
+         .          .    280:		// first record is period
+         .          .    281:		if len(data) < 3 {
+         .          .    282:			return fmt.Errorf("truncated profile")
+         .          .    283:		}
+         .          .    284:		if data[0] != 3 || data[2] == 0 {
+         .          .    285:			return fmt.Errorf("malformed profile")
+         .          .    286:		}
+         .          .    287:		// data[2] is sampling rate in Hz. Convert to sampling
+         .          .    288:		// period in nanoseconds.
+         .          .    289:		b.period = 1e9 / int64(data[2])
+         .          .    290:		b.havePeriod = true
+         .          .    291:		data = data[3:]
+         .          .    292:		// Consume tag slot. Note that there isn't a meaningful tag
+         .          .    293:		// value for this record.
+         .          .    294:		tags = tags[1:]
+         .          .    295:	}
+         .          .    296:
+         .          .    297:	// Parse CPU samples from the profile.
+         .          .    298:	// Each sample is 3+n uint64s:
+         .          .    299:	//	data[0] = 3+n
+         .          .    300:	//	data[1] = time stamp (ignored)
+         .          .    301:	//	data[2] = count
+         .          .    302:	//	data[3:3+n] = stack
+         .          .    303:	// If the count is 0 and the stack has length 1,
+         .          .    304:	// that's an overflow record inserted by the runtime
+         .          .    305:	// to indicate that stack[0] samples were lost.
+         .          .    306:	// Otherwise the count is usually 1,
+         .          .    307:	// but in a few special cases like lost non-Go samples
+         .          .    308:	// there can be larger counts.
+         .          .    309:	// Because many samples with the same stack arrive,
+         .          .    310:	// we want to deduplicate immediately, which we do
+         .          .    311:	// using the b.m profMap.
+         .          .    312:	for len(data) > 0 {
+         .          .    313:		if len(data) < 3 || data[0] > uint64(len(data)) {
+         .          .    314:			return fmt.Errorf("truncated profile")
+         .          .    315:		}
+         .          .    316:		if data[0] < 3 || tags != nil && len(tags) < 1 {
+         .          .    317:			return fmt.Errorf("malformed profile")
+         .          .    318:		}
+         .          .    319:		if len(tags) < 1 {
+         .          .    320:			return fmt.Errorf("mismatched profile records and tags")
+         .          .    321:		}
+         .          .    322:		count := data[2]
+         .          .    323:		stk := data[3:data[0]]
+         .          .    324:		data = data[data[0]:]
+         .          .    325:		tag := tags[0]
+         .          .    326:		tags = tags[1:]
+         .          .    327:
+         .          .    328:		if count == 0 && len(stk) == 1 {
+         .          .    329:			// overflow record
+         .          .    330:			count = uint64(stk[0])
+         .          .    331:			stk = []uint64{
+         .          .    332:				// gentraceback guarantees that PCs in the
+         .          .    333:				// stack can be unconditionally decremented and
+         .          .    334:				// still be valid, so we must do the same.
+         .          .    335:				uint64(abi.FuncPCABIInternal(lostProfileEvent) + 1),
+         .          .    336:			}
+         .          .    337:		}
+         .       40ms    338:		b.m.lookup(stk, tag).count += int64(count)
+         .          .    339:	}
+         .          .    340:
+         .          .    341:	if len(tags) != 0 {
+         .          .    342:		return fmt.Errorf("mismatched profile records and tags")
+         .          .    343:	}
+ROUTINE ======================== runtime/pprof.profileWriter in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/pprof.go
+         0       50ms (flat, cum) 0.046% of Total
+         .          .    867:func profileWriter(w io.Writer) {
+         .          .    868:	b := newProfileBuilder(w)
+         .          .    869:	var err error
+         .          .    870:	for {
+         .          .    871:		time.Sleep(100 * time.Millisecond)
+         .       10ms    872:		data, tags, eof := readProfile()
+         .       40ms    873:		if e := b.addCPUData(data, tags); e != nil && err == nil {
+         .          .    874:			err = e
+         .          .    875:		}
+         .          .    876:		if eof {
+         .          .    877:			break
+         .          .    878:		}
+ROUTINE ======================== runtime/pprof.readProfile in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/cpuprof.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    243:func runtime_pprof_readProfile() ([]uint64, []unsafe.Pointer, bool) {
+         .          .    244:	lock(&cpuprof.lock)
+         .          .    245:	log := cpuprof.log
+         .          .    246:	unlock(&cpuprof.lock)
+         .          .    247:	readMode := profBufBlocking
+         .          .    248:	if GOOS == "darwin" || GOOS == "ios" {
+         .          .    249:		readMode = profBufNonBlocking // For #61768; on Darwin notes are not async-signal-safe.  See sigNoteSetup in os_darwin.go.
+         .          .    250:	}
+         .       10ms    251:	data, tags, eof := log.read(readMode)
+         .          .    252:	if len(data) == 0 && eof {
+         .          .    253:		lock(&cpuprof.lock)
+         .          .    254:		cpuprof.log = nil
+         .          .    255:		unlock(&cpuprof.lock)
+         .          .    256:	}

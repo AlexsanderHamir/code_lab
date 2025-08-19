@@ -1,0 +1,103 @@
+Total: 9.28MB
+ROUTINE ======================== testing.(*M).Run in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/testing.go
+         0     1.72MB (flat, cum) 18.56% of Total
+         .          .   2039:func (m *M) Run() (code int) {
+         .          .   2040:	defer func() {
+         .          .   2041:		code = m.exitCode
+         .          .   2042:	}()
+         .          .   2043:
+         .          .   2044:	// Count the number of calls to m.Run.
+         .          .   2045:	// We only ever expected 1, but we didn't enforce that,
+         .          .   2046:	// and now there are tests in the wild that call m.Run multiple times.
+         .          .   2047:	// Sigh. go.dev/issue/23129.
+         .          .   2048:	m.numRun++
+         .          .   2049:
+         .          .   2050:	// TestMain may have already called flag.Parse.
+         .          .   2051:	if !flag.Parsed() {
+         .          .   2052:		flag.Parse()
+         .          .   2053:	}
+         .          .   2054:
+         .          .   2055:	if chatty.json {
+         .          .   2056:		// With -v=json, stdout and stderr are pointing to the same pipe,
+         .          .   2057:		// which is leading into test2json. In general, operating systems
+         .          .   2058:		// do a good job of ensuring that writes to the same pipe through
+         .          .   2059:		// different file descriptors are delivered whole, so that writing
+         .          .   2060:		// AAA to stdout and BBB to stderr simultaneously produces
+         .          .   2061:		// AAABBB or BBBAAA on the pipe, not something like AABBBA.
+         .          .   2062:		// However, the exception to this is when the pipe fills: in that
+         .          .   2063:		// case, Go's use of non-blocking I/O means that writing AAA
+         .          .   2064:		// or BBB might be split across multiple system calls, making it
+         .          .   2065:		// entirely possible to get output like AABBBA. The same problem
+         .          .   2066:		// happens inside the operating system kernel if we switch to
+         .          .   2067:		// blocking I/O on the pipe. This interleaved output can do things
+         .          .   2068:		// like print unrelated messages in the middle of a TestFoo line,
+         .          .   2069:		// which confuses test2json. Setting os.Stderr = os.Stdout will make
+         .          .   2070:		// them share a single pfd, which will hold a lock for each program
+         .          .   2071:		// write, preventing any interleaving.
+         .          .   2072:		//
+         .          .   2073:		// It might be nice to set Stderr = Stdout always, or perhaps if
+         .          .   2074:		// we can tell they are the same file, but for now -v=json is
+         .          .   2075:		// a very clear signal. Making the two files the same may cause
+         .          .   2076:		// surprises if programs close os.Stdout but expect to be able
+         .          .   2077:		// to continue to write to os.Stderr, but it's hard to see why a
+         .          .   2078:		// test would think it could take over global state that way.
+         .          .   2079:		//
+         .          .   2080:		// This fix only helps programs where the output is coming directly
+         .          .   2081:		// from Go code. It does not help programs in which a subprocess is
+         .          .   2082:		// writing to stderr or stdout at the same time that a Go test is writing output.
+         .          .   2083:		// It also does not help when the output is coming from the runtime,
+         .          .   2084:		// such as when using the print/println functions, since that code writes
+         .          .   2085:		// directly to fd 2 without any locking.
+         .          .   2086:		// We keep realStderr around to prevent fd 2 from being closed.
+         .          .   2087:		//
+         .          .   2088:		// See go.dev/issue/33419.
+         .          .   2089:		realStderr = os.Stderr
+         .          .   2090:		os.Stderr = os.Stdout
+         .          .   2091:	}
+         .          .   2092:
+         .          .   2093:	if *parallel < 1 {
+         .          .   2094:		fmt.Fprintln(os.Stderr, "testing: -parallel can only be given a positive integer")
+         .          .   2095:		flag.Usage()
+         .          .   2096:		m.exitCode = 2
+         .          .   2097:		return
+         .          .   2098:	}
+         .          .   2099:	if *matchFuzz != "" && *fuzzCacheDir == "" {
+         .          .   2100:		fmt.Fprintln(os.Stderr, "testing: -test.fuzzcachedir must be set if -test.fuzz is set")
+         .          .   2101:		flag.Usage()
+         .          .   2102:		m.exitCode = 2
+         .          .   2103:		return
+         .          .   2104:	}
+         .          .   2105:
+         .          .   2106:	if *matchList != "" {
+         .          .   2107:		listTests(m.deps.MatchString, m.tests, m.benchmarks, m.fuzzTargets, m.examples)
+         .          .   2108:		m.exitCode = 0
+         .          .   2109:		return
+         .          .   2110:	}
+         .          .   2111:
+         .          .   2112:	if *shuffle != "off" {
+         .          .   2113:		var n int64
+         .          .   2114:		var err error
+         .          .   2115:		if *shuffle == "on" {
+         .          .   2116:			n = time.Now().UnixNano()
+         .          .   2117:		} else {
+         .          .   2118:			n, err = strconv.ParseInt(*shuffle, 10, 64)
+         .          .   2119:			if err != nil {
+         .          .   2120:				fmt.Fprintln(os.Stderr, `testing: -shuffle should be "off", "on", or a valid integer:`, err)
+         .          .   2121:				m.exitCode = 2
+         .          .   2122:				return
+         .          .   2123:			}
+         .          .   2124:		}
+         .          .   2125:		fmt.Println("-test.shuffle", n)
+         .          .   2126:		rng := rand.New(rand.NewSource(n))
+         .          .   2127:		rng.Shuffle(len(m.tests), func(i, j int) { m.tests[i], m.tests[j] = m.tests[j], m.tests[i] })
+         .          .   2128:		rng.Shuffle(len(m.benchmarks), func(i, j int) { m.benchmarks[i], m.benchmarks[j] = m.benchmarks[j], m.benchmarks[i] })
+         .          .   2129:	}
+         .          .   2130:
+         .          .   2131:	parseCpuList()
+         .          .   2132:
+         .     1.72MB   2133:	m.before()
+         .          .   2134:	defer m.after()
+         .          .   2135:
+         .          .   2136:	// Run tests, examples, and benchmarks unless this is a fuzz worker process.
+         .          .   2137:	// Workers start after this is done by their parent process, and they should
+         .          .   2138:	// not repeat this work.

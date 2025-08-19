@@ -1,0 +1,26 @@
+Total: 30.68s
+ROUTINE ======================== runtime.typedmemmove in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mbarrier.go
+      10ms       20ms (flat, cum) 0.065% of Total
+         .          .    150:func typedmemmove(typ *abi.Type, dst, src unsafe.Pointer) {
+         .          .    151:	if dst == src {
+         .          .    152:		return
+         .          .    153:	}
+      10ms       10ms    154:	if writeBarrier.enabled && typ.Pointers() {
+         .          .    155:		// This always copies a full value of type typ so it's safe
+         .          .    156:		// to pass typ along as an optimization. See the comment on
+         .          .    157:		// bulkBarrierPreWrite.
+         .          .    158:		bulkBarrierPreWrite(uintptr(dst), uintptr(src), typ.PtrBytes, typ)
+         .          .    159:	}
+         .          .    160:	// There's a race here: if some other goroutine can write to
+         .          .    161:	// src, it may change some pointer in src after we've
+         .          .    162:	// performed the write barrier but before we perform the
+         .          .    163:	// memory copy. This safe because the write performed by that
+         .          .    164:	// other goroutine must also be accompanied by a write
+         .          .    165:	// barrier, so at worst we've unnecessarily greyed the old
+         .          .    166:	// pointer that was in src.
+         .       10ms    167:	memmove(dst, src, typ.Size_)
+         .          .    168:	if goexperiment.CgoCheck2 {
+         .          .    169:		cgoCheckMemmove2(typ, dst, src, 0, typ.Size_)
+         .          .    170:	}
+         .          .    171:}
+         .          .    172:

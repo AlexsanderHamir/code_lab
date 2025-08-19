@@ -1,0 +1,15 @@
+Total: 52.38s
+ROUTINE ======================== runtime.procyield in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/asm_arm64.s
+     110ms      110ms (flat, cum)  0.21% of Total
+         .          .    917:TEXT runtime·procyield(SB),NOSPLIT,$0-0
+         .          .    918:	MOVWU	cycles+0(FP), R0
+         .          .    919:again:
+     100ms      100ms    920:	YIELD
+         .          .    921:	SUBW	$1, R0
+         .          .    922:	CBNZ	R0, again
+      10ms       10ms    923:	RET
+         .          .    924:
+         .          .    925:// Save state of caller into g->sched,
+         .          .    926:// but using fake PC from systemstack_switch.
+         .          .    927:// Must only be called from functions with no locals ($0)
+         .          .    928:// or else unwinding from systemstack_switch is incorrect.

@@ -1,0 +1,21 @@
+Total: 52.53s
+ROUTINE ======================== runtime.pidleput in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .   6640:func pidleput(pp *p, now int64) int64 {
+         .          .   6641:	assertLockHeld(&sched.lock)
+         .          .   6642:
+         .          .   6643:	if !runqempty(pp) {
+         .          .   6644:		throw("pidleput: P has non-empty run queue")
+         .          .   6645:	}
+         .          .   6646:	if now == 0 {
+         .          .   6647:		now = nanotime()
+         .          .   6648:	}
+         .          .   6649:	if pp.timers.len.Load() == 0 {
+         .          .   6650:		timerpMask.clear(pp.id)
+         .          .   6651:	}
+      10ms       10ms   6652:	idlepMask.set(pp.id)
+         .          .   6653:	pp.link = sched.pidle
+         .          .   6654:	sched.pidle.set(pp)
+         .          .   6655:	sched.npidle.Add(1)
+         .          .   6656:	if !pp.limiterEvent.start(limiterEventIdle, now) {
+         .          .   6657:		throw("must be able to track idle limiter event")

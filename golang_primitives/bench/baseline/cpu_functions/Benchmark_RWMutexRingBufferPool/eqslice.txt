@@ -1,0 +1,13 @@
+Total: 48.01s
+ROUTINE ======================== runtime.eqslice in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      20ms       20ms (flat, cum) 0.042% of Total
+         .          .    352:func eqslice(x, y []uintptr) bool {
+         .          .    353:	if len(x) != len(y) {
+         .          .    354:		return false
+         .          .    355:	}
+      20ms       20ms    356:	for i, xi := range x {
+         .          .    357:		if xi != y[i] {
+         .          .    358:			return false
+         .          .    359:		}
+         .          .    360:	}
+         .          .    361:	return true

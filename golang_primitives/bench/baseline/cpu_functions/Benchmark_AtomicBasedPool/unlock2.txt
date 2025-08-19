@@ -1,0 +1,26 @@
+Total: 108.20s
+ROUTINE ======================== runtime.unlock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+      90ms      120ms (flat, cum)  0.11% of Total
+      10ms       10ms    259:func unlock2(l *mutex) {
+         .          .    260:	gp := getg()
+         .          .    261:
+      10ms       10ms    262:	prev8 := atomic.Xchg8(key8(&l.key), 0)
+         .          .    263:	if prev8&mutexLocked == 0 {
+         .          .    264:		throw("unlock of unlocked lock")
+         .          .    265:	}
+         .          .    266:
+      30ms       30ms    267:	if prev8&mutexSleeping != 0 {
+         .          .    268:		unlock2Wake(l)
+         .          .    269:	}
+         .          .    270:
+         .       30ms    271:	gp.m.mLockProfile.recordUnlock(l)
+      10ms       10ms    272:	gp.m.locks--
+         .          .    273:	if gp.m.locks < 0 {
+         .          .    274:		throw("runtime·unlock: lock count")
+         .          .    275:	}
+      30ms       30ms    276:	if gp.m.locks == 0 && gp.preempt { // restore the preemption request in case we've cleared it in newstack
+         .          .    277:		gp.stackguard0 = stackPreempt
+         .          .    278:	}
+         .          .    279:}
+         .          .    280:
+         .          .    281:// unlock2Wake updates the list of Ms waiting on l, waking an M if necessary.

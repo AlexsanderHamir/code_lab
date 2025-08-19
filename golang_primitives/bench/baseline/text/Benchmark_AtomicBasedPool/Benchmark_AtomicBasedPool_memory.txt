@@ -1,0 +1,41 @@
+File: primitives_performance.test
+Type: alloc_space
+Time: 2025-08-19 12:51:21 PDT
+Showing nodes accounting for 10371.99kB, 100% of 10371.99kB total
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%  3084.08kB 29.73%  primitives_performance.Benchmark_AtomicBasedPool
+         0     0%     0%  3084.08kB 29.73%  testing.(*B).runN
+    3078kB 29.68% 29.68%     3078kB 29.68%  runtime.allocm
+         0     0% 29.68%     3078kB 29.68%  runtime.newm
+         0     0% 29.68%     3078kB 29.68%  runtime.resetspinning
+         0     0% 29.68%     3078kB 29.68%  runtime.schedule
+         0     0% 29.68%     3078kB 29.68%  runtime.startm
+         0     0% 29.68%     3078kB 29.68%  runtime.wakep
+         0     0% 29.68%  2572.07kB 24.80%  testing.(*B).launch
+ 1548.03kB 14.93% 44.60%  2572.05kB 24.80%  primitives_performance.NewAtomicBasedPool (inline)
+         0     0% 44.60%  2001.60kB 19.30%  runtime/pprof.profileWriter
+         0     0% 44.60%     1539kB 14.84%  runtime.mcall
+         0     0% 44.60%     1539kB 14.84%  runtime.mstart
+         0     0% 44.60%     1539kB 14.84%  runtime.mstart0
+         0     0% 44.60%     1539kB 14.84%  runtime.mstart1
+         0     0% 44.60%     1539kB 14.84%  runtime.park_m
+  902.59kB  8.70% 53.30%  1485.59kB 14.32%  compress/flate.NewWriter (inline)
+         0     0% 53.30%  1485.59kB 14.32%  compress/gzip.(*Writer).Write
+         0     0% 53.30%  1485.59kB 14.32%  runtime/pprof.(*profileBuilder).appendLocsForStack
+         0     0% 53.30%  1485.59kB 14.32%  runtime/pprof.(*profileBuilder).build
+         0     0% 53.30%  1485.59kB 14.32%  runtime/pprof.(*profileBuilder).emitLocation
+         0     0% 53.30%  1485.59kB 14.32%  runtime/pprof.(*profileBuilder).flush
+         0     0% 53.30%  1184.27kB 11.42%  main.main
+         0     0% 53.30%  1184.27kB 11.42%  runtime.main
+ 1184.27kB 11.42% 64.72%  1184.27kB 11.42%  runtime/pprof.StartCPUProfile
+         0     0% 64.72%  1184.27kB 11.42%  testing.(*M).Run
+         0     0% 64.72%  1184.27kB 11.42%  testing.(*M).before
+         0     0% 64.72%  1184.27kB 11.42%  testing/internal/testdeps.TestDeps.StartCPUProfile
+ 1024.03kB  9.87% 74.59%  1024.03kB  9.87%  testing.(*B).RunParallel.func1
+ 1024.02kB  9.87% 84.47%  1024.02kB  9.87%  primitives_performance.init.func1
+         0     0% 84.47%   583.01kB  5.62%  compress/flate.(*compressor).init
+  583.01kB  5.62% 90.09%   583.01kB  5.62%  compress/flate.newDeflateFast (inline)
+  516.01kB  4.98% 95.06%   516.01kB  4.98%  runtime/pprof.(*profMap).lookup
+         0     0% 95.06%   516.01kB  4.98%  runtime/pprof.(*profileBuilder).addCPUData
+  512.02kB  4.94%   100%   512.02kB  4.94%  testing.(*B).RunParallel
+         0     0%   100%   512.01kB  4.94%  testing.(*B).run1.func1

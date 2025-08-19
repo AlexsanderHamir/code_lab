@@ -1,0 +1,46 @@
+Total: 52.53s
+ROUTINE ======================== runtime.saveblockevent in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      10ms      840ms (flat, cum)  1.60% of Total
+         .          .    533:func saveblockevent(cycles, rate int64, skip int, which bucketType) {
+         .          .    534:	if debug.profstackdepth == 0 {
+         .          .    535:		// profstackdepth is set to 0 by the user, so mp.profStack is nil and we
+         .          .    536:		// can't record a stack trace.
+         .          .    537:		return
+         .          .    538:	}
+         .          .    539:	if skip > maxSkip {
+         .          .    540:		print("requested skip=", skip)
+         .          .    541:		throw("invalid skip value")
+         .          .    542:	}
+         .          .    543:	gp := getg()
+         .       10ms    544:	mp := acquirem() // we must not be preempted while accessing profstack
+         .          .    545:
+         .          .    546:	var nstk int
+         .          .    547:	if tracefpunwindoff() || gp.m.hasCgoOnStack() {
+         .          .    548:		if gp.m.curg == nil || gp.m.curg == gp {
+         .          .    549:			nstk = callers(skip, mp.profStack)
+         .          .    550:		} else {
+         .          .    551:			nstk = gcallers(gp.m.curg, skip, mp.profStack)
+         .          .    552:		}
+         .          .    553:	} else {
+         .          .    554:		if gp.m.curg == nil || gp.m.curg == gp {
+         .          .    555:			if skip > 0 {
+         .          .    556:				// We skip one fewer frame than the provided value for frame
+         .          .    557:				// pointer unwinding because the skip value includes the current
+         .          .    558:				// frame, whereas the saved frame pointer will give us the
+         .          .    559:				// caller's return address first (so, not including
+         .          .    560:				// saveblockevent)
+         .          .    561:				skip -= 1
+         .          .    562:			}
+         .      470ms    563:			nstk = fpTracebackPartialExpand(skip, unsafe.Pointer(getfp()), mp.profStack)
+         .          .    564:		} else {
+         .          .    565:			mp.profStack[0] = gp.m.curg.sched.pc
+         .          .    566:			nstk = 1 + fpTracebackPartialExpand(skip, unsafe.Pointer(gp.m.curg.sched.bp), mp.profStack[1:])
+         .          .    567:		}
+         .          .    568:	}
+         .          .    569:
+      10ms      360ms    570:	saveBlockEventStack(cycles, rate, mp.profStack[:nstk], which)
+         .          .    571:	releasem(mp)
+         .          .    572:}
+         .          .    573:
+         .          .    574:// fpTracebackPartialExpand records a call stack obtained starting from fp.
+         .          .    575:// This function will skip the given number of frames, properly accounting for

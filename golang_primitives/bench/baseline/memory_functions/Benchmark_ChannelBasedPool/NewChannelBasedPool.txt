@@ -1,0 +1,18 @@
+Total: 8.43MB
+ROUTINE ======================== primitives_performance.NewChannelBasedPool in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+    1.01MB     2.51MB (flat, cum) 29.74% of Total
+         .          .    155:func NewChannelBasedPool(capacity int, allocator func() *testObject, cleaner func(*testObject)) *ChannelBasedPool {
+         .          .    156:	pool := &ChannelBasedPool{
+    1.01MB     1.01MB    157:		objects:   make(chan *testObject, capacity),
+         .          .    158:		allocator: allocator,
+         .          .    159:		cleaner:   cleaner,
+         .          .    160:	}
+         .          .    161:
+         .          .    162:	// Pre-populate the pool
+         .          .    163:	for range capacity {
+         .     1.50MB    164:		pool.objects <- allocator()
+         .          .    165:	}
+         .          .    166:
+         .          .    167:	return pool
+         .          .    168:}
+         .          .    169:

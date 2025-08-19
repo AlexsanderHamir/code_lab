@@ -1,0 +1,11 @@
+Total: 8.43MB
+ROUTINE ======================== runtime/pprof.(*protobuf).length in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/protobuf.go
+         0      513kB (flat, cum)  5.94% of Total
+         .          .     22:func (b *protobuf) length(tag int, len int) {
+         .          .     23:	b.varint(uint64(tag)<<3 | 2)
+         .      513kB     24:	b.varint(uint64(len))
+         .          .     25:}
+         .          .     26:
+         .          .     27:func (b *protobuf) uint64(tag int, x uint64) {
+         .          .     28:	// append varint to b.data
+         .          .     29:	b.varint(uint64(tag)<<3 | 0)

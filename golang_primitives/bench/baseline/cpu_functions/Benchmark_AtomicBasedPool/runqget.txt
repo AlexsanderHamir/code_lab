@@ -1,0 +1,49 @@
+Total: 108.20s
+ROUTINE ======================== runtime.globrunqget in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      20ms       30ms (flat, cum) 0.028% of Total
+         .          .   6576:func globrunqget(pp *p, max int32) *g {
+         .          .   6577:	assertLockHeld(&sched.lock)
+         .          .   6578:
+         .          .   6579:	if sched.runqsize == 0 {
+         .          .   6580:		return nil
+         .          .   6581:	}
+         .          .   6582:
+      10ms       10ms   6583:	n := sched.runqsize/gomaxprocs + 1
+         .          .   6584:	if n > sched.runqsize {
+         .          .   6585:		n = sched.runqsize
+         .          .   6586:	}
+         .          .   6587:	if max > 0 && n > max {
+         .          .   6588:		n = max
+         .          .   6589:	}
+         .          .   6590:	if n > int32(len(pp.runq))/2 {
+         .          .   6591:		n = int32(len(pp.runq)) / 2
+         .          .   6592:	}
+         .          .   6593:
+         .          .   6594:	sched.runqsize -= n
+         .          .   6595:
+         .       10ms   6596:	gp := sched.runq.pop()
+         .          .   6597:	n--
+         .          .   6598:	for ; n > 0; n-- {
+         .          .   6599:		gp1 := sched.runq.pop()
+         .          .   6600:		runqput(pp, gp1, false)
+         .          .   6601:	}
+      10ms       10ms   6602:	return gp
+         .          .   6603:}
+         .          .   6604:
+         .          .   6605:// pMask is an atomic bitstring with one bit per P.
+         .          .   6606:type pMask []uint32
+         .          .   6607:
+ROUTINE ======================== runtime.runqget in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       20ms (flat, cum) 0.018% of Total
+         .          .   6868:func runqget(pp *p) (gp *g, inheritTime bool) {
+         .          .   6869:	// If there's a runnext, it's the next G to run.
+      10ms       10ms   6870:	next := pp.runnext
+         .          .   6871:	// If the runnext is non-0 and the CAS fails, it could only have been stolen by another P,
+         .          .   6872:	// because other Ps can race to set runnext to 0, but only the current P can set it to non-0.
+         .          .   6873:	// Hence, there's no need to retry this CAS if it fails.
+         .       10ms   6874:	if next != 0 && pp.runnext.cas(next, 0) {
+         .          .   6875:		return next.ptr(), true
+         .          .   6876:	}
+         .          .   6877:
+         .          .   6878:	for {
+         .          .   6879:		h := atomic.LoadAcq(&pp.runqhead) // load-acquire, synchronize with other consumers

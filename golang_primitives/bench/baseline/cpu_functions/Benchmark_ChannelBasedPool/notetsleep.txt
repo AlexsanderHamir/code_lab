@@ -1,0 +1,61 @@
+Total: 30.68s
+ROUTINE ======================== runtime.notetsleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_sema.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .    158:func notetsleep(n *note, ns int64) bool {
+         .          .    159:	gp := getg()
+         .          .    160:	if gp != gp.m.g0 {
+         .          .    161:		throw("notetsleep not on g0")
+         .          .    162:	}
+         .          .    163:	semacreate(gp.m)
+         .       10ms    164:	return notetsleep_internal(n, ns, nil, 0)
+         .          .    165:}
+         .          .    166:
+         .          .    167:// same as runtime·notetsleep, but called on user g (not g0)
+         .          .    168:// calls only nosplit functions between entersyscallblock/exitsyscall.
+         .          .    169:func notetsleepg(n *note, ns int64) bool {
+ROUTINE ======================== runtime.notetsleep_internal in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_sema.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .     75:func notetsleep_internal(n *note, ns int64, gp *g, deadline int64) bool {
+         .          .     76:	// gp and deadline are logically local variables, but they are written
+         .          .     77:	// as parameters so that the stack space they require is charged
+         .          .     78:	// to the caller.
+         .          .     79:	// This reduces the nosplit footprint of notetsleep_internal.
+         .          .     80:	gp = getg()
+         .          .     81:
+         .          .     82:	// Register for wakeup on n->waitm.
+         .          .     83:	if !atomic.Casuintptr(&n.key, 0, uintptr(unsafe.Pointer(gp.m))) {
+         .          .     84:		// Must be locked (got wakeup).
+         .          .     85:		if n.key != locked {
+         .          .     86:			throw("notetsleep - waitm out of sync")
+         .          .     87:		}
+         .          .     88:		return true
+         .          .     89:	}
+         .          .     90:	if ns < 0 {
+         .          .     91:		// Queued. Sleep.
+         .          .     92:		gp.m.blocked = true
+         .          .     93:		if *cgo_yield == nil {
+         .          .     94:			semasleep(-1)
+         .          .     95:		} else {
+         .          .     96:			// Sleep in arbitrary-but-moderate intervals to poll libc interceptors.
+         .          .     97:			const ns = 10e6
+         .          .     98:			for semasleep(ns) < 0 {
+         .          .     99:				asmcgocall(*cgo_yield, nil)
+         .          .    100:			}
+         .          .    101:		}
+         .          .    102:		gp.m.blocked = false
+         .          .    103:		return true
+         .          .    104:	}
+         .          .    105:
+         .          .    106:	deadline = nanotime() + ns
+         .          .    107:	for {
+         .          .    108:		// Registered. Sleep.
+         .          .    109:		gp.m.blocked = true
+         .          .    110:		if *cgo_yield != nil && ns > 10e6 {
+         .          .    111:			ns = 10e6
+         .          .    112:		}
+         .       10ms    113:		if semasleep(ns) >= 0 {
+         .          .    114:			gp.m.blocked = false
+         .          .    115:			// Acquired semaphore, semawakeup unregistered us.
+         .          .    116:			// Done.
+         .          .    117:			return true
+         .          .    118:		}

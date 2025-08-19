@@ -1,0 +1,16 @@
+Total: 52.38s
+ROUTINE ======================== runtime.libcCall in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_libc.go
+      20ms       20ms (flat, cum) 0.038% of Total
+         .          .     20:func libcCall(fn, arg unsafe.Pointer) int32 {
+         .          .     21:	// Leave caller's PC/SP/G around for traceback.
+         .          .     22:	gp := getg()
+         .          .     23:	var mp *m
+         .          .     24:	if gp != nil {
+         .          .     25:		mp = gp.m
+         .          .     26:	}
+      20ms       20ms     27:	if mp != nil && mp.libcallsp == 0 {
+         .          .     28:		mp.libcallg.set(gp)
+         .          .     29:		mp.libcallpc = sys.GetCallerPC()
+         .          .     30:		// sp must be the last, because once async cpu profiler finds
+         .          .     31:		// all three values to be non-zero, it will use them
+         .          .     32:		mp.libcallsp = sys.GetCallerSP()

@@ -1,0 +1,52 @@
+Total: 52.53s
+ROUTINE ======================== runtime.(*mLockProfile).recordUnlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0      190ms (flat, cum)  0.36% of Total
+         .          .    772:func (prof *mLockProfile) recordUnlock(l *mutex) {
+         .          .    773:	if uintptr(unsafe.Pointer(l)) == prof.pending {
+         .          .    774:		prof.captureStack()
+         .          .    775:	}
+         .          .    776:	if gp := getg(); gp.m.locks == 1 && gp.m.mLockProfile.haveStack {
+         .      190ms    777:		prof.store()
+         .          .    778:	}
+         .          .    779:}
+         .          .    780:
+         .          .    781:func (prof *mLockProfile) captureStack() {
+         .          .    782:	if debug.profstackdepth == 0 {
+ROUTINE ======================== runtime.(*timeHistogram).record in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/histogram.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    105:func (h *timeHistogram) record(duration int64) {
+         .          .    106:	// If the duration is negative, capture that in underflow.
+         .          .    107:	if duration < 0 {
+         .          .    108:		h.underflow.Add(1)
+         .          .    109:		return
+         .          .    110:	}
+         .          .    111:	// bucketBit is the target bit for the bucket which is usually the
+         .          .    112:	// highest 1 bit, but if we're less than the minimum, is the highest
+         .          .    113:	// 1 bit of the minimum (which will be zero in the duration).
+         .          .    114:	//
+         .          .    115:	// bucket is the bucket index, which is the bucketBit minus the
+         .          .    116:	// highest bit of the minimum, plus one to leave room for the catch-all
+         .          .    117:	// bucket for samples lower than the minimum.
+         .          .    118:	var bucketBit, bucket uint
+         .          .    119:	if l := sys.Len64(uint64(duration)); l < timeHistMinBucketBits {
+         .          .    120:		bucketBit = timeHistMinBucketBits
+         .          .    121:		bucket = 0 // bucketBit - timeHistMinBucketBits
+         .          .    122:	} else {
+         .          .    123:		bucketBit = uint(l)
+         .          .    124:		bucket = bucketBit - timeHistMinBucketBits + 1
+         .          .    125:	}
+         .          .    126:	// If the bucket we computed is greater than the number of buckets,
+         .          .    127:	// count that in overflow.
+         .          .    128:	if bucket >= timeHistNumBuckets {
+         .          .    129:		h.overflow.Add(1)
+         .          .    130:		return
+         .          .    131:	}
+         .          .    132:	// The sub-bucket index is just next timeHistSubBucketBits after the bucketBit.
+         .          .    133:	subBucket := uint(duration>>(bucketBit-1-timeHistSubBucketBits)) % timeHistNumSubBuckets
+         .          .    134:	h.counts[bucket*timeHistNumSubBuckets+subBucket].Add(1)
+      10ms       10ms    135:}
+         .          .    136:
+         .          .    137:// write dumps the histogram to the passed metricValue as a float64 histogram.
+         .          .    138:func (h *timeHistogram) write(out *metricValue) {
+         .          .    139:	hist := out.float64HistOrInit(timeHistBuckets)
+         .          .    140:	// The bottom-most bucket, containing negative values, is tracked

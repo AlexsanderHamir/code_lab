@@ -1,0 +1,10 @@
+Total: 48.01s
+ROUTINE ======================== internal/runtime/atomic.(*Uint64).CompareAndSwap in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+      10ms       10ms (flat, cum) 0.021% of Total
+         .          .    324:func (u *Uint64) CompareAndSwap(old, new uint64) bool {
+      10ms       10ms    325:	return Cas64(&u.value, old, new)
+         .          .    326:}
+         .          .    327:
+         .          .    328:// Swap replaces u's value with new, returning
+         .          .    329:// u's value before the replacement.
+         .          .    330://

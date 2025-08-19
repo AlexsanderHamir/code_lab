@@ -1,0 +1,10 @@
+Total: 108.20s
+ROUTINE ======================== runtime.saveBlockEventStack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    859:func saveBlockEventStack(cycles, rate int64, stk []uintptr, which bucketType) {
+         .       10ms    860:	b := stkbucket(which, 0, stk, true)
+         .          .    861:	bp := b.bp()
+         .          .    862:
+         .          .    863:	lock(&profBlockLock)
+         .          .    864:	// We want to up-scale the count and cycles according to the
+         .          .    865:	// probability that the event was sampled. For block profile events,

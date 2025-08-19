@@ -1,0 +1,25 @@
+Total: 64.37s
+ROUTINE ======================== primitives_performance.Benchmark_RingBufferCond in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     13.93s (flat, cum) 21.64% of Total
+         .          .     73:func Benchmark_RingBufferCond(b *testing.B) {
+         .          .     74:	debug.SetGCPercent(-1)
+         .          .     75:	b.ReportAllocs()
+         .          .     76:
+         .          .     77:	pool := NewRingBufferCondPool(1000, testAllocator, testCleaner)
+         .          .     78:
+         .          .     79:	b.ResetTimer()
+         .     13.93s     80:	b.RunParallel(func(pb *testing.PB) {
+         .          .     81:		for pb.Next() {
+         .          .     82:			obj := pool.Get()
+         .          .     83:			pool.Put(obj)
+         .          .     84:		}
+         .          .     85:	})
+ROUTINE ======================== primitives_performance.Benchmark_RingBufferCond.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     36.33s (flat, cum) 56.44% of Total
+         .          .     80:	b.RunParallel(func(pb *testing.PB) {
+         .          .     81:		for pb.Next() {
+         .     20.35s     82:			obj := pool.Get()
+         .     15.98s     83:			pool.Put(obj)
+         .          .     84:		}
+         .          .     85:	})
+         .          .     86:}

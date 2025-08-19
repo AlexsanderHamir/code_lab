@@ -1,0 +1,11 @@
+Total: 52.53s
+ROUTINE ======================== runtime.readvarint in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      20ms       20ms (flat, cum) 0.038% of Total
+         .          .   1273:func readvarint(p []byte) (read uint32, val uint32) {
+         .          .   1274:	var v, shift, n uint32
+      20ms       20ms   1275:	for {
+         .          .   1276:		b := p[n]
+         .          .   1277:		n++
+         .          .   1278:		v |= uint32(b&0x7F) << (shift & 31)
+         .          .   1279:		if b&0x80 == 0 {
+         .          .   1280:			break

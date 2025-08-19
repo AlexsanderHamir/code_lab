@@ -1,0 +1,10 @@
+Total: 30.68s
+ROUTINE ======================== runtime.gcStart.func2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgc.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .    725:	systemstack(func() {
+         .       10ms    726:		stw = stopTheWorldWithSema(stwGCSweepTerm)
+         .          .    727:	})
+         .          .    728:
+         .          .    729:	// Accumulate fine-grained stopping time.
+         .          .    730:	work.cpuStats.accumulateGCPauseTime(stw.stoppingCPUTime, 1)
+         .          .    731:

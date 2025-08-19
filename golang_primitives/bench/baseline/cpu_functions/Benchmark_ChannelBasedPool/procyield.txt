@@ -1,0 +1,12 @@
+Total: 30.68s
+ROUTINE ======================== runtime.procyield in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/asm_arm64.s
+      10ms       10ms (flat, cum) 0.033% of Total
+         .          .    917:TEXT runtime·procyield(SB),NOSPLIT,$0-0
+         .          .    918:	MOVWU	cycles+0(FP), R0
+         .          .    919:again:
+      10ms       10ms    920:	YIELD
+         .          .    921:	SUBW	$1, R0
+         .          .    922:	CBNZ	R0, again
+         .          .    923:	RET
+         .          .    924:
+         .          .    925:// Save state of caller into g->sched,

@@ -1,0 +1,20 @@
+Total: 8.43MB
+ROUTINE ======================== primitives_performance.init.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+    1.50MB     1.50MB (flat, cum) 17.79% of Total
+         .          .    448:var testAllocator = func() *testObject {
+    1.50MB     1.50MB    449:	return &testObject{
+         .          .    450:		ID:   0,
+         .          .    451:		Data: "test",
+         .          .    452:	}
+         .          .    453:}
+         .          .    454:
+ROUTINE ======================== testing.(*B).RunParallel.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+  512.02kB   512.02kB (flat, cum)  5.93% of Total
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+  512.02kB   512.02kB    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .          .    962:			body(pb)

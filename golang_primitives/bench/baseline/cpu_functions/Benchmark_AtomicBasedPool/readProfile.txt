@@ -1,0 +1,17 @@
+Total: 108.20s
+ROUTINE ======================== runtime/pprof.readProfile in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/cpuprof.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    243:func runtime_pprof_readProfile() ([]uint64, []unsafe.Pointer, bool) {
+         .          .    244:	lock(&cpuprof.lock)
+         .          .    245:	log := cpuprof.log
+         .          .    246:	unlock(&cpuprof.lock)
+         .          .    247:	readMode := profBufBlocking
+         .          .    248:	if GOOS == "darwin" || GOOS == "ios" {
+         .          .    249:		readMode = profBufNonBlocking // For #61768; on Darwin notes are not async-signal-safe.  See sigNoteSetup in os_darwin.go.
+         .          .    250:	}
+         .       10ms    251:	data, tags, eof := log.read(readMode)
+         .          .    252:	if len(data) == 0 && eof {
+         .          .    253:		lock(&cpuprof.lock)
+         .          .    254:		cpuprof.log = nil
+         .          .    255:		unlock(&cpuprof.lock)
+         .          .    256:	}

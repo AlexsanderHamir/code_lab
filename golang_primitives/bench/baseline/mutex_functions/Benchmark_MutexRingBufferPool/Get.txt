@@ -1,0 +1,14 @@
+Total: 47.86s
+ROUTINE ======================== primitives_performance.(*MutexRingBufferPool).Get in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+         0     18.22s (flat, cum) 38.08% of Total
+         .          .     91:func (p *MutexRingBufferPool) Get() *testObject {
+         .          .     92:	p.mu.Lock()
+         .          .     93:	defer p.mu.Unlock()
+         .          .     94:
+         .          .     95:	if obj, ok := p.ringBuffer.Pop(); ok {
+         .     18.22s     96:		return obj
+         .          .     97:	}
+         .          .     98:	return p.allocator()
+         .          .     99:}
+         .          .    100:
+         .          .    101:func (p *MutexRingBufferPool) Put(obj *testObject) {

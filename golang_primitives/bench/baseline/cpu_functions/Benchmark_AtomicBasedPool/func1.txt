@@ -1,0 +1,36 @@
+Total: 108.20s
+ROUTINE ======================== primitives_performance.Benchmark_AtomicBasedPool.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+      20ms    107.20s (flat, cum) 99.08% of Total
+         .          .     64:	b.RunParallel(func(pb *testing.PB) {
+         .       50ms     65:		for pb.Next() {
+         .     54.90s     66:			obj := pool.Get()
+      20ms     52.25s     67:			pool.Put(obj)
+         .          .     68:		}
+         .          .     69:	})
+         .          .     70:}
+         .          .     71:
+         .          .     72:// Benchmark: Ring buffer with condition variables pool
+ROUTINE ======================== runtime.goroutineReady.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    455:	systemstack(func() {
+         .       10ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {
+ROUTINE ======================== testing.(*B).RunParallel.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0    107.20s (flat, cum) 99.08% of Total
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+         .          .    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .    107.20s    962:			body(pb)
+         .          .    963:		}()
+         .          .    964:	}
+         .          .    965:	wg.Wait()
+         .          .    966:	if n.Load() <= uint64(b.N) && !b.Failed() {
+         .          .    967:		b.Fatal("RunParallel: body exited without pb.Next() == false")

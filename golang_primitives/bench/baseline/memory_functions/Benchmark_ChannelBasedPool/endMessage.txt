@@ -1,0 +1,12 @@
+Total: 8.43MB
+ROUTINE ======================== runtime/pprof.(*protobuf).endMessage in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/protobuf.go
+         0      513kB (flat, cum)  5.94% of Total
+         .          .    132:func (b *protobuf) endMessage(tag int, start msgOffset) {
+         .          .    133:	n1 := int(start)
+         .          .    134:	n2 := len(b.data)
+         .      513kB    135:	b.length(tag, n2-n1)
+         .          .    136:	n3 := len(b.data)
+         .          .    137:	copy(b.tmp[:], b.data[n2:n3])
+         .          .    138:	copy(b.data[n1+(n3-n2):], b.data[n1:n2])
+         .          .    139:	copy(b.data[n1:], b.tmp[:n3-n2])
+         .          .    140:	b.nest--

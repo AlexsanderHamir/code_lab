@@ -1,0 +1,45 @@
+Total: 6.30MB
+ROUTINE ======================== primitives_performance.init.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+  512.01kB   512.01kB (flat, cum)  7.94% of Total
+         .          .    448:var testAllocator = func() *testObject {
+  512.01kB   512.01kB    449:	return &testObject{
+         .          .    450:		ID:   0,
+         .          .    451:		Data: "test",
+         .          .    452:	}
+         .          .    453:}
+         .          .    454:
+ROUTINE ======================== runtime.injectglist.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      513kB (flat, cum)  7.96% of Total
+         .          .   3925:	startIdle := func(n int) {
+         .          .   3926:		for i := 0; i < n; i++ {
+         .          .   3927:			mp := acquirem() // See comment in startm.
+         .          .   3928:			lock(&sched.lock)
+         .          .   3929:
+         .          .   3930:			pp, _ := pidlegetSpinning(0)
+         .          .   3931:			if pp == nil {
+         .          .   3932:				unlock(&sched.lock)
+         .          .   3933:				releasem(mp)
+         .          .   3934:				break
+         .          .   3935:			}
+         .          .   3936:
+         .      513kB   3937:			startm(pp, false, true)
+         .          .   3938:			unlock(&sched.lock)
+         .          .   3939:			releasem(mp)
+         .          .   3940:		}
+         .          .   3941:	}
+         .          .   3942:
+ROUTINE ======================== testing.(*B).run1.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0   512.01kB (flat, cum)  7.94% of Total
+         .          .    238:	go func() {
+         .          .    239:		// Signal that we're done whether we return normally
+         .          .    240:		// or by FailNow's runtime.Goexit.
+         .          .    241:		defer func() {
+         .          .    242:			b.signal <- true
+         .          .    243:		}()
+         .          .    244:
+         .   512.01kB    245:		b.runN(1)
+         .          .    246:	}()
+         .          .    247:	<-b.signal
+         .          .    248:	if b.failed {
+         .          .    249:		fmt.Fprintf(b.w, "%s--- FAIL: %s\n%s", b.chatty.prefix(), b.name, b.output)
+         .          .    250:		return false

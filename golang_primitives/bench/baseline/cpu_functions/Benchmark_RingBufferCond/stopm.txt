@@ -1,0 +1,26 @@
+Total: 52.38s
+ROUTINE ======================== runtime.stopm in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms      4.52s (flat, cum)  8.63% of Total
+         .          .   2894:func stopm() {
+         .          .   2895:	gp := getg()
+         .          .   2896:
+         .          .   2897:	if gp.m.locks != 0 {
+         .          .   2898:		throw("stopm holding locks")
+         .          .   2899:	}
+      10ms       10ms   2900:	if gp.m.p != 0 {
+         .          .   2901:		throw("stopm holding p")
+         .          .   2902:	}
+         .          .   2903:	if gp.m.spinning {
+         .          .   2904:		throw("stopm spinning")
+         .          .   2905:	}
+         .          .   2906:
+         .       80ms   2907:	lock(&sched.lock)
+         .          .   2908:	mput(gp.m)
+         .       10ms   2909:	unlock(&sched.lock)
+         .      4.41s   2910:	mPark()
+         .       10ms   2911:	acquirep(gp.m.nextp.ptr())
+         .          .   2912:	gp.m.nextp = 0
+         .          .   2913:}
+         .          .   2914:
+         .          .   2915:func mspinning() {
+         .          .   2916:	// startm's caller incremented nmspinning. Set the new M's spinning.

@@ -1,0 +1,29 @@
+Total: 52.38s
+ROUTINE ======================== runtime.netpoll in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/netpoll_kqueue.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .     90:func netpoll(delay int64) (gList, int32) {
+         .          .     91:	if kq == -1 {
+         .          .     92:		return gList{}, 0
+         .          .     93:	}
+         .          .     94:	var tp *timespec
+         .          .     95:	var ts timespec
+         .          .     96:	if delay < 0 {
+         .          .     97:		tp = nil
+         .          .     98:	} else if delay == 0 {
+         .          .     99:		tp = &ts
+         .          .    100:	} else {
+         .          .    101:		ts.setNsec(delay)
+         .          .    102:		if ts.tv_sec > 1e6 {
+         .          .    103:			// Darwin returns EINVAL if the sleep time is too long.
+         .          .    104:			ts.tv_sec = 1e6
+         .          .    105:		}
+         .          .    106:		tp = &ts
+         .          .    107:	}
+         .          .    108:	var events [64]keventt
+         .          .    109:retry:
+         .       10ms    110:	n := kevent(kq, nil, 0, &events[0], int32(len(events)), tp)
+         .          .    111:	if n < 0 {
+         .          .    112:		// Ignore the ETIMEDOUT error for now, but try to dive deep and
+         .          .    113:		// figure out what really happened with n == ETIMEOUT,
+         .          .    114:		// see https://go.dev/issue/59679 for details.
+         .          .    115:		if n != -_EINTR && n != -_ETIMEDOUT {

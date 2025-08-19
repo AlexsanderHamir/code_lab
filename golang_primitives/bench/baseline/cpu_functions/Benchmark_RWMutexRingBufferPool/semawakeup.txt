@@ -1,0 +1,18 @@
+Total: 48.01s
+ROUTINE ======================== runtime.semawakeup in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/os_darwin.go
+         0      6.36s (flat, cum) 13.25% of Total
+         .          .     78:func semawakeup(mp *m) {
+         .          .     79:	if g := getg(); g == g.m.gsignal {
+         .          .     80:		throw("semawakeup on Darwin signal stack")
+         .          .     81:	}
+         .       30ms     82:	pthread_mutex_lock(&mp.mutex)
+         .          .     83:	mp.count++
+         .          .     84:	if mp.count > 0 {
+         .      6.31s     85:		pthread_cond_signal(&mp.cond)
+         .          .     86:	}
+         .       20ms     87:	pthread_mutex_unlock(&mp.mutex)
+         .          .     88:}
+         .          .     89:
+         .          .     90:// The read and write file descriptors used by the sigNote functions.
+         .          .     91:var sigNoteRead, sigNoteWrite int32
+         .          .     92:

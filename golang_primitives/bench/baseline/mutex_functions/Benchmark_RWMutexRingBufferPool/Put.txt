@@ -1,0 +1,22 @@
+Total: 59.56s
+ROUTINE ======================== primitives_performance.(*RWMutexRingBufferPool).Put in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+         0     15.75s (flat, cum) 26.44% of Total
+         .          .    141:func (p *RWMutexRingBufferPool) Put(obj *testObject) {
+         .          .    142:	p.mu.Lock()
+         .          .    143:	defer p.mu.Unlock()
+         .          .    144:
+         .          .    145:	p.ringBuffer.Push(obj)
+         .     15.75s    146:}
+         .          .    147:
+         .          .    148:// Channel-based implementation for comparison
+         .          .    149:type ChannelBasedPool struct {
+         .          .    150:	objects   chan *testObject
+         .          .    151:	allocator func() *testObject
+ROUTINE ======================== primitives_performance.(*RWMutexRingBufferPool).Put.deferwrap1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+         0     15.75s (flat, cum) 26.44% of Total
+         .     15.75s    143:	defer p.mu.Unlock()
+         .          .    144:
+         .          .    145:	p.ringBuffer.Push(obj)
+         .          .    146:}
+         .          .    147:
+         .          .    148:// Channel-based implementation for comparison

@@ -1,0 +1,31 @@
+Total: 52.53s
+ROUTINE ======================== runtime.runqgrab in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      40ms     18.60s (flat, cum) 35.41% of Total
+         .          .   6934:func runqgrab(pp *p, batch *[256]guintptr, batchHead uint32, stealRunNextG bool) uint32 {
+      10ms       10ms   6935:	for {
+         .          .   6936:		h := atomic.LoadAcq(&pp.runqhead) // load-acquire, synchronize with other consumers
+         .          .   6937:		t := atomic.LoadAcq(&pp.runqtail) // load-acquire, synchronize with the producer
+      10ms       10ms   6938:		n := t - h
+         .          .   6939:		n = n - n/2
+         .          .   6940:		if n == 0 {
+         .          .   6941:			if stealRunNextG {
+         .          .   6942:				// Try to steal from pp.runnext.
+         .          .   6943:				if next := pp.runnext; next != 0 {
+      20ms       20ms   6944:					if pp.status == _Prunning {
+         .          .   6945:						// Sleep to ensure that pp isn't about to run the g
+         .          .   6946:						// we are about to steal.
+         .          .   6947:						// The important use case here is when the g running
+         .          .   6948:						// on pp ready()s another g and then almost
+         .          .   6949:						// immediately blocks. Instead of stealing runnext
+         .          .   6950:						// in this window, back off to give pp a chance to
+         .          .   6951:						// schedule runnext. This will avoid thrashing gs
+         .          .   6952:						// between different Ps.
+         .          .   6953:						// A sync chan send/recv takes ~50ns as of time of
+         .          .   6954:						// writing, so 3us gives ~50x overshoot.
+         .          .   6955:						if !osHasLowResTimer {
+         .     18.56s   6956:							usleep(3)
+         .          .   6957:						} else {
+         .          .   6958:							// On some platforms system timer granularity is
+         .          .   6959:							// 1-15ms, which is way too much for this
+         .          .   6960:							// optimization. So just yield.
+         .          .   6961:							osyield()

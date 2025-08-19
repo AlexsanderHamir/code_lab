@@ -1,0 +1,47 @@
+File: primitives_performance.test
+Type: alloc_space
+Time: 2025-08-19 12:50:23 PDT
+Showing nodes accounting for 9499.99kB, 100% of 9499.99kB total
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%  3125.93kB 32.90%  runtime/pprof.profileWriter
+         0     0%     0%  2609.92kB 27.47%  runtime/pprof.(*profileBuilder).appendLocsForStack
+         0     0%     0%  2609.92kB 27.47%  runtime/pprof.(*profileBuilder).build
+  902.59kB  9.50%  9.50%  2097.87kB 22.08%  compress/flate.NewWriter (inline)
+         0     0%  9.50%  2097.87kB 22.08%  compress/gzip.(*Writer).Write
+         0     0%  9.50%  2097.87kB 22.08%  runtime/pprof.(*profileBuilder).emitLocation
+         0     0%  9.50%  2097.87kB 22.08%  runtime/pprof.(*profileBuilder).flush
+         0     0%  9.50%  1762.94kB 18.56%  main.main
+         0     0%  9.50%  1762.94kB 18.56%  runtime.main
+ 1762.94kB 18.56% 28.06%  1762.94kB 18.56%  runtime/pprof.StartCPUProfile
+         0     0% 28.06%  1762.94kB 18.56%  testing.(*M).Run
+         0     0% 28.06%  1762.94kB 18.56%  testing.(*M).before
+         0     0% 28.06%  1762.94kB 18.56%  testing/internal/testdeps.TestDeps.StartCPUProfile
+    1539kB 16.20% 44.26%     1539kB 16.20%  runtime.allocm
+         0     0% 44.26%     1539kB 16.20%  runtime.newm
+         0     0% 44.26%     1539kB 16.20%  runtime.resetspinning
+         0     0% 44.26%     1539kB 16.20%  runtime.schedule
+         0     0% 44.26%     1539kB 16.20%  runtime.startm
+         0     0% 44.26%     1539kB 16.20%  runtime.wakep
+         0     0% 44.26%  1537.02kB 16.18%  runtime.mcall
+         0     0% 44.26%  1537.02kB 16.18%  runtime.park_m
+         0     0% 44.26%  1536.06kB 16.17%  testing.(*B).launch
+         0     0% 44.26%  1536.06kB 16.17%  testing.(*B).runN
+ 1195.29kB 12.58% 56.84%  1195.29kB 12.58%  compress/flate.(*compressor).init
+         0     0% 56.84%     1026kB 10.80%  runtime.mstart
+         0     0% 56.84%     1026kB 10.80%  runtime.mstart0
+         0     0% 56.84%     1026kB 10.80%  runtime.mstart1
+         0     0% 56.84%  1024.02kB 10.78%  primitives_performance.Benchmark_MutexRingBufferPool
+         0     0% 56.84%  1024.02kB 10.78%  primitives_performance.NewMutexRingBufferPool
+ 1024.02kB 10.78% 67.62%  1024.02kB 10.78%  primitives_performance.init.func1
+         0     0% 67.62%  1024.02kB 10.78%  runtime.(*timer).maybeAdd
+         0     0% 67.62%  1024.02kB 10.78%  runtime.(*timer).modify
+         0     0% 67.62%  1024.02kB 10.78%  runtime.(*timer).reset (inline)
+ 1024.02kB 10.78% 78.40%  1024.02kB 10.78%  runtime.(*timers).addHeap
+         0     0% 78.40%  1024.02kB 10.78%  runtime.resetForSleep
+  516.01kB  5.43% 83.83%   516.01kB  5.43%  runtime/pprof.(*profMap).lookup
+         0     0% 83.83%   516.01kB  5.43%  runtime/pprof.(*profileBuilder).addCPUData
+  512.05kB  5.39% 89.22%   512.05kB  5.39%  runtime.(*scavengerState).init
+         0     0% 89.22%   512.05kB  5.39%  runtime.bgscavenge
+  512.05kB  5.39% 94.61%   512.05kB  5.39%  runtime/pprof.allFrames
+         0     0% 94.61%   512.04kB  5.39%  context.WithCancel
+  512.04kB  5.39%   100%   512.04kB  5.39%  context.withCancel (inline)

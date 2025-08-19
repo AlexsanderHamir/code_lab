@@ -1,0 +1,65 @@
+Total: 6.30MB
+ROUTINE ======================== runtime.(*scavengerState).wake in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgcscavenge.go
+         0      513kB (flat, cum)  7.96% of Total
+         .          .    436:func (s *scavengerState) wake() {
+         .          .    437:	lock(&s.lock)
+         .          .    438:	if s.parked {
+         .          .    439:		// Unset sysmonWake, since the scavenger is now being awoken.
+         .          .    440:		s.sysmonWake.Store(0)
+         .          .    441:
+         .          .    442:		// s.parked is unset to prevent a double wake-up.
+         .          .    443:		s.parked = false
+         .          .    444:
+         .          .    445:		// Ready the goroutine by injecting it. We use injectglist instead
+         .          .    446:		// of ready or goready in order to allow us to run this function
+         .          .    447:		// without a P. injectglist also avoids placing the goroutine in
+         .          .    448:		// the current P's runnext slot, which is desirable to prevent
+         .          .    449:		// the scavenger from interfering with user goroutine scheduling
+         .          .    450:		// too much.
+         .          .    451:		var list gList
+         .          .    452:		list.push(s.g)
+         .      513kB    453:		injectglist(&list)
+         .          .    454:	}
+         .          .    455:	unlock(&s.lock)
+         .          .    456:}
+         .          .    457:
+         .          .    458:// sleep puts the scavenger to sleep based on the amount of time that it worked
+ROUTINE ======================== runtime.wakep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0        2MB (flat, cum) 31.82% of Total
+         .          .   3114:func wakep() {
+         .          .   3115:	// Be conservative about spinning threads, only start one if none exist
+         .          .   3116:	// already.
+         .          .   3117:	if sched.nmspinning.Load() != 0 || !sched.nmspinning.CompareAndSwap(0, 1) {
+         .          .   3118:		return
+         .          .   3119:	}
+         .          .   3120:
+         .          .   3121:	// Disable preemption until ownership of pp transfers to the next M in
+         .          .   3122:	// startm. Otherwise preemption here would leave pp stuck waiting to
+         .          .   3123:	// enter _Pgcstop.
+         .          .   3124:	//
+         .          .   3125:	// See preemption comment on acquirem in startm for more details.
+         .          .   3126:	mp := acquirem()
+         .          .   3127:
+         .          .   3128:	var pp *p
+         .          .   3129:	lock(&sched.lock)
+         .          .   3130:	pp, _ = pidlegetSpinning(0)
+         .          .   3131:	if pp == nil {
+         .          .   3132:		if sched.nmspinning.Add(-1) < 0 {
+         .          .   3133:			throw("wakep: negative nmspinning")
+         .          .   3134:		}
+         .          .   3135:		unlock(&sched.lock)
+         .          .   3136:		releasem(mp)
+         .          .   3137:		return
+         .          .   3138:	}
+         .          .   3139:	// Since we always have a P, the race in the "No M is available"
+         .          .   3140:	// comment in startm doesn't apply during the small window between the
+         .          .   3141:	// unlock here and lock in startm. A checkdead in between will always
+         .          .   3142:	// see at least one running M (ours).
+         .          .   3143:	unlock(&sched.lock)
+         .          .   3144:
+         .        2MB   3145:	startm(pp, true, false)
+         .          .   3146:
+         .          .   3147:	releasem(mp)
+         .          .   3148:}
+         .          .   3149:
+         .          .   3150:// Stops execution of the current m that is locked to a g until the g is runnable again.

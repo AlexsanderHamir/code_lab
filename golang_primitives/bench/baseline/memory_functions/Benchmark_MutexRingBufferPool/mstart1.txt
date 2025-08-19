@@ -1,0 +1,47 @@
+Total: 9.28MB
+ROUTINE ======================== runtime.mstart1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0        1MB (flat, cum) 10.80% of Total
+         .          .   1824:func mstart1() {
+         .          .   1825:	gp := getg()
+         .          .   1826:
+         .          .   1827:	if gp != gp.m.g0 {
+         .          .   1828:		throw("bad runtime·mstart")
+         .          .   1829:	}
+         .          .   1830:
+         .          .   1831:	// Set up m.g0.sched as a label returning to just
+         .          .   1832:	// after the mstart1 call in mstart0 above, for use by goexit0 and mcall.
+         .          .   1833:	// We're never coming back to mstart1 after we call schedule,
+         .          .   1834:	// so other calls can reuse the current frame.
+         .          .   1835:	// And goexit0 does a gogo that needs to return from mstart1
+         .          .   1836:	// and let mstart0 exit the thread.
+         .          .   1837:	gp.sched.g = guintptr(unsafe.Pointer(gp))
+         .          .   1838:	gp.sched.pc = sys.GetCallerPC()
+         .          .   1839:	gp.sched.sp = sys.GetCallerSP()
+         .          .   1840:
+         .          .   1841:	asminit()
+         .          .   1842:	minit()
+         .          .   1843:
+         .          .   1844:	// Install signal handlers; after minit so that minit can
+         .          .   1845:	// prepare the thread to be able to handle the signals.
+         .          .   1846:	if gp.m == &m0 {
+         .          .   1847:		mstartm0()
+         .          .   1848:	}
+         .          .   1849:
+         .          .   1850:	if debug.dataindependenttiming == 1 {
+         .          .   1851:		sys.EnableDIT()
+         .          .   1852:	}
+         .          .   1853:
+         .          .   1854:	if fn := gp.m.mstartfn; fn != nil {
+         .          .   1855:		fn()
+         .          .   1856:	}
+         .          .   1857:
+         .          .   1858:	if gp.m != &m0 {
+         .          .   1859:		acquirep(gp.m.nextp.ptr())
+         .          .   1860:		gp.m.nextp = 0
+         .          .   1861:	}
+         .        1MB   1862:	schedule()
+         .          .   1863:}
+         .          .   1864:
+         .          .   1865:// mstartm0 implements part of mstart1 that only runs on the m0.
+         .          .   1866://
+         .          .   1867:// Write barriers are allowed here because we know the GC can't be

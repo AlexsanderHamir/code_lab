@@ -1,0 +1,12 @@
+Total: 6.30MB
+ROUTINE ======================== runtime/pprof.(*profileBuilder).flush in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/proto.go
+         0   650.62kB (flat, cum) 10.09% of Total
+         .          .    143:func (b *profileBuilder) flush() {
+         .          .    144:	const dataFlush = 4096
+         .          .    145:	if b.pb.nest == 0 && len(b.pb.data) > dataFlush {
+         .   650.62kB    146:		b.zw.Write(b.pb.data)
+         .          .    147:		b.pb.data = b.pb.data[:0]
+         .          .    148:	}
+         .          .    149:}
+         .          .    150:
+         .          .    151:// pbValueType encodes a ValueType message to b.pb.

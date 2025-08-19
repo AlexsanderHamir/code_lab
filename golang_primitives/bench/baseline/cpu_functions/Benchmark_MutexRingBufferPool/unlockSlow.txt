@@ -1,0 +1,28 @@
+Total: 52.53s
+ROUTINE ======================== internal/sync.(*Mutex).unlockSlow in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/sync/mutex.go
+      50ms     14.84s (flat, cum) 28.25% of Total
+         .          .    202:func (m *Mutex) unlockSlow(new int32) {
+         .          .    203:	if (new+mutexLocked)&mutexLocked == 0 {
+         .          .    204:		fatal("sync: unlock of unlocked mutex")
+         .          .    205:	}
+         .          .    206:	if new&mutexStarving == 0 {
+         .          .    207:		old := new
+         .          .    208:		for {
+         .          .    209:			// If there are no waiters or a goroutine has already
+         .          .    210:			// been woken or grabbed the lock, no need to wake anyone.
+         .          .    211:			// In starvation mode ownership is directly handed off from unlocking
+         .          .    212:			// goroutine to the next waiter. We are not part of this chain,
+         .          .    213:			// since we did not observe mutexStarving when we unlocked the mutex above.
+         .          .    214:			// So get off the way.
+         .          .    215:			if old>>mutexWaiterShift == 0 || old&(mutexLocked|mutexWoken|mutexStarving) != 0 {
+      10ms       10ms    216:				return
+         .          .    217:			}
+         .          .    218:			// Grab the right to wake someone.
+         .          .    219:			new = (old - 1<<mutexWaiterShift) | mutexWoken
+      40ms       40ms    220:			if atomic.CompareAndSwapInt32(&m.state, old, new) {
+         .     14.79s    221:				runtime_Semrelease(&m.sema, false, 2)
+         .          .    222:				return
+         .          .    223:			}
+         .          .    224:			old = m.state
+         .          .    225:		}
+         .          .    226:	} else {

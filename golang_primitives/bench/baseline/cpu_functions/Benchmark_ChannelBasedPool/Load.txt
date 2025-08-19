@@ -1,0 +1,10 @@
+Total: 30.68s
+ROUTINE ======================== internal/runtime/atomic.(*UnsafePointer).Load in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+      10ms       10ms (flat, cum) 0.033% of Total
+         .          .    465:func (u *UnsafePointer) Load() unsafe.Pointer {
+      10ms       10ms    466:	return Loadp(unsafe.Pointer(&u.value))
+         .          .    467:}
+         .          .    468:
+         .          .    469:// StoreNoWB updates the value atomically.
+         .          .    470://
+         .          .    471:// WARNING: As the name implies this operation does *not*

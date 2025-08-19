@@ -1,0 +1,19 @@
+Total: 52.38s
+ROUTINE ======================== primitives_performance.(*RingBufferCondPool).Get in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+      50ms     13.06s (flat, cum) 24.93% of Total
+      10ms       10ms    424:func (p *RingBufferCondPool) Get() *testObject {
+      10ms      4.99s    425:	p.mu.Lock()
+      10ms       10ms    426:	defer p.mu.Unlock()
+         .          .    427:
+         .          .    428:	// Wait until there's an object available
+         .       30ms    429:	for p.ringBuffer.IsEmpty() {
+         .          .    430:		p.cond.Wait()
+         .          .    431:	}
+         .          .    432:
+         .       20ms    433:	obj, _ := p.ringBuffer.Pop()
+      20ms         8s    434:	return obj
+         .          .    435:}
+         .          .    436:
+         .          .    437:func (p *RingBufferCondPool) Put(obj *testObject) {
+         .          .    438:	p.mu.Lock()
+         .          .    439:	defer p.mu.Unlock()

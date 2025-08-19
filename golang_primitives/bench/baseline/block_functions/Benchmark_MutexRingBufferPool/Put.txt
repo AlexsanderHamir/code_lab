@@ -1,0 +1,10 @@
+Total: 63.70s
+ROUTINE ======================== primitives_performance.(*MutexRingBufferPool).Put in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+         0     16.23s (flat, cum) 25.48% of Total
+         .          .    101:func (p *MutexRingBufferPool) Put(obj *testObject) {
+         .     16.23s    102:	p.mu.Lock()
+         .          .    103:	defer p.mu.Unlock()
+         .          .    104:
+         .          .    105:	p.ringBuffer.Push(obj)
+         .          .    106:}
+         .          .    107:

@@ -1,0 +1,10 @@
+Total: 52.53s
+ROUTINE ======================== runtime.parkunlock_c in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      450ms (flat, cum)  0.86% of Total
+         .          .   4087:func parkunlock_c(gp *g, lock unsafe.Pointer) bool {
+         .      450ms   4088:	unlock((*mutex)(lock))
+         .          .   4089:	return true
+         .          .   4090:}
+         .          .   4091:
+         .          .   4092:// park continuation on g0.
+         .          .   4093:func park_m(gp *g) {

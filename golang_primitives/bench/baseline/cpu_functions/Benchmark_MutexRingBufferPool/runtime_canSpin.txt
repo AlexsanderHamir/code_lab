@@ -1,0 +1,18 @@
+Total: 52.53s
+ROUTINE ======================== internal/sync.runtime_canSpin in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      50ms       90ms (flat, cum)  0.17% of Total
+         .          .   7188:func internal_sync_runtime_canSpin(i int) bool {
+         .          .   7189:	// sync.Mutex is cooperative, so we are conservative with spinning.
+         .          .   7190:	// Spin only few times and only if running on a multicore machine and
+         .          .   7191:	// GOMAXPROCS>1 and there is at least one other running P and local runq is empty.
+         .          .   7192:	// As opposed to runtime mutex we don't do passive spinning here,
+         .          .   7193:	// because there can be work on global runq or on other Ps.
+      10ms       20ms   7194:	if i >= active_spin || ncpu <= 1 || gomaxprocs <= sched.npidle.Load()+sched.nmspinning.Load()+1 {
+         .          .   7195:		return false
+         .          .   7196:	}
+      40ms       70ms   7197:	if p := getg().m.p.ptr(); !runqempty(p) {
+         .          .   7198:		return false
+         .          .   7199:	}
+         .          .   7200:	return true
+         .          .   7201:}
+         .          .   7202:

@@ -1,0 +1,40 @@
+Total: 7.05MB
+ROUTINE ======================== runtime/pprof.StartCPUProfile in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/pprof.go
+    1.16MB     1.16MB (flat, cum) 16.41% of Total
+         .          .    833:func StartCPUProfile(w io.Writer) error {
+         .          .    834:	// The runtime routines allow a variable profiling rate,
+         .          .    835:	// but in practice operating systems cannot trigger signals
+         .          .    836:	// at more than about 500 Hz, and our processing of the
+         .          .    837:	// signal is not cheap (mostly getting the stack trace).
+         .          .    838:	// 100 Hz is a reasonable choice: it is frequent enough to
+         .          .    839:	// produce useful data, rare enough not to bog down the
+         .          .    840:	// system, and a nice round number to make it easy to
+         .          .    841:	// convert sample counts to seconds. Instead of requiring
+         .          .    842:	// each client to specify the frequency, we hard code it.
+         .          .    843:	const hz = 100
+         .          .    844:
+         .          .    845:	cpu.Lock()
+         .          .    846:	defer cpu.Unlock()
+         .          .    847:	if cpu.done == nil {
+         .          .    848:		cpu.done = make(chan bool)
+         .          .    849:	}
+         .          .    850:	// Double-check.
+         .          .    851:	if cpu.profiling {
+         .          .    852:		return fmt.Errorf("cpu profiling already in use")
+         .          .    853:	}
+         .          .    854:	cpu.profiling = true
+    1.16MB     1.16MB    855:	runtime.SetCPUProfileRate(hz)
+         .          .    856:	go profileWriter(w)
+         .          .    857:	return nil
+         .          .    858:}
+         .          .    859:
+         .          .    860:// readProfile, provided by the runtime, returns the next chunk of
+ROUTINE ======================== testing/internal/testdeps.TestDeps.StartCPUProfile in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/internal/testdeps/deps.go
+         0     1.16MB (flat, cum) 16.41% of Total
+         .          .     50:func (TestDeps) StartCPUProfile(w io.Writer) error {
+         .     1.16MB     51:	return pprof.StartCPUProfile(w)
+         .          .     52:}
+         .          .     53:
+         .          .     54:func (TestDeps) StopCPUProfile() {
+         .          .     55:	pprof.StopCPUProfile()
+         .          .     56:}

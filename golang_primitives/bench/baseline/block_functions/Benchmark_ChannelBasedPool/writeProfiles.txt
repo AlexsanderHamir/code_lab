@@ -1,0 +1,21 @@
+Total: 26.57s
+ROUTINE ======================== testing.(*M).writeProfiles in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/testing.go
+         0      181ms (flat, cum)  0.68% of Total
+         .          .   2378:func (m *M) writeProfiles() {
+         .          .   2379:	if *testlog != "" {
+         .          .   2380:		if err := m.deps.StopTestLog(); err != nil {
+         .          .   2381:			fmt.Fprintf(os.Stderr, "testing: can't write %s: %s\n", *testlog, err)
+         .          .   2382:			os.Exit(2)
+         .          .   2383:		}
+         .          .   2384:		if err := testlogFile.Close(); err != nil {
+         .          .   2385:			fmt.Fprintf(os.Stderr, "testing: can't write %s: %s\n", *testlog, err)
+         .          .   2386:			os.Exit(2)
+         .          .   2387:		}
+         .          .   2388:	}
+         .          .   2389:	if *cpuProfile != "" {
+         .      181ms   2390:		m.deps.StopCPUProfile() // flushes profile to disk
+         .          .   2391:	}
+         .          .   2392:	if *traceFile != "" {
+         .          .   2393:		trace.Stop() // flushes trace to disk
+         .          .   2394:	}
+         .          .   2395:	if *memProfile != "" {

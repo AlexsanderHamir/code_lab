@@ -1,0 +1,17 @@
+Total: 59.56s
+ROUTINE ======================== primitives_performance.(*RWMutexRingBufferPool).Get.deferwrap1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+         0     15.79s (flat, cum) 26.52% of Total
+         .     15.79s    133:	defer p.mu.Unlock()
+         .          .    134:
+         .          .    135:	if obj, ok := p.ringBuffer.Pop(); ok {
+         .          .    136:		return obj
+         .          .    137:	}
+         .          .    138:	return p.allocator()
+ROUTINE ======================== primitives_performance.(*RWMutexRingBufferPool).Put.deferwrap1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+         0     15.75s (flat, cum) 26.44% of Total
+         .     15.75s    143:	defer p.mu.Unlock()
+         .          .    144:
+         .          .    145:	p.ringBuffer.Push(obj)
+         .          .    146:}
+         .          .    147:
+         .          .    148:// Channel-based implementation for comparison

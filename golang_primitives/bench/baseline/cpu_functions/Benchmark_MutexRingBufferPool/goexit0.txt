@@ -1,0 +1,11 @@
+Total: 52.53s
+ROUTINE ======================== runtime.goexit0 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .   4311:func goexit0(gp *g) {
+         .          .   4312:	gdestroy(gp)
+         .       10ms   4313:	schedule()
+         .          .   4314:}
+         .          .   4315:
+         .          .   4316:func gdestroy(gp *g) {
+         .          .   4317:	mp := getg().m
+         .          .   4318:	pp := mp.p.ptr()

@@ -1,0 +1,78 @@
+Total: 7.05MB
+ROUTINE ======================== runtime/pprof.(*profileBuilder).emitLocation in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/proto.go
+         0   902.59kB (flat, cum) 12.51% of Total
+         .          .    586:func (b *profileBuilder) emitLocation() uint64 {
+         .          .    587:	if len(b.deck.pcs) == 0 {
+         .          .    588:		return 0
+         .          .    589:	}
+         .          .    590:	defer b.deck.reset()
+         .          .    591:
+         .          .    592:	addr := b.deck.pcs[0]
+         .          .    593:	firstFrame := b.deck.frames[0]
+         .          .    594:
+         .          .    595:	// We can't write out functions while in the middle of the
+         .          .    596:	// Location message, so record new functions we encounter and
+         .          .    597:	// write them out after the Location.
+         .          .    598:	type newFunc struct {
+         .          .    599:		id         uint64
+         .          .    600:		name, file string
+         .          .    601:		startLine  int64
+         .          .    602:	}
+         .          .    603:	newFuncs := make([]newFunc, 0, 8)
+         .          .    604:
+         .          .    605:	id := uint64(len(b.locs)) + 1
+         .          .    606:	b.locs[addr] = locInfo{
+         .          .    607:		id:                     id,
+         .          .    608:		pcs:                    append([]uintptr{}, b.deck.pcs...),
+         .          .    609:		firstPCSymbolizeResult: b.deck.firstPCSymbolizeResult,
+         .          .    610:		firstPCFrames:          append([]runtime.Frame{}, b.deck.frames[:b.deck.firstPCFrames]...),
+         .          .    611:	}
+         .          .    612:
+         .          .    613:	start := b.pb.startMessage()
+         .          .    614:	b.pb.uint64Opt(tagLocation_ID, id)
+         .          .    615:	b.pb.uint64Opt(tagLocation_Address, uint64(firstFrame.PC))
+         .          .    616:	for _, frame := range b.deck.frames {
+         .          .    617:		// Write out each line in frame expansion.
+         .          .    618:		funcName := runtime_FrameSymbolName(&frame)
+         .          .    619:		funcID := uint64(b.funcs[funcName])
+         .          .    620:		if funcID == 0 {
+         .          .    621:			funcID = uint64(len(b.funcs)) + 1
+         .          .    622:			b.funcs[funcName] = int(funcID)
+         .          .    623:			newFuncs = append(newFuncs, newFunc{
+         .          .    624:				id:        funcID,
+         .          .    625:				name:      funcName,
+         .          .    626:				file:      frame.File,
+         .          .    627:				startLine: int64(runtime_FrameStartLine(&frame)),
+         .          .    628:			})
+         .          .    629:		}
+         .          .    630:		b.pbLine(tagLocation_Line, funcID, int64(frame.Line))
+         .          .    631:	}
+         .          .    632:	for i := range b.mem {
+         .          .    633:		if b.mem[i].start <= addr && addr < b.mem[i].end || b.mem[i].fake {
+         .          .    634:			b.pb.uint64Opt(tagLocation_MappingID, uint64(i+1))
+         .          .    635:
+         .          .    636:			m := b.mem[i]
+         .          .    637:			m.funcs |= b.deck.symbolizeResult
+         .          .    638:			b.mem[i] = m
+         .          .    639:			break
+         .          .    640:		}
+         .          .    641:	}
+         .          .    642:	b.pb.endMessage(tagProfile_Location, start)
+         .          .    643:
+         .          .    644:	// Write out functions we found during frame expansion.
+         .          .    645:	for _, fn := range newFuncs {
+         .          .    646:		start := b.pb.startMessage()
+         .          .    647:		b.pb.uint64Opt(tagFunction_ID, fn.id)
+         .          .    648:		b.pb.int64Opt(tagFunction_Name, b.stringIndex(fn.name))
+         .          .    649:		b.pb.int64Opt(tagFunction_SystemName, b.stringIndex(fn.name))
+         .          .    650:		b.pb.int64Opt(tagFunction_Filename, b.stringIndex(fn.file))
+         .          .    651:		b.pb.int64Opt(tagFunction_StartLine, fn.startLine)
+         .          .    652:		b.pb.endMessage(tagProfile_Function, start)
+         .          .    653:	}
+         .          .    654:
+         .   902.59kB    655:	b.flush()
+         .          .    656:	return id
+         .          .    657:}
+         .          .    658:
+         .          .    659:var space = []byte(" ")
+         .          .    660:var newline = []byte("\n")

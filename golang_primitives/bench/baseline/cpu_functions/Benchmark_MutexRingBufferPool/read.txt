@@ -1,0 +1,115 @@
+Total: 52.53s
+ROUTINE ======================== runtime.goready in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       30ms (flat, cum) 0.057% of Total
+         .          .    454:func goready(gp *g, traceskip int) {
+         .       30ms    455:	systemstack(func() {
+         .          .    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+ROUTINE ======================== runtime.pMask.read in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .   6609:func (p pMask) read(id uint32) bool {
+         .          .   6610:	word := id / 32
+         .          .   6611:	mask := uint32(1) << (id % 32)
+      10ms       10ms   6612:	return (atomic.Load(&p[word]) & mask) != 0
+         .          .   6613:}
+         .          .   6614:
+         .          .   6615:// set sets P id's bit.
+         .          .   6616:func (p pMask) set(id int32) {
+         .          .   6617:	word := id / 32
+ROUTINE ======================== runtime.pthread_cond_signal in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+     3.73s      3.73s (flat, cum)  7.10% of Total
+         .          .    567:func pthread_cond_signal(c *pthreadcond) int32 {
+     3.73s      3.73s    568:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_cond_signal_trampoline)), unsafe.Pointer(&c))
+         .          .    569:	KeepAlive(c)
+         .          .    570:	return ret
+         .          .    571:}
+         .          .    572:func pthread_cond_signal_trampoline()
+         .          .    573:
+ROUTINE ======================== runtime.pthread_cond_wait in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+    11.87s     11.87s (flat, cum) 22.60% of Total
+         .          .    546:func pthread_cond_wait(c *pthreadcond, m *pthreadmutex) int32 {
+    11.87s     11.87s    547:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_cond_wait_trampoline)), unsafe.Pointer(&c))
+         .          .    548:	KeepAlive(c)
+         .          .    549:	KeepAlive(m)
+         .          .    550:	return ret
+         .          .    551:}
+         .          .    552:func pthread_cond_wait_trampoline()
+ROUTINE ======================== runtime.pthread_mutex_lock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    518:func pthread_mutex_lock(m *pthreadmutex) int32 {
+      10ms       10ms    519:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_mutex_lock_trampoline)), unsafe.Pointer(&m))
+         .          .    520:	KeepAlive(m)
+         .          .    521:	return ret
+         .          .    522:}
+         .          .    523:func pthread_mutex_lock_trampoline()
+         .          .    524:
+ROUTINE ======================== runtime.pthread_mutex_unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+     100ms      100ms (flat, cum)  0.19% of Total
+         .          .    527:func pthread_mutex_unlock(m *pthreadmutex) int32 {
+     100ms      100ms    528:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_mutex_unlock_trampoline)), unsafe.Pointer(&m))
+         .          .    529:	KeepAlive(m)
+         .          .    530:	return ret
+         .          .    531:}
+         .          .    532:func pthread_mutex_unlock_trampoline()
+         .          .    533:
+ROUTINE ======================== runtime.readvarint in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      20ms       20ms (flat, cum) 0.038% of Total
+         .          .   1273:func readvarint(p []byte) (read uint32, val uint32) {
+         .          .   1274:	var v, shift, n uint32
+      20ms       20ms   1275:	for {
+         .          .   1276:		b := p[n]
+         .          .   1277:		n++
+         .          .   1278:		v |= uint32(b&0x7F) << (shift & 31)
+         .          .   1279:		if b&0x80 == 0 {
+         .          .   1280:			break
+ROUTINE ======================== runtime.ready in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      20ms      650ms (flat, cum)  1.24% of Total
+         .          .   1040:func ready(gp *g, traceskip int, next bool) {
+         .          .   1041:	status := readgstatus(gp)
+         .          .   1042:
+         .          .   1043:	// Mark runnable.
+         .          .   1044:	mp := acquirem() // disable preemption because it can be holding p in a local var
+      20ms       20ms   1045:	if status&^_Gscan != _Gwaiting {
+         .          .   1046:		dumpgstatus(gp)
+         .          .   1047:		throw("bad g->status in ready")
+         .          .   1048:	}
+         .          .   1049:
+         .          .   1050:	// status is Gwaiting or Gscanwaiting, make Grunnable and put on runq
+         .          .   1051:	trace := traceAcquire()
+         .       20ms   1052:	casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   1053:	if trace.ok() {
+         .          .   1054:		trace.GoUnpark(gp, traceskip)
+         .          .   1055:		traceRelease(trace)
+         .          .   1056:	}
+         .          .   1057:	runqput(mp.p.ptr(), gp, next)
+         .      610ms   1058:	wakep()
+         .          .   1059:	releasem(mp)
+         .          .   1060:}
+         .          .   1061:
+         .          .   1062:// freezeStopWait is a large value that freezetheworld sets
+         .          .   1063:// sched.stopwait to in order to request that all Gs permanently stop.
+ROUTINE ======================== runtime.readyWithTime in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      30ms      100ms (flat, cum)  0.19% of Total
+      20ms       20ms    123:func readyWithTime(s *sudog, traceskip int) {
+         .          .    124:	if s.releasetime != 0 {
+         .       40ms    125:		s.releasetime = cputicks()
+         .          .    126:	}
+         .       30ms    127:	goready(s.g, traceskip)
+      10ms       10ms    128:}
+         .          .    129:
+         .          .    130:type semaProfileFlags int
+         .          .    131:
+         .          .    132:const (
+         .          .    133:	semaBlockProfile semaProfileFlags = 1 << iota
+ROUTINE ======================== runtime.readyWithTime.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      650ms (flat, cum)  1.24% of Total
+         .          .    455:	systemstack(func() {
+         .      650ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {

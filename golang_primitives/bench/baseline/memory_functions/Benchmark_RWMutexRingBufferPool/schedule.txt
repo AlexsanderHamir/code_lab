@@ -1,0 +1,56 @@
+Total: 7.05MB
+ROUTINE ======================== runtime.schedule in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0     1.50MB (flat, cum) 21.33% of Total
+         .          .   3991:func schedule() {
+         .          .   3992:	mp := getg().m
+         .          .   3993:
+         .          .   3994:	if mp.locks != 0 {
+         .          .   3995:		throw("schedule: holding locks")
+         .          .   3996:	}
+         .          .   3997:
+         .          .   3998:	if mp.lockedg != 0 {
+         .          .   3999:		stoplockedm()
+         .          .   4000:		execute(mp.lockedg.ptr(), false) // Never returns.
+         .          .   4001:	}
+         .          .   4002:
+         .          .   4003:	// We should not schedule away from a g that is executing a cgo call,
+         .          .   4004:	// since the cgo call is using the m's g0 stack.
+         .          .   4005:	if mp.incgo {
+         .          .   4006:		throw("schedule: in cgo")
+         .          .   4007:	}
+         .          .   4008:
+         .          .   4009:top:
+         .          .   4010:	pp := mp.p.ptr()
+         .          .   4011:	pp.preempt = false
+         .          .   4012:
+         .          .   4013:	// Safety check: if we are spinning, the run queue should be empty.
+         .          .   4014:	// Check this before calling checkTimers, as that might call
+         .          .   4015:	// goready to put a ready goroutine on the local run queue.
+         .          .   4016:	if mp.spinning && (pp.runnext != 0 || pp.runqhead != pp.runqtail) {
+         .          .   4017:		throw("schedule: spinning with local work")
+         .          .   4018:	}
+         .          .   4019:
+         .          .   4020:	gp, inheritTime, tryWakeP := findRunnable() // blocks until work is available
+         .          .   4021:
+         .          .   4022:	if debug.dontfreezetheworld > 0 && freezing.Load() {
+         .          .   4023:		// See comment in freezetheworld. We don't want to perturb
+         .          .   4024:		// scheduler state, so we didn't gcstopm in findRunnable, but
+         .          .   4025:		// also don't want to allow new goroutines to run.
+         .          .   4026:		//
+         .          .   4027:		// Deadlock here rather than in the findRunnable loop so if
+         .          .   4028:		// findRunnable is stuck in a loop we don't perturb that
+         .          .   4029:		// either.
+         .          .   4030:		lock(&deadlock)
+         .          .   4031:		lock(&deadlock)
+         .          .   4032:	}
+         .          .   4033:
+         .          .   4034:	// This thread is going to run a goroutine and is not spinning anymore,
+         .          .   4035:	// so if it was marked as spinning we need to reset it now and potentially
+         .          .   4036:	// start a new spinning M.
+         .          .   4037:	if mp.spinning {
+         .     1.50MB   4038:		resetspinning()
+         .          .   4039:	}
+         .          .   4040:
+         .          .   4041:	if sched.disable.user && !schedEnabled(gp) {
+         .          .   4042:		// Scheduling of this goroutine is disabled. Put it on
+         .          .   4043:		// the list of pending runnable goroutines for when we

@@ -1,0 +1,10 @@
+Total: 52.38s
+ROUTINE ======================== runtime.funcdata in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      30ms       30ms (flat, cum) 0.057% of Total
+         .          .   1229:func funcdata(f funcInfo, i uint8) unsafe.Pointer {
+      30ms       30ms   1230:	if i < 0 || i >= f.nfuncdata {
+         .          .   1231:		return nil
+         .          .   1232:	}
+         .          .   1233:	base := f.datap.gofunc // load gofunc address early so that we calculate during cache misses
+         .          .   1234:	p := uintptr(unsafe.Pointer(&f.nfuncdata)) + unsafe.Sizeof(f.nfuncdata) + uintptr(f.npcdata)*4 + uintptr(i)*4
+         .          .   1235:	off := *(*uint32)(unsafe.Pointer(p))

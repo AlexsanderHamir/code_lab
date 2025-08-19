@@ -1,0 +1,21 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*timer).updateHeap in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    262:func (t *timer) updateHeap() (updated bool) {
+         .          .    263:	assertWorldStoppedOrLockHeld(&t.mu)
+         .          .    264:	t.trace("updateHeap")
+         .          .    265:	ts := t.ts
+         .          .    266:	if ts == nil || t != ts.heap[0].timer {
+         .          .    267:		badTimer()
+         .          .    268:	}
+         .          .    269:	assertLockHeld(&ts.mu)
+         .          .    270:	if t.state&timerZombie != 0 {
+         .          .    271:		// Take timer out of heap.
+         .          .    272:		t.state &^= timerHeaped | timerZombie | timerModified
+         .          .    273:		ts.zombies.Add(-1)
+         .       10ms    274:		ts.deleteMin()
+         .          .    275:		return true
+         .          .    276:	}
+         .          .    277:
+         .          .    278:	if t.state&timerModified != 0 {
+         .          .    279:		// Update ts.heap[0].when and move within heap.

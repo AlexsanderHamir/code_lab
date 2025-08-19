@@ -1,0 +1,7 @@
+Total: 108.20s
+ROUTINE ======================== primitives_performance.init.func2 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+      50ms       50ms (flat, cum) 0.046% of Total
+      40ms       40ms    455:var testCleaner = func(obj *testObject) {
+         .          .    456:	obj.ID = 0
+      10ms       10ms    457:	obj.Data = ""
+         .          .    458:}

@@ -1,0 +1,66 @@
+Total: 52.53s
+ROUTINE ======================== runtime.stealWork in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+     120ms     18.82s (flat, cum) 35.83% of Total
+         .          .   3679:func stealWork(now int64) (gp *g, inheritTime bool, rnow, pollUntil int64, newWork bool) {
+         .          .   3680:	pp := getg().m.p.ptr()
+         .          .   3681:
+         .          .   3682:	ranTimer := false
+         .          .   3683:
+         .          .   3684:	const stealTries = 4
+      20ms       20ms   3685:	for i := 0; i < stealTries; i++ {
+      30ms       30ms   3686:		stealTimersOrRunNextG := i == stealTries-1
+         .          .   3687:
+      20ms       50ms   3688:		for enum := stealOrder.start(cheaprand()); !enum.done(); enum.next() {
+         .       10ms   3689:			if sched.gcwaiting.Load() {
+         .          .   3690:				// GC work may be available.
+         .          .   3691:				return nil, false, now, pollUntil, true
+         .          .   3692:			}
+         .          .   3693:			p2 := allp[enum.position()]
+      30ms       30ms   3694:			if pp == p2 {
+         .          .   3695:				continue
+         .          .   3696:			}
+         .          .   3697:
+         .          .   3698:			// Steal timers from p2. This call to checkTimers is the only place
+         .          .   3699:			// where we might hold a lock on a different P's timers. We do this
+         .          .   3700:			// once on the last pass before checking runnext because stealing
+         .          .   3701:			// from the other P's runnext should be the last resort, so if there
+         .          .   3702:			// are timers to steal do that first.
+         .          .   3703:			//
+         .          .   3704:			// We only check timers on one of the stealing iterations because
+         .          .   3705:			// the time stored in now doesn't change in this loop and checking
+         .          .   3706:			// the timers for each P more than once with the same value of now
+         .          .   3707:			// is probably a waste of time.
+         .          .   3708:			//
+         .          .   3709:			// timerpMask tells us whether the P may have timers at all. If it
+         .          .   3710:			// can't, no need to check at all.
+         .          .   3711:			if stealTimersOrRunNextG && timerpMask.read(enum.position()) {
+         .       20ms   3712:				tnow, w, ran := p2.timers.check(now)
+         .          .   3713:				now = tnow
+         .          .   3714:				if w != 0 && (pollUntil == 0 || w < pollUntil) {
+         .          .   3715:					pollUntil = w
+         .          .   3716:				}
+         .          .   3717:				if ran {
+         .          .   3718:					// Running the timers may have
+         .          .   3719:					// made an arbitrary number of G's
+         .          .   3720:					// ready and added them to this P's
+         .          .   3721:					// local run queue. That invalidates
+         .          .   3722:					// the assumption of runqsteal
+         .          .   3723:					// that it always has room to add
+         .          .   3724:					// stolen G's. So check now if there
+         .          .   3725:					// is a local G to run.
+         .          .   3726:					if gp, inheritTime := runqget(pp); gp != nil {
+         .          .   3727:						return gp, inheritTime, now, pollUntil, ranTimer
+         .          .   3728:					}
+         .          .   3729:					ranTimer = true
+         .          .   3730:				}
+         .          .   3731:			}
+         .          .   3732:
+         .          .   3733:			// Don't bother to attempt to steal if p2 is idle.
+      10ms       20ms   3734:			if !idlepMask.read(enum.position()) {
+         .     18.63s   3735:				if gp := runqsteal(pp, p2, stealTimersOrRunNextG); gp != nil {
+      10ms       10ms   3736:					return gp, false, now, pollUntil, ranTimer
+         .          .   3737:				}
+         .          .   3738:			}
+         .          .   3739:		}
+         .          .   3740:	}
+         .          .   3741:

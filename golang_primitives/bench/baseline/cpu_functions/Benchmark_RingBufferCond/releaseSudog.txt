@@ -1,0 +1,54 @@
+Total: 52.38s
+ROUTINE ======================== runtime.releaseSudog in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    499:func releaseSudog(s *sudog) {
+         .          .    500:	if s.elem != nil {
+         .          .    501:		throw("runtime: sudog with non-nil elem")
+         .          .    502:	}
+         .          .    503:	if s.isSelect {
+         .          .    504:		throw("runtime: sudog with non-false isSelect")
+         .          .    505:	}
+         .          .    506:	if s.next != nil {
+         .          .    507:		throw("runtime: sudog with non-nil next")
+         .          .    508:	}
+         .          .    509:	if s.prev != nil {
+         .          .    510:		throw("runtime: sudog with non-nil prev")
+         .          .    511:	}
+         .          .    512:	if s.waitlink != nil {
+         .          .    513:		throw("runtime: sudog with non-nil waitlink")
+         .          .    514:	}
+         .          .    515:	if s.c != nil {
+         .          .    516:		throw("runtime: sudog with non-nil c")
+         .          .    517:	}
+         .          .    518:	gp := getg()
+         .          .    519:	if gp.param != nil {
+         .          .    520:		throw("runtime: releaseSudog with non-nil gp.param")
+         .          .    521:	}
+         .          .    522:	mp := acquirem() // avoid rescheduling to another P
+         .          .    523:	pp := mp.p.ptr()
+         .          .    524:	if len(pp.sudogcache) == cap(pp.sudogcache) {
+         .          .    525:		// Transfer half of local cache to the central cache.
+         .          .    526:		var first, last *sudog
+         .          .    527:		for len(pp.sudogcache) > cap(pp.sudogcache)/2 {
+         .          .    528:			n := len(pp.sudogcache)
+         .          .    529:			p := pp.sudogcache[n-1]
+         .          .    530:			pp.sudogcache[n-1] = nil
+         .          .    531:			pp.sudogcache = pp.sudogcache[:n-1]
+         .          .    532:			if first == nil {
+         .          .    533:				first = p
+         .          .    534:			} else {
+         .          .    535:				last.next = p
+         .          .    536:			}
+         .          .    537:			last = p
+         .          .    538:		}
+         .          .    539:		lock(&sched.sudoglock)
+         .          .    540:		last.next = sched.sudogcache
+         .          .    541:		sched.sudogcache = first
+         .          .    542:		unlock(&sched.sudoglock)
+         .          .    543:	}
+      10ms       10ms    544:	pp.sudogcache = append(pp.sudogcache, s)
+         .          .    545:	releasem(mp)
+         .          .    546:}
+         .          .    547:
+         .          .    548:// called from assembly.
+         .          .    549:func badmcall(fn func(*g)) {

@@ -1,0 +1,25 @@
+Total: 49.16s
+ROUTINE ======================== primitives_performance.Benchmark_RingBufferCond.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     34.68s (flat, cum) 70.54% of Total
+         .          .     80:	b.RunParallel(func(pb *testing.PB) {
+         .          .     81:		for pb.Next() {
+         .     18.72s     82:			obj := pool.Get()
+         .     15.96s     83:			pool.Put(obj)
+         .          .     84:		}
+         .          .     85:	})
+         .          .     86:}
+ROUTINE ======================== testing.(*B).RunParallel.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     34.68s (flat, cum) 70.54% of Total
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+         .          .    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .     34.68s    962:			body(pb)
+         .          .    963:		}()
+         .          .    964:	}
+         .          .    965:	wg.Wait()
+         .          .    966:	if n.Load() <= uint64(b.N) && !b.Failed() {
+         .          .    967:		b.Fatal("RunParallel: body exited without pb.Next() == false")

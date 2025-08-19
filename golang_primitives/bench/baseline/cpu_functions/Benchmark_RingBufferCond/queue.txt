@@ -1,0 +1,82 @@
+Total: 52.38s
+ROUTINE ======================== runtime.(*semaRoot).dequeue in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      10ms       20ms (flat, cum) 0.038% of Total
+         .          .    393:func (root *semaRoot) dequeue(addr *uint32) (found *sudog, now, tailtime int64) {
+         .          .    394:	ps := &root.treap
+         .          .    395:	s := *ps
+      10ms       10ms    396:	for ; s != nil; s = *ps {
+         .          .    397:		if s.elem == unsafe.Pointer(addr) {
+         .          .    398:			goto Found
+         .          .    399:		}
+         .          .    400:		if uintptr(unsafe.Pointer(addr)) < uintptr(s.elem) {
+         .          .    401:			ps = &s.prev
+         .          .    402:		} else {
+         .          .    403:			ps = &s.next
+         .          .    404:		}
+         .          .    405:	}
+         .          .    406:	return nil, 0, 0
+         .          .    407:
+         .          .    408:Found:
+         .          .    409:	now = int64(0)
+         .          .    410:	if s.acquiretime != 0 {
+         .       10ms    411:		now = cputicks()
+         .          .    412:	}
+         .          .    413:	if t := s.waitlink; t != nil {
+         .          .    414:		// Substitute t, also waiting on addr, for s in root tree of unique addrs.
+         .          .    415:		*ps = t
+         .          .    416:		t.ticket = s.ticket
+ROUTINE ======================== runtime.(*semaRoot).queue in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    295:func (root *semaRoot) queue(addr *uint32, s *sudog, lifo bool) {
+         .          .    296:	s.g = getg()
+         .          .    297:	s.elem = unsafe.Pointer(addr)
+         .          .    298:	s.next = nil
+         .          .    299:	s.prev = nil
+         .          .    300:	s.waiters = 0
+         .          .    301:
+         .          .    302:	var last *sudog
+         .          .    303:	pt := &root.treap
+         .          .    304:	for t := *pt; t != nil; t = *pt {
+         .          .    305:		if t.elem == unsafe.Pointer(addr) {
+         .          .    306:			// Already have addr in list.
+         .          .    307:			if lifo {
+         .          .    308:				// Substitute s in t's place in treap.
+         .          .    309:				*pt = s
+         .          .    310:				s.ticket = t.ticket
+         .          .    311:				s.acquiretime = t.acquiretime // preserve head acquiretime as oldest time
+         .          .    312:				s.parent = t.parent
+         .          .    313:				s.prev = t.prev
+         .          .    314:				s.next = t.next
+         .          .    315:				if s.prev != nil {
+         .          .    316:					s.prev.parent = s
+         .          .    317:				}
+         .          .    318:				if s.next != nil {
+         .          .    319:					s.next.parent = s
+         .          .    320:				}
+         .          .    321:				// Add t first in s's wait list.
+         .          .    322:				s.waitlink = t
+         .          .    323:				s.waittail = t.waittail
+         .          .    324:				if s.waittail == nil {
+         .          .    325:					s.waittail = t
+         .          .    326:				}
+         .          .    327:				s.waiters = t.waiters
+         .          .    328:				if s.waiters+1 != 0 {
+         .          .    329:					s.waiters++
+         .          .    330:				}
+         .          .    331:				t.parent = nil
+         .          .    332:				t.prev = nil
+         .          .    333:				t.next = nil
+         .          .    334:				t.waittail = nil
+         .          .    335:			} else {
+         .          .    336:				// Add s to end of t's wait list.
+         .          .    337:				if t.waittail == nil {
+         .          .    338:					t.waitlink = s
+         .          .    339:				} else {
+         .          .    340:					t.waittail.waitlink = s
+         .          .    341:				}
+      10ms       10ms    342:				t.waittail = s
+         .          .    343:				s.waitlink = nil
+         .          .    344:				if t.waiters+1 != 0 {
+         .          .    345:					t.waiters++
+         .          .    346:				}
+         .          .    347:			}

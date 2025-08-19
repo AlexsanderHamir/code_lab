@@ -1,0 +1,10 @@
+Total: 48.01s
+ROUTINE ======================== runtime.pthread_mutex_lock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+      30ms       30ms (flat, cum) 0.062% of Total
+         .          .    518:func pthread_mutex_lock(m *pthreadmutex) int32 {
+      30ms       30ms    519:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_mutex_lock_trampoline)), unsafe.Pointer(&m))
+         .          .    520:	KeepAlive(m)
+         .          .    521:	return ret
+         .          .    522:}
+         .          .    523:func pthread_mutex_lock_trampoline()
+         .          .    524:

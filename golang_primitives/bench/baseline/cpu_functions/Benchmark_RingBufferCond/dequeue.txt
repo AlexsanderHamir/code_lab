@@ -1,0 +1,27 @@
+Total: 52.38s
+ROUTINE ======================== runtime.(*semaRoot).dequeue in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      10ms       20ms (flat, cum) 0.038% of Total
+         .          .    393:func (root *semaRoot) dequeue(addr *uint32) (found *sudog, now, tailtime int64) {
+         .          .    394:	ps := &root.treap
+         .          .    395:	s := *ps
+      10ms       10ms    396:	for ; s != nil; s = *ps {
+         .          .    397:		if s.elem == unsafe.Pointer(addr) {
+         .          .    398:			goto Found
+         .          .    399:		}
+         .          .    400:		if uintptr(unsafe.Pointer(addr)) < uintptr(s.elem) {
+         .          .    401:			ps = &s.prev
+         .          .    402:		} else {
+         .          .    403:			ps = &s.next
+         .          .    404:		}
+         .          .    405:	}
+         .          .    406:	return nil, 0, 0
+         .          .    407:
+         .          .    408:Found:
+         .          .    409:	now = int64(0)
+         .          .    410:	if s.acquiretime != 0 {
+         .       10ms    411:		now = cputicks()
+         .          .    412:	}
+         .          .    413:	if t := s.waitlink; t != nil {
+         .          .    414:		// Substitute t, also waiting on addr, for s in root tree of unique addrs.
+         .          .    415:		*ps = t
+         .          .    416:		t.ticket = s.ticket

@@ -1,0 +1,80 @@
+File: primitives_performance.test
+Type: cpu
+Time: 2025-08-19 12:51:03 PDT
+Duration: 18.65s, Total samples = 108.20s (580.18%)
+Showing nodes accounting for 108.20s, 100% of 108.20s total
+      flat  flat%   sum%        cum   cum%
+     0.02s 0.018% 0.018%    107.20s 99.08%  primitives_performance.Benchmark_AtomicBasedPool.func1
+         0     0% 0.018%    107.20s 99.08%  testing.(*B).RunParallel.func1
+    54.80s 50.65% 50.67%     54.90s 50.74%  primitives_performance.(*AtomicBasedPool).Get
+    51.99s 48.05% 98.72%     52.23s 48.27%  primitives_performance.(*AtomicBasedPool).Put
+     0.01s 0.0092% 98.72%      0.81s  0.75%  runtime.newstack
+         0     0% 98.72%      0.80s  0.74%  runtime.gopreempt_m (inline)
+         0     0% 98.72%      0.80s  0.74%  runtime.goschedImpl
+         0     0% 98.72%      0.73s  0.67%  runtime.morestack
+     0.04s 0.037% 98.76%      0.70s  0.65%  runtime.schedule
+     0.07s 0.065% 98.83%      0.55s  0.51%  runtime.findRunnable
+         0     0% 98.83%      0.21s  0.19%  runtime.mcall
+     0.20s  0.18% 99.01%      0.20s  0.18%  runtime.asyncPreempt
+         0     0% 99.01%      0.20s  0.18%  runtime.goexit0
+         0     0% 99.01%      0.20s  0.18%  runtime.lock (inline)
+     0.12s  0.11% 99.12%      0.20s  0.18%  runtime.lock2
+         0     0% 99.12%      0.20s  0.18%  runtime.lockWithRank (inline)
+         0     0% 99.12%      0.19s  0.18%  runtime.mPark (inline)
+         0     0% 99.12%      0.19s  0.18%  runtime.notesleep
+     0.19s  0.18% 99.30%      0.19s  0.18%  runtime.pthread_cond_wait
+         0     0% 99.30%      0.19s  0.18%  runtime.semasleep
+         0     0% 99.30%      0.19s  0.18%  runtime.stopm
+     0.02s 0.018% 99.32%      0.14s  0.13%  runtime.wakep
+         0     0% 99.32%      0.12s  0.11%  runtime.unlock (inline)
+     0.09s 0.083% 99.40%      0.12s  0.11%  runtime.unlock2
+         0     0% 99.40%      0.12s  0.11%  runtime.unlockWithRank (inline)
+     0.03s 0.028% 99.43%      0.11s   0.1%  runtime.(*timers).check
+     0.04s 0.037% 99.46%      0.11s   0.1%  runtime.execute
+     0.05s 0.046% 99.51%      0.10s 0.092%  runtime.casgstatus
+         0     0% 99.51%      0.09s 0.083%  runtime.nanotime (inline)
+     0.08s 0.074% 99.58%      0.09s 0.083%  runtime.nanotime1
+     0.08s 0.074% 99.66%      0.08s 0.074%  runtime.usleep
+         0     0% 99.66%      0.07s 0.065%  runtime.osyield (inline)
+     0.05s 0.046% 99.70%      0.05s 0.046%  primitives_performance.init.func2
+     0.02s 0.018% 99.72%      0.05s 0.046%  runtime.(*timers).run
+         0     0% 99.72%      0.05s 0.046%  runtime/pprof.profileWriter
+     0.05s 0.046% 99.77%      0.05s 0.046%  testing.(*PB).Next (inline)
+     0.02s 0.018% 99.79%      0.04s 0.037%  runtime/pprof.(*profMap).lookup
+         0     0% 99.79%      0.04s 0.037%  runtime/pprof.(*profileBuilder).addCPUData
+     0.02s 0.018% 99.81%      0.03s 0.028%  runtime.(*mLockProfile).recordUnlock
+     0.01s 0.0092% 99.82%      0.03s 0.028%  runtime.(*timer).unlockAndRun
+     0.02s 0.018% 99.83%      0.03s 0.028%  runtime.globrunqget
+     0.03s 0.028% 99.86%      0.03s 0.028%  runtime.puintptr.ptr (inline)
+         0     0% 99.86%      0.02s 0.018%  runtime.mapaccess1_fast64
+     0.01s 0.0092% 99.87%      0.02s 0.018%  runtime.runqget (inline)
+     0.01s 0.0092% 99.88%      0.02s 0.018%  runtime.traceAcquire (inline)
+     0.01s 0.0092% 99.89%      0.01s 0.0092%  gogo
+     0.01s 0.0092% 99.90%      0.01s 0.0092%  internal/runtime/maps.(*groupReference).key (inline)
+     0.01s 0.0092% 99.91%      0.01s 0.0092%  internal/runtime/maps.(*groupsReference).group (inline)
+     0.01s 0.0092% 99.92%      0.01s 0.0092%  runtime.(*gQueue).pop (inline)
+     0.01s 0.0092% 99.93%      0.01s 0.0092%  runtime.(*guintptr).cas (inline)
+         0     0% 99.93%      0.01s 0.0092%  runtime.(*lockTimer).begin
+         0     0% 99.93%      0.01s 0.0092%  runtime.(*mLockProfile).store
+     0.01s 0.0092% 99.94%      0.01s 0.0092%  runtime.(*profBuf).read
+     0.01s 0.0092% 99.94%      0.01s 0.0092%  runtime.(*timer).maybeAdd
+         0     0% 99.94%      0.01s 0.0092%  runtime.(*timer).modify
+         0     0% 99.94%      0.01s 0.0092%  runtime.(*timer).reset (inline)
+         0     0% 99.94%      0.01s 0.0092%  runtime.(*timer).updateHeap
+     0.01s 0.0092%   100%      0.01s 0.0092%  runtime.(*timers).deleteMin
+         0     0%   100%      0.01s 0.0092%  runtime.goready (inline)
+         0     0%   100%      0.01s 0.0092%  runtime.goroutineReady
+         0     0%   100%      0.01s 0.0092%  runtime.goroutineReady.goready.func1
+     0.01s 0.0092%   100%      0.01s 0.0092%  runtime.libcCall
+         0     0%   100%      0.01s 0.0092%  runtime.park_m
+     0.01s 0.0092%   100%      0.01s 0.0092%  runtime.pidlegetSpinning
+         0     0%   100%      0.01s 0.0092%  runtime.ready
+         0     0%   100%      0.01s 0.0092%  runtime.resetForSleep
+         0     0%   100%      0.01s 0.0092%  runtime.runqgrab
+         0     0%   100%      0.01s 0.0092%  runtime.runqsteal
+         0     0%   100%      0.01s 0.0092%  runtime.saveBlockEventStack
+     0.01s 0.0092%   100%      0.01s 0.0092%  runtime.save_g
+         0     0%   100%      0.01s 0.0092%  runtime.stealWork
+     0.01s 0.0092%   100%      0.01s 0.0092%  runtime.stkbucket
+     0.01s 0.0092%   100%      0.01s 0.0092%  runtime.traceEnabled (inline)
+         0     0%   100%      0.01s 0.0092%  runtime/pprof.readProfile

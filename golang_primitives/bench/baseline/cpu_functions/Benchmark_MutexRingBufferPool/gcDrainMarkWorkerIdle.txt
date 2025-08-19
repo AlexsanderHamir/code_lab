@@ -1,0 +1,10 @@
+Total: 52.53s
+ROUTINE ======================== runtime.gcDrainMarkWorkerIdle in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgcmark.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .   1099:func gcDrainMarkWorkerIdle(gcw *gcWork) {
+         .       10ms   1100:	gcDrain(gcw, gcDrainIdle|gcDrainUntilPreempt|gcDrainFlushBgCredit)
+         .          .   1101:}
+         .          .   1102:
+         .          .   1103:// gcDrainMarkWorkerDedicated is a wrapper for gcDrain that exists to better account
+         .          .   1104:// mark time in profiles.
+         .          .   1105:func gcDrainMarkWorkerDedicated(gcw *gcWork, untilPreempt bool) {

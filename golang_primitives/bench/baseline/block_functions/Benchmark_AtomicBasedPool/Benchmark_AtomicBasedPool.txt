@@ -1,0 +1,16 @@
+Total: 37.13s
+ROUTINE ======================== primitives_performance.Benchmark_AtomicBasedPool in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     18.47s (flat, cum) 49.76% of Total
+         .          .     57:func Benchmark_AtomicBasedPool(b *testing.B) {
+         .          .     58:	debug.SetGCPercent(-1)
+         .          .     59:	b.ReportAllocs()
+         .          .     60:
+         .          .     61:	pool := NewAtomicBasedPool(1000, testAllocator, testCleaner)
+         .          .     62:
+         .          .     63:	b.ResetTimer()
+         .     18.47s     64:	b.RunParallel(func(pb *testing.PB) {
+         .          .     65:		for pb.Next() {
+         .          .     66:			obj := pool.Get()
+         .          .     67:			pool.Put(obj)
+         .          .     68:		}
+         .          .     69:	})

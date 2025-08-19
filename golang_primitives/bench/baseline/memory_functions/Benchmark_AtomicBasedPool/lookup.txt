@@ -1,0 +1,50 @@
+Total: 10.13MB
+ROUTINE ======================== runtime/pprof.(*profMap).lookup in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/map.go
+  516.01kB   516.01kB (flat, cum)  4.98% of Total
+         .          .     28:func (m *profMap) lookup(stk []uint64, tag unsafe.Pointer) *profMapEntry {
+         .          .     29:	// Compute hash of (stk, tag).
+         .          .     30:	h := uintptr(0)
+         .          .     31:	for _, x := range stk {
+         .          .     32:		h = h<<8 | (h >> (8 * (unsafe.Sizeof(h) - 1)))
+         .          .     33:		h += uintptr(x) * 41
+         .          .     34:	}
+         .          .     35:	h = h<<8 | (h >> (8 * (unsafe.Sizeof(h) - 1)))
+         .          .     36:	h += uintptr(tag) * 41
+         .          .     37:
+         .          .     38:	// Find entry if present.
+         .          .     39:	var last *profMapEntry
+         .          .     40:Search:
+         .          .     41:	for e := m.hash[h]; e != nil; last, e = e, e.nextHash {
+         .          .     42:		if len(e.stk) != len(stk) || e.tag != tag {
+         .          .     43:			continue
+         .          .     44:		}
+         .          .     45:		for j := range stk {
+         .          .     46:			if e.stk[j] != uintptr(stk[j]) {
+         .          .     47:				continue Search
+         .          .     48:			}
+         .          .     49:		}
+         .          .     50:		// Move to front.
+         .          .     51:		if last != nil {
+         .          .     52:			last.nextHash = e.nextHash
+         .          .     53:			e.nextHash = m.hash[h]
+         .          .     54:			m.hash[h] = e
+         .          .     55:		}
+         .          .     56:		return e
+         .          .     57:	}
+         .          .     58:
+         .          .     59:	// Add new entry.
+         .          .     60:	if len(m.free) < 1 {
+         .          .     61:		m.free = make([]profMapEntry, 128)
+         .          .     62:	}
+         .          .     63:	e := &m.free[0]
+         .          .     64:	m.free = m.free[1:]
+         .          .     65:	e.nextHash = m.hash[h]
+         .          .     66:	e.tag = tag
+         .          .     67:
+         .          .     68:	if len(m.freeStk) < len(stk) {
+  516.01kB   516.01kB     69:		m.freeStk = make([]uintptr, 1024)
+         .          .     70:	}
+         .          .     71:	// Limit cap to prevent append from clobbering freeStk.
+         .          .     72:	e.stk = m.freeStk[:len(stk):len(stk)]
+         .          .     73:	m.freeStk = m.freeStk[len(stk):]
+         .          .     74:

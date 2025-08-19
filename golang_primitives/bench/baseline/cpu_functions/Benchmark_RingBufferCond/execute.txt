@@ -1,0 +1,37 @@
+Total: 52.38s
+ROUTINE ======================== runtime.execute in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       30ms (flat, cum) 0.057% of Total
+         .          .   3233:func execute(gp *g, inheritTime bool) {
+         .          .   3234:	mp := getg().m
+         .          .   3235:
+         .          .   3236:	if goroutineProfile.active {
+         .          .   3237:		// Make sure that gp has had its stack written out to the goroutine
+         .          .   3238:		// profile, exactly as it was when the goroutine profiler first stopped
+         .          .   3239:		// the world.
+         .          .   3240:		tryRecordGoroutineProfile(gp, nil, osyield)
+         .          .   3241:	}
+         .          .   3242:
+         .          .   3243:	// Assign gp.m before entering _Grunning so running Gs have an
+         .          .   3244:	// M.
+      10ms       10ms   3245:	mp.curg = gp
+         .          .   3246:	gp.m = mp
+         .       10ms   3247:	casgstatus(gp, _Grunnable, _Grunning)
+         .          .   3248:	gp.waitsince = 0
+         .          .   3249:	gp.preempt = false
+         .          .   3250:	gp.stackguard0 = gp.stack.lo + stackGuard
+         .          .   3251:	if !inheritTime {
+         .          .   3252:		mp.p.ptr().schedtick++
+         .          .   3253:	}
+         .          .   3254:
+         .          .   3255:	// Check whether the profiler needs to be turned on or off.
+         .          .   3256:	hz := sched.profilehz
+         .          .   3257:	if mp.profilehz != hz {
+         .          .   3258:		setThreadCPUProfiler(hz)
+         .          .   3259:	}
+         .          .   3260:
+         .       10ms   3261:	trace := traceAcquire()
+         .          .   3262:	if trace.ok() {
+         .          .   3263:		trace.GoStart()
+         .          .   3264:		traceRelease(trace)
+         .          .   3265:	}
+         .          .   3266:

@@ -1,0 +1,10 @@
+Total: 48.01s
+ROUTINE ======================== runtime.(*randomEnum).done in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      20ms       20ms (flat, cum) 0.042% of Total
+         .          .   7279:func (enum *randomEnum) done() bool {
+      20ms       20ms   7280:	return enum.i == enum.count
+         .          .   7281:}
+         .          .   7282:
+         .          .   7283:func (enum *randomEnum) next() {
+         .          .   7284:	enum.i++
+         .          .   7285:	enum.pos = (enum.pos + enum.inc) % enum.count

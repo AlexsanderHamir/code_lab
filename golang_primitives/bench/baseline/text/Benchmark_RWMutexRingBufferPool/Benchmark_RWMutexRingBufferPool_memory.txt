@@ -1,0 +1,47 @@
+File: primitives_performance.test
+Type: alloc_space
+Time: 2025-08-19 12:50:42 PDT
+Showing nodes accounting for 7214.96kB, 100% of 7214.96kB total
+      flat  flat%   sum%        cum   cum%
+    2052kB 28.44% 28.44%     2052kB 28.44%  runtime.allocm
+         0     0% 28.44%     2052kB 28.44%  runtime.newm
+         0     0% 28.44%     2052kB 28.44%  runtime.startm
+         0     0% 28.44%     1539kB 21.33%  runtime.resetspinning
+         0     0% 28.44%     1539kB 21.33%  runtime.schedule
+         0     0% 28.44%     1539kB 21.33%  runtime.wakep
+         0     0% 28.44%  1538.01kB 21.32%  runtime.mcall
+         0     0% 28.44%  1538.01kB 21.32%  runtime.park_m
+         0     0% 28.44%  1536.04kB 21.29%  primitives_performance.Benchmark_RWMutexRingBufferPool
+         0     0% 28.44%  1536.04kB 21.29%  primitives_performance.NewRWMutexRingBufferPool
+ 1536.04kB 21.29% 49.73%  1536.04kB 21.29%  primitives_performance.init.func1
+         0     0% 49.73%  1536.04kB 21.29%  testing.(*B).launch
+         0     0% 49.73%  1536.04kB 21.29%  testing.(*B).runN
+         0     0% 49.73%  1418.60kB 19.66%  runtime/pprof.profileWriter
+         0     0% 49.73%  1184.27kB 16.41%  main.main
+         0     0% 49.73%  1184.27kB 16.41%  runtime.main
+ 1184.27kB 16.41% 66.14%  1184.27kB 16.41%  runtime/pprof.StartCPUProfile
+         0     0% 66.14%  1184.27kB 16.41%  testing.(*M).Run
+         0     0% 66.14%  1184.27kB 16.41%  testing.(*M).before
+         0     0% 66.14%  1184.27kB 16.41%  testing/internal/testdeps.TestDeps.StartCPUProfile
+         0     0% 66.14%     1026kB 14.22%  runtime.mstart
+         0     0% 66.14%     1026kB 14.22%  runtime.mstart0
+         0     0% 66.14%     1026kB 14.22%  runtime.mstart1
+  902.59kB 12.51% 78.65%   902.59kB 12.51%  compress/flate.NewWriter (inline)
+         0     0% 78.65%   902.59kB 12.51%  compress/gzip.(*Writer).Write
+         0     0% 78.65%   902.59kB 12.51%  runtime/pprof.(*profileBuilder).appendLocsForStack
+         0     0% 78.65%   902.59kB 12.51%  runtime/pprof.(*profileBuilder).build
+         0     0% 78.65%   902.59kB 12.51%  runtime/pprof.(*profileBuilder).emitLocation
+         0     0% 78.65%   902.59kB 12.51%  runtime/pprof.(*profileBuilder).flush
+  516.01kB  7.15% 85.81%   516.01kB  7.15%  runtime/pprof.(*profMap).lookup
+         0     0% 85.81%   516.01kB  7.15%  runtime/pprof.(*profileBuilder).addCPUData
+         0     0% 85.81%      513kB  7.11%  runtime.(*scavengerState).wake
+         0     0% 85.81%      513kB  7.11%  runtime.injectglist
+         0     0% 85.81%      513kB  7.11%  runtime.injectglist.func1
+         0     0% 85.81%      513kB  7.11%  runtime.sysmon
+  512.05kB  7.10% 92.90%   512.05kB  7.10%  runtime.(*scavengerState).init
+         0     0% 92.90%   512.05kB  7.10%  runtime.bgscavenge
+         0     0% 92.90%   512.01kB  7.10%  runtime.(*timer).maybeAdd
+         0     0% 92.90%   512.01kB  7.10%  runtime.(*timer).modify
+         0     0% 92.90%   512.01kB  7.10%  runtime.(*timer).reset (inline)
+  512.01kB  7.10%   100%   512.01kB  7.10%  runtime.(*timers).addHeap
+         0     0%   100%   512.01kB  7.10%  runtime.resetForSleep

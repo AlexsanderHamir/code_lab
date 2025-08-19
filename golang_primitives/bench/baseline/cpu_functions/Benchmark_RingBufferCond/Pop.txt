@@ -1,0 +1,15 @@
+Total: 52.38s
+ROUTINE ======================== primitives_performance.(*RingBuffer[go.shape.*uint8]).Pop in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+      20ms       20ms (flat, cum) 0.038% of Total
+         .          .     44:func (rb *RingBuffer[T]) Pop() (T, bool) {
+         .          .     45:	var zero T
+      10ms       10ms     46:	if rb.size <= 0 {
+         .          .     47:		return zero, false // Buffer is empty
+         .          .     48:	}
+         .          .     49:
+      10ms       10ms     50:	item := rb.buffer[rb.head]
+         .          .     51:	rb.head = (rb.head + 1) % rb.capacity
+         .          .     52:	rb.size--
+         .          .     53:	return item, true
+         .          .     54:}
+         .          .     55:

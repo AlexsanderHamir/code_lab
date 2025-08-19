@@ -1,0 +1,207 @@
+Total: 52.38s
+ROUTINE ======================== runtime.lock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+     150ms     19.84s (flat, cum) 37.88% of Total
+         .          .    153:func lock2(l *mutex) {
+         .          .    154:	gp := getg()
+      10ms       10ms    155:	if gp.m.locks < 0 {
+         .          .    156:		throw("runtime·lock: lock count")
+         .          .    157:	}
+         .          .    158:	gp.m.locks++
+         .          .    159:
+         .          .    160:	k8 := key8(&l.key)
+         .          .    161:
+         .          .    162:	// Speculative grab for lock.
+      90ms       90ms    163:	v8 := atomic.Xchg8(k8, mutexLocked)
+         .          .    164:	if v8&mutexLocked == 0 {
+         .          .    165:		if v8&mutexSleeping != 0 {
+         .          .    166:			atomic.Or8(k8, mutexSleeping)
+         .          .    167:		}
+      10ms       10ms    168:		return
+         .          .    169:	}
+         .          .    170:	semacreate(gp.m)
+         .          .    171:
+         .          .    172:	timer := &lockTimer{lock: l}
+         .       40ms    173:	timer.begin()
+         .          .    174:	// On uniprocessors, no point spinning.
+         .          .    175:	// On multiprocessors, spin for mutexActiveSpinCount attempts.
+         .          .    176:	spin := 0
+         .          .    177:	if ncpu > 1 {
+         .          .    178:		spin = mutexActiveSpinCount
+         .          .    179:	}
+         .          .    180:
+         .          .    181:	var weSpin, atTail bool
+         .          .    182:	v := atomic.Loaduintptr(&l.key)
+         .          .    183:tryAcquire:
+         .          .    184:	for i := 0; ; i++ {
+         .          .    185:		if v&mutexLocked == 0 {
+      30ms       30ms    186:			if weSpin {
+         .          .    187:				next := (v &^ mutexSpinning) | mutexSleeping | mutexLocked
+         .          .    188:				if next&^mutexMMask == 0 {
+         .          .    189:					// The fast-path Xchg8 may have cleared mutexSleeping. Fix
+         .          .    190:					// the hint so unlock2 knows when to use its slow path.
+         .          .    191:					next = next &^ mutexSleeping
+         .          .    192:				}
+         .          .    193:				if atomic.Casuintptr(&l.key, v, next) {
+         .       20ms    194:					timer.end()
+         .          .    195:					return
+         .          .    196:				}
+         .          .    197:			} else {
+         .          .    198:				prev8 := atomic.Xchg8(k8, mutexLocked|mutexSleeping)
+         .          .    199:				if prev8&mutexLocked == 0 {
+         .       50ms    200:					timer.end()
+         .          .    201:					return
+         .          .    202:				}
+         .          .    203:			}
+         .          .    204:			v = atomic.Loaduintptr(&l.key)
+         .          .    205:			continue tryAcquire
+         .          .    206:		}
+         .          .    207:
+      10ms       10ms    208:		if !weSpin && v&mutexSpinning == 0 && atomic.Casuintptr(&l.key, v, v|mutexSpinning) {
+         .          .    209:			v |= mutexSpinning
+         .          .    210:			weSpin = true
+         .          .    211:		}
+         .          .    212:
+         .          .    213:		if weSpin || atTail || mutexPreferLowLatency(l) {
+         .          .    214:			if i < spin {
+         .       10ms    215:				procyield(mutexActiveSpinSize)
+         .          .    216:				v = atomic.Loaduintptr(&l.key)
+         .          .    217:				continue tryAcquire
+         .          .    218:			} else if i < spin+mutexPassiveSpinCount {
+         .     12.08s    219:				osyield() // TODO: Consider removing this step. See https://go.dev/issue/69268.
+         .          .    220:				v = atomic.Loaduintptr(&l.key)
+         .          .    221:				continue tryAcquire
+         .          .    222:			}
+         .          .    223:		}
+         .          .    224:
+         .          .    225:		// Go to sleep
+         .          .    226:		if v&mutexLocked == 0 {
+         .          .    227:			throw("runtime·lock: sleeping while lock is available")
+         .          .    228:		}
+         .          .    229:
+         .          .    230:		// Store the current head of the list of sleeping Ms in our gp.m.mWaitList.next field
+         .          .    231:		gp.m.mWaitList.next = mutexWaitListHead(v)
+         .          .    232:
+         .          .    233:		// Pack a (partial) pointer to this M with the current lock state bits
+         .          .    234:		next := (uintptr(unsafe.Pointer(gp.m)) &^ mutexMMask) | v&mutexMMask | mutexSleeping
+         .          .    235:		if weSpin { // If we were spinning, prepare to retire
+         .          .    236:			next = next &^ mutexSpinning
+         .          .    237:		}
+         .          .    238:
+         .          .    239:		if atomic.Casuintptr(&l.key, v, next) {
+         .          .    240:			weSpin = false
+         .          .    241:			// We've pushed ourselves onto the stack of waiters. Wait.
+         .      7.49s    242:			semasleep(-1)
+         .          .    243:			atTail = gp.m.mWaitList.next == 0 // we were at risk of starving
+         .          .    244:			i = 0
+         .          .    245:		}
+         .          .    246:
+         .          .    247:		gp.m.mWaitList.next = 0
+ROUTINE ======================== runtime.unlock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+     120ms      2.69s (flat, cum)  5.14% of Total
+      10ms       10ms    259:func unlock2(l *mutex) {
+         .          .    260:	gp := getg()
+         .          .    261:
+      50ms       50ms    262:	prev8 := atomic.Xchg8(key8(&l.key), 0)
+         .          .    263:	if prev8&mutexLocked == 0 {
+         .          .    264:		throw("unlock of unlocked lock")
+         .          .    265:	}
+         .          .    266:
+      60ms       60ms    267:	if prev8&mutexSleeping != 0 {
+         .      2.39s    268:		unlock2Wake(l)
+         .          .    269:	}
+         .          .    270:
+         .      180ms    271:	gp.m.mLockProfile.recordUnlock(l)
+         .          .    272:	gp.m.locks--
+         .          .    273:	if gp.m.locks < 0 {
+         .          .    274:		throw("runtime·unlock: lock count")
+         .          .    275:	}
+         .          .    276:	if gp.m.locks == 0 && gp.preempt { // restore the preemption request in case we've cleared it in newstack
+ROUTINE ======================== runtime.unlock2Wake in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+      20ms      2.39s (flat, cum)  4.56% of Total
+         .          .    284:func unlock2Wake(l *mutex) {
+         .          .    285:	v := atomic.Loaduintptr(&l.key)
+         .          .    286:
+         .          .    287:	// On occasion, seek out and wake the M at the bottom of the stack so it
+         .          .    288:	// doesn't starve.
+         .          .    289:	antiStarve := cheaprandn(mutexTailWakePeriod) == 0
+         .          .    290:	if !(antiStarve || // avoiding starvation may require a wake
+      10ms       10ms    291:		v&mutexSpinning == 0 || // no spinners means we must wake
+      10ms       10ms    292:		mutexPreferLowLatency(l)) { // prefer waiters be awake as much as possible
+         .          .    293:		return
+         .          .    294:	}
+         .          .    295:
+         .          .    296:	for {
+         .          .    297:		if v&^mutexMMask == 0 || v&mutexStackLocked != 0 {
+         .          .    298:			// No waiting Ms means nothing to do.
+         .          .    299:			//
+         .          .    300:			// If the stack lock is unavailable, its owner would make the same
+         .          .    301:			// wake decisions that we would, so there's nothing for us to do.
+         .          .    302:			//
+         .          .    303:			// Although: This thread may have a different call stack, which
+         .          .    304:			// would result in a different entry in the mutex contention profile
+         .          .    305:			// (upon completion of go.dev/issue/66999). That could lead to weird
+         .          .    306:			// results if a slow critical section ends but another thread
+         .          .    307:			// quickly takes the lock, finishes its own critical section,
+         .          .    308:			// releases the lock, and then grabs the stack lock. That quick
+         .          .    309:			// thread would then take credit (blame) for the delay that this
+         .          .    310:			// slow thread caused. The alternative is to have more expensive
+         .          .    311:			// atomic operations (a CAS) on the critical path of unlock2.
+         .          .    312:			return
+         .          .    313:		}
+         .          .    314:		// Other M's are waiting for the lock.
+         .          .    315:		// Obtain the stack lock, and pop off an M.
+         .          .    316:		next := v | mutexStackLocked
+         .          .    317:		if atomic.Casuintptr(&l.key, v, next) {
+         .          .    318:			break
+         .          .    319:		}
+         .          .    320:		v = atomic.Loaduintptr(&l.key)
+         .          .    321:	}
+         .          .    322:
+         .          .    323:	// We own the mutexStackLocked flag. New Ms may push themselves onto the
+         .          .    324:	// stack concurrently, but we're now the only thread that can remove or
+         .          .    325:	// modify the Ms that are sleeping in the list.
+         .          .    326:
+         .          .    327:	var committed *m // If we choose an M within the stack, we've made a promise to wake it
+         .          .    328:	for {
+         .          .    329:		headM := v &^ mutexMMask
+         .          .    330:		flags := v & (mutexMMask &^ mutexStackLocked) // preserve low bits, but release stack lock
+         .          .    331:
+         .       10ms    332:		mp := mutexWaitListHead(v).ptr()
+         .          .    333:		wakem := committed
+         .          .    334:		if committed == nil {
+         .          .    335:			if v&mutexSpinning == 0 || mutexPreferLowLatency(l) {
+         .          .    336:				wakem = mp
+         .          .    337:			}
+         .          .    338:			if antiStarve {
+         .          .    339:				// Wake the M at the bottom of the stack of waiters. (This is
+         .          .    340:				// O(N) with the number of waiters.)
+         .          .    341:				wakem = mp
+         .          .    342:				prev := mp
+         .          .    343:				for {
+         .          .    344:					next := wakem.mWaitList.next.ptr()
+         .          .    345:					if next == nil {
+         .          .    346:						break
+         .          .    347:					}
+         .          .    348:					prev, wakem = wakem, next
+         .          .    349:				}
+         .          .    350:				if wakem != mp {
+         .          .    351:					prev.mWaitList.next = wakem.mWaitList.next
+         .          .    352:					committed = wakem
+         .          .    353:				}
+         .          .    354:			}
+         .          .    355:		}
+         .          .    356:
+         .          .    357:		if wakem == mp {
+         .          .    358:			headM = uintptr(mp.mWaitList.next) &^ mutexMMask
+         .          .    359:		}
+         .          .    360:
+         .          .    361:		next := headM | flags
+         .          .    362:		if atomic.Casuintptr(&l.key, v, next) {
+         .          .    363:			if wakem != nil {
+         .          .    364:				// Claimed an M. Wake it.
+         .      2.36s    365:				semawakeup(wakem)
+         .          .    366:			}
+         .          .    367:			break
+         .          .    368:		}
+         .          .    369:
+         .          .    370:		v = atomic.Loaduintptr(&l.key)

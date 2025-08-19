@@ -1,0 +1,12 @@
+Total: 48.01s
+ROUTINE ======================== runtime.releasem in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/runtime1.go
+      10ms       10ms (flat, cum) 0.021% of Total
+         .          .    612:func releasem(mp *m) {
+         .          .    613:	gp := getg()
+         .          .    614:	mp.locks--
+      10ms       10ms    615:	if mp.locks == 0 && gp.preempt {
+         .          .    616:		// restore the preemption request in case we've cleared it in newstack
+         .          .    617:		gp.stackguard0 = stackPreempt
+         .          .    618:	}
+         .          .    619:}
+         .          .    620:

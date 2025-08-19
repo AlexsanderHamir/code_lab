@@ -1,0 +1,107 @@
+Total: 52.38s
+ROUTINE ======================== runtime.pcvalue in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+     170ms      220ms (flat, cum)  0.42% of Total
+      10ms       10ms    979:func pcvalue(f funcInfo, off uint32, targetpc uintptr, strict bool) (int32, uintptr) {
+         .          .    980:	// If true, when we get a cache hit, still look up the data and make sure it
+         .          .    981:	// matches the cached contents.
+         .          .    982:	const debugCheckCache = false
+         .          .    983:
+         .          .    984:	if off == 0 {
+         .          .    985:		return -1, 0
+         .          .    986:	}
+         .          .    987:
+         .          .    988:	// Check the cache. This speeds up walks of deep stacks, which
+         .          .    989:	// tend to have the same recursive functions over and over,
+         .          .    990:	// or repetitive stacks between goroutines.
+         .          .    991:	var checkVal int32
+         .          .    992:	var checkPC uintptr
+         .          .    993:	ck := pcvalueCacheKey(targetpc)
+         .          .    994:	{
+         .          .    995:		mp := acquirem()
+         .          .    996:		cache := &mp.pcvalueCache
+         .          .    997:		// The cache can be used by the signal handler on this M. Avoid
+         .          .    998:		// re-entrant use of the cache. The signal handler can also write inUse,
+         .          .    999:		// but will always restore its value, so we can use a regular increment
+         .          .   1000:		// even if we get signaled in the middle of it.
+         .          .   1001:		cache.inUse++
+         .          .   1002:		if cache.inUse == 1 {
+      60ms       60ms   1003:			for i := range cache.entries[ck] {
+         .          .   1004:				// We check off first because we're more
+         .          .   1005:				// likely to have multiple entries with
+         .          .   1006:				// different offsets for the same targetpc
+         .          .   1007:				// than the other way around, so we'll usually
+         .          .   1008:				// fail in the first clause.
+         .          .   1009:				ent := &cache.entries[ck][i]
+      60ms       60ms   1010:				if ent.off == off && ent.targetpc == targetpc {
+      10ms       10ms   1011:					val, pc := ent.val, ent.valPC
+         .          .   1012:					if debugCheckCache {
+         .          .   1013:						checkVal, checkPC = ent.val, ent.valPC
+         .          .   1014:						break
+         .          .   1015:					} else {
+         .          .   1016:						cache.inUse--
+         .          .   1017:						releasem(mp)
+      10ms       10ms   1018:						return val, pc
+         .          .   1019:					}
+         .          .   1020:				}
+         .          .   1021:			}
+         .          .   1022:		} else if debugCheckCache && (cache.inUse < 1 || cache.inUse > 2) {
+         .          .   1023:			// Catch accounting errors or deeply reentrant use. In principle
+         .          .   1024:			// "inUse" should never exceed 2.
+         .          .   1025:			throw("cache.inUse out of range")
+         .          .   1026:		}
+         .          .   1027:		cache.inUse--
+         .          .   1028:		releasem(mp)
+         .          .   1029:	}
+         .          .   1030:
+         .          .   1031:	if !f.valid() {
+         .          .   1032:		if strict && panicking.Load() == 0 {
+         .          .   1033:			println("runtime: no module data for", hex(f.entry()))
+         .          .   1034:			throw("no module data")
+         .          .   1035:		}
+         .          .   1036:		return -1, 0
+         .          .   1037:	}
+         .          .   1038:	datap := f.datap
+         .          .   1039:	p := datap.pctab[off:]
+         .       20ms   1040:	pc := f.entry()
+         .          .   1041:	prevpc := pc
+         .          .   1042:	val := int32(-1)
+         .          .   1043:	for {
+         .          .   1044:		var ok bool
+      10ms       20ms   1045:		p, ok = step(p, &pc, &val, pc == f.entry())
+      10ms       10ms   1046:		if !ok {
+         .          .   1047:			break
+         .          .   1048:		}
+         .          .   1049:		if targetpc < pc {
+         .          .   1050:			// Replace a random entry in the cache. Random
+         .          .   1051:			// replacement prevents a performance cliff if
+         .          .   1052:			// a recursive stack's cycle is slightly
+         .          .   1053:			// larger than the cache.
+         .          .   1054:			// Put the new element at the beginning,
+         .          .   1055:			// since it is the most likely to be newly used.
+         .          .   1056:			if debugCheckCache && checkPC != 0 {
+         .          .   1057:				if checkVal != val || checkPC != prevpc {
+         .          .   1058:					print("runtime: table value ", val, "@", prevpc, " != cache value ", checkVal, "@", checkPC, " at PC ", targetpc, " off ", off, "\n")
+         .          .   1059:					throw("bad pcvalue cache")
+         .          .   1060:				}
+         .          .   1061:			} else {
+         .          .   1062:				mp := acquirem()
+         .          .   1063:				cache := &mp.pcvalueCache
+         .          .   1064:				cache.inUse++
+         .          .   1065:				if cache.inUse == 1 {
+         .          .   1066:					e := &cache.entries[ck]
+         .          .   1067:					ci := cheaprandn(uint32(len(cache.entries[ck])))
+         .          .   1068:					e[ci] = e[0]
+         .          .   1069:					e[0] = pcvalueCacheEnt{
+         .          .   1070:						targetpc: targetpc,
+         .          .   1071:						off:      off,
+         .          .   1072:						val:      val,
+         .          .   1073:						valPC:    prevpc,
+         .          .   1074:					}
+         .          .   1075:				}
+         .          .   1076:				cache.inUse--
+         .       20ms   1077:				releasem(mp)
+         .          .   1078:			}
+         .          .   1079:
+         .          .   1080:			return val, prevpc
+         .          .   1081:		}
+         .          .   1082:		prevpc = pc

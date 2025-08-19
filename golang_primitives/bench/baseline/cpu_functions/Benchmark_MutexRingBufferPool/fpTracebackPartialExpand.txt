@@ -1,0 +1,42 @@
+Total: 52.53s
+ROUTINE ======================== runtime.fpTracebackPartialExpand in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      20ms      470ms (flat, cum)  0.89% of Total
+      10ms       10ms    578:func fpTracebackPartialExpand(skip int, fp unsafe.Pointer, pcBuf []uintptr) int {
+         .          .    579:	var n int
+         .          .    580:	lastFuncID := abi.FuncIDNormal
+         .          .    581:	skipOrAdd := func(retPC uintptr) bool {
+         .          .    582:		if skip > 0 {
+         .          .    583:			skip--
+         .          .    584:		} else if n < len(pcBuf) {
+         .          .    585:			pcBuf[n] = retPC
+         .          .    586:			n++
+         .          .    587:		}
+         .          .    588:		return n < len(pcBuf)
+         .          .    589:	}
+         .          .    590:	for n < len(pcBuf) && fp != nil {
+         .          .    591:		// return addr sits one word above the frame pointer
+         .          .    592:		pc := *(*uintptr)(unsafe.Pointer(uintptr(fp) + goarch.PtrSize))
+         .          .    593:
+         .          .    594:		if skip > 0 {
+         .          .    595:			callPC := pc - 1
+         .      110ms    596:			fi := findfunc(callPC)
+      10ms      170ms    597:			u, uf := newInlineUnwinder(fi, callPC)
+         .      170ms    598:			for ; uf.valid(); uf = u.next(uf) {
+         .          .    599:				sf := u.srcFunc(uf)
+         .          .    600:				if sf.funcID == abi.FuncIDWrapper && elideWrapperCalling(lastFuncID) {
+         .          .    601:					// ignore wrappers
+         .       10ms    602:				} else if more := skipOrAdd(uf.pc + 1); !more {
+         .          .    603:					return n
+         .          .    604:				}
+         .          .    605:				lastFuncID = sf.funcID
+         .          .    606:			}
+         .          .    607:		} else {
+ROUTINE ======================== runtime.fpTracebackPartialExpand.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    581:	skipOrAdd := func(retPC uintptr) bool {
+      10ms       10ms    582:		if skip > 0 {
+         .          .    583:			skip--
+         .          .    584:		} else if n < len(pcBuf) {
+         .          .    585:			pcBuf[n] = retPC
+         .          .    586:			n++
+         .          .    587:		}

@@ -1,0 +1,19 @@
+Total: 48.01s
+ROUTINE ======================== runtime.(*lockTimer).end in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0      150ms (flat, cum)  0.31% of Total
+         .          .    701:func (lt *lockTimer) end() {
+         .          .    702:	gp := getg()
+         .          .    703:
+         .          .    704:	if lt.timeStart != 0 {
+         .       90ms    705:		nowTime := nanotime()
+         .          .    706:		gp.m.mLockProfile.waitTime.Add((nowTime - lt.timeStart) * lt.timeRate)
+         .          .    707:	}
+         .          .    708:
+         .          .    709:	if lt.tickStart != 0 {
+         .       50ms    710:		nowTick := cputicks()
+         .       10ms    711:		gp.m.mLockProfile.recordLock(nowTick-lt.tickStart, lt.lock)
+         .          .    712:	}
+         .          .    713:}
+         .          .    714:
+         .          .    715:type mLockProfile struct {
+         .          .    716:	waitTime   atomic.Int64 // total nanoseconds spent waiting in runtime.lockWithRank

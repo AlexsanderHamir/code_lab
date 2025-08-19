@@ -1,0 +1,16 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*mLockProfile).recordUnlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      20ms       30ms (flat, cum) 0.028% of Total
+         .          .    772:func (prof *mLockProfile) recordUnlock(l *mutex) {
+         .          .    773:	if uintptr(unsafe.Pointer(l)) == prof.pending {
+         .          .    774:		prof.captureStack()
+         .          .    775:	}
+      10ms       10ms    776:	if gp := getg(); gp.m.locks == 1 && gp.m.mLockProfile.haveStack {
+         .       10ms    777:		prof.store()
+         .          .    778:	}
+      10ms       10ms    779:}
+         .          .    780:
+         .          .    781:func (prof *mLockProfile) captureStack() {
+         .          .    782:	if debug.profstackdepth == 0 {
+         .          .    783:		// profstackdepth is set to 0 by the user, so mp.profStack is nil and we
+         .          .    784:		// can't record a stack trace.

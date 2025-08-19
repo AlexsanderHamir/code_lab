@@ -1,0 +1,29 @@
+Total: 48.01s
+ROUTINE ======================== runtime.findfunc in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      30ms       50ms (flat, cum)   0.1% of Total
+         .          .    894:func findfunc(pc uintptr) funcInfo {
+         .       10ms    895:	datap := findmoduledatap(pc)
+         .          .    896:	if datap == nil {
+         .          .    897:		return funcInfo{}
+         .          .    898:	}
+         .          .    899:	const nsub = uintptr(len(findfuncbucket{}.subbuckets))
+         .          .    900:
+         .       10ms    901:	pcOff, ok := datap.textOff(pc)
+         .          .    902:	if !ok {
+         .          .    903:		return funcInfo{}
+         .          .    904:	}
+         .          .    905:
+         .          .    906:	x := uintptr(pcOff) + datap.text - datap.minpc // TODO: are datap.text and datap.minpc always equal?
+         .          .    907:	b := x / abi.FuncTabBucketSize
+         .          .    908:	i := x % abi.FuncTabBucketSize / (abi.FuncTabBucketSize / nsub)
+         .          .    909:
+         .          .    910:	ffb := (*findfuncbucket)(add(unsafe.Pointer(datap.findfunctab), b*unsafe.Sizeof(findfuncbucket{})))
+         .          .    911:	idx := ffb.idx + uint32(ffb.subbuckets[i])
+         .          .    912:
+         .          .    913:	// Find the ftab entry.
+      30ms       30ms    914:	for datap.ftab[idx+1].entryoff <= pcOff {
+         .          .    915:		idx++
+         .          .    916:	}
+         .          .    917:
+         .          .    918:	funcoff := datap.ftab[idx].funcoff
+         .          .    919:	return funcInfo{(*_func)(unsafe.Pointer(&datap.pclntable[funcoff])), datap}

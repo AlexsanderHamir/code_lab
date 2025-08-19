@@ -1,0 +1,10 @@
+Total: 52.53s
+ROUTINE ======================== runtime.findmoduledatap in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      30ms       30ms (flat, cum) 0.057% of Total
+         .          .    836:func findmoduledatap(pc uintptr) *moduledata {
+      30ms       30ms    837:	for datap := &firstmoduledata; datap != nil; datap = datap.next {
+         .          .    838:		if datap.minpc <= pc && pc < datap.maxpc {
+         .          .    839:			return datap
+         .          .    840:		}
+         .          .    841:	}
+         .          .    842:	return nil

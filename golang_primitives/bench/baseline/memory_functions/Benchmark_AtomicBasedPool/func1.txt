@@ -1,0 +1,35 @@
+Total: 10.13MB
+ROUTINE ======================== primitives_performance.init.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+       1MB        1MB (flat, cum)  9.87% of Total
+         .          .    448:var testAllocator = func() *testObject {
+       1MB        1MB    449:	return &testObject{
+         .          .    450:		ID:   0,
+         .          .    451:		Data: "test",
+         .          .    452:	}
+         .          .    453:}
+         .          .    454:
+ROUTINE ======================== testing.(*B).RunParallel.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+       1MB        1MB (flat, cum)  9.87% of Total
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+       1MB        1MB    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .          .    962:			body(pb)
+ROUTINE ======================== testing.(*B).run1.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0   512.01kB (flat, cum)  4.94% of Total
+         .          .    238:	go func() {
+         .          .    239:		// Signal that we're done whether we return normally
+         .          .    240:		// or by FailNow's runtime.Goexit.
+         .          .    241:		defer func() {
+         .          .    242:			b.signal <- true
+         .          .    243:		}()
+         .          .    244:
+         .   512.01kB    245:		b.runN(1)
+         .          .    246:	}()
+         .          .    247:	<-b.signal
+         .          .    248:	if b.failed {
+         .          .    249:		fmt.Fprintf(b.w, "%s--- FAIL: %s\n%s", b.chatty.prefix(), b.name, b.output)
+         .          .    250:		return false

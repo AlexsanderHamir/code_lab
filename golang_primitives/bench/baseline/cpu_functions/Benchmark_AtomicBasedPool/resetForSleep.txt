@@ -1,0 +1,10 @@
+Total: 108.20s
+ROUTINE ======================== runtime.resetForSleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    346:func resetForSleep(gp *g, _ unsafe.Pointer) bool {
+         .       10ms    347:	gp.timer.reset(gp.sleepWhen, 0)
+         .          .    348:	return true
+         .          .    349:}
+         .          .    350:
+         .          .    351:// A timeTimer is a runtime-allocated time.Timer or time.Ticker
+         .          .    352:// with the additional runtime state following it.

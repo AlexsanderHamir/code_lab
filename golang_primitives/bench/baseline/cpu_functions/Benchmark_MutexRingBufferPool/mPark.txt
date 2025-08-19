@@ -1,0 +1,11 @@
+Total: 52.53s
+ROUTINE ======================== runtime.mPark in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      4.46s (flat, cum)  8.49% of Total
+         .          .   1885:func mPark() {
+         .          .   1886:	gp := getg()
+         .      4.46s   1887:	notesleep(&gp.m.park)
+         .          .   1888:	noteclear(&gp.m.park)
+         .          .   1889:}
+         .          .   1890:
+         .          .   1891:// mexit tears down and exits the current thread.
+         .          .   1892://

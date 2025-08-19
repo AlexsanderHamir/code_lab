@@ -1,0 +1,49 @@
+Total: 30.68s
+ROUTINE ======================== runtime.morestack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/asm_arm64.s
+         0       10ms (flat, cum) 0.033% of Total
+         .          .    302:TEXT runtime·morestack(SB),NOSPLIT|NOFRAME,$0-0
+         .          .    303:	// Cannot grow scheduler stack (m->g0).
+         .          .    304:	MOVD	g_m(g), R8
+         .          .    305:	MOVD	m_g0(R8), R4
+         .          .    306:
+         .          .    307:	// Called from f.
+         .          .    308:	// Set g->sched to context in f
+         .          .    309:	MOVD	RSP, R0
+         .          .    310:	MOVD	R0, (g_sched+gobuf_sp)(g)
+         .          .    311:	MOVD	R29, (g_sched+gobuf_bp)(g)
+         .          .    312:	MOVD	LR, (g_sched+gobuf_pc)(g)
+         .          .    313:	MOVD	R3, (g_sched+gobuf_lr)(g)
+         .          .    314:	MOVD	R26, (g_sched+gobuf_ctxt)(g)
+         .          .    315:
+         .          .    316:	CMP	g, R4
+         .          .    317:	BNE	3(PC)
+         .          .    318:	BL	runtime·badmorestackg0(SB)
+         .          .    319:	B	runtime·abort(SB)
+         .          .    320:
+         .          .    321:	// Cannot grow signal stack (m->gsignal).
+         .          .    322:	MOVD	m_gsignal(R8), R4
+         .          .    323:	CMP	g, R4
+         .          .    324:	BNE	3(PC)
+         .          .    325:	BL	runtime·badmorestackgsignal(SB)
+         .          .    326:	B	runtime·abort(SB)
+         .          .    327:
+         .          .    328:	// Called from f.
+         .          .    329:	// Set m->morebuf to f's callers.
+         .          .    330:	MOVD	R3, (m_morebuf+gobuf_pc)(R8)	// f's caller's PC
+         .          .    331:	MOVD	RSP, R0
+         .          .    332:	MOVD	R0, (m_morebuf+gobuf_sp)(R8)	// f's caller's RSP
+         .          .    333:	MOVD	g, (m_morebuf+gobuf_g)(R8)
+         .          .    334:
+         .          .    335:	// Call newstack on m->g0's stack.
+         .          .    336:	MOVD	m_g0(R8), g
+         .          .    337:	BL	runtime·save_g(SB)
+         .          .    338:	MOVD	(g_sched+gobuf_sp)(g), R0
+         .          .    339:	MOVD	R0, RSP
+         .          .    340:	MOVD	(g_sched+gobuf_bp)(g), R29
+         .          .    341:	MOVD.W	$0, -16(RSP)	// create a call frame on g0 (saved LR; keep 16-aligned)
+         .       10ms    342:	BL	runtime·newstack(SB)
+         .          .    343:
+         .          .    344:	// Not reached, but make sure the return PC from the call to newstack
+         .          .    345:	// is still in this function, and not the beginning of the next.
+         .          .    346:	UNDEF
+         .          .    347:

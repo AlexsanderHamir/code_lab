@@ -1,0 +1,11 @@
+Total: 52.38s
+ROUTINE ======================== internal/sync.runtime_doSpin in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      20ms      120ms (flat, cum)  0.23% of Total
+         .          .   7205:func internal_sync_runtime_doSpin() {
+         .      100ms   7206:	procyield(active_spin_cnt)
+      20ms       20ms   7207:}
+         .          .   7208:
+         .          .   7209:// Active spinning for sync.Mutex.
+         .          .   7210://
+         .          .   7211:// sync_runtime_canSpin should be an internal detail,
+         .          .   7212:// but widely used packages access it using linkname.

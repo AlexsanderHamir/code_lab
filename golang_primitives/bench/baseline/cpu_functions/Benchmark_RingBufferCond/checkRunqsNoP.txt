@@ -1,0 +1,13 @@
+Total: 52.38s
+ROUTINE ======================== runtime.checkRunqsNoP in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       20ms (flat, cum) 0.038% of Total
+         .          .   3753:func checkRunqsNoP(allpSnapshot []*p, idlepMaskSnapshot pMask) *p {
+         .          .   3754:	for id, p2 := range allpSnapshot {
+      10ms       10ms   3755:		if !idlepMaskSnapshot.read(uint32(id)) && !runqempty(p2) {
+         .          .   3756:			lock(&sched.lock)
+         .       10ms   3757:			pp, _ := pidlegetSpinning(0)
+         .          .   3758:			if pp == nil {
+         .          .   3759:				// Can't get a P, don't bother checking remaining Ps.
+         .          .   3760:				unlock(&sched.lock)
+         .          .   3761:				return nil
+         .          .   3762:			}

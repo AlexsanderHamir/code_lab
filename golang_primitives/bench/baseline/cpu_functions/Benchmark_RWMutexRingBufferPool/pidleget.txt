@@ -1,0 +1,33 @@
+Total: 48.01s
+ROUTINE ======================== runtime.pidleget in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       20ms (flat, cum) 0.042% of Total
+         .          .   6669:func pidleget(now int64) (*p, int64) {
+         .          .   6670:	assertLockHeld(&sched.lock)
+         .          .   6671:
+         .          .   6672:	pp := sched.pidle.ptr()
+         .          .   6673:	if pp != nil {
+         .          .   6674:		// Timer may get added at any time now.
+         .          .   6675:		if now == 0 {
+         .       10ms   6676:			now = nanotime()
+         .          .   6677:		}
+         .          .   6678:		timerpMask.set(pp.id)
+         .          .   6679:		idlepMask.clear(pp.id)
+         .          .   6680:		sched.pidle = pp.link
+         .          .   6681:		sched.npidle.Add(-1)
+         .       10ms   6682:		pp.limiterEvent.stop(limiterEventIdle, now)
+         .          .   6683:	}
+         .          .   6684:	return pp, now
+         .          .   6685:}
+         .          .   6686:
+         .          .   6687:// pidlegetSpinning tries to get a p from the _Pidle list, acquiring ownership.
+ROUTINE ======================== runtime.pidlegetSpinning in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       20ms (flat, cum) 0.042% of Total
+         .          .   6697:func pidlegetSpinning(now int64) (*p, int64) {
+         .          .   6698:	assertLockHeld(&sched.lock)
+         .          .   6699:
+         .       20ms   6700:	pp, now := pidleget(now)
+         .          .   6701:	if pp == nil {
+         .          .   6702:		// See "Delicate dance" comment in findrunnable. We found work
+         .          .   6703:		// that we cannot take, we must synchronize with non-spinning
+         .          .   6704:		// Ms that may be preparing to drop their P.
+         .          .   6705:		sched.needspinning.Store(1)

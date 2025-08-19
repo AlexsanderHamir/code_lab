@@ -1,0 +1,13 @@
+Total: 52.38s
+ROUTINE ======================== runtime.(*inlineUnwinder).srcFunc in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtabinl.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    116:func (u *inlineUnwinder) srcFunc(uf inlineFrame) srcFunc {
+         .          .    117:	if uf.index < 0 {
+         .          .    118:		return u.f.srcFunc()
+         .          .    119:	}
+      10ms       10ms    120:	t := &u.inlTree[uf.index]
+         .          .    121:	return srcFunc{
+         .          .    122:		u.f.datap,
+         .          .    123:		t.nameOff,
+         .          .    124:		t.startLine,
+         .          .    125:		t.funcID,

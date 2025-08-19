@@ -1,0 +1,40 @@
+File: primitives_performance.test
+Type: delay
+Time: 2025-08-19 12:50:42 PDT
+Showing nodes accounting for 61504797.48us, 100% of 61504797.48us total
+      flat  flat%   sum%        cum   cum%
+         0     0%     0% 33493822.86us 54.46%  primitives_performance.Benchmark_RWMutexRingBufferPool.func1
+33493822.86us 54.46% 54.46% 33493822.86us 54.46%  sync.(*Mutex).Lock (inline)
+         0     0% 54.46% 33493822.86us 54.46%  sync.(*RWMutex).Lock
+         0     0% 54.46% 33493822.86us 54.46%  testing.(*B).RunParallel.func1
+         0     0% 54.46% 27823147.79us 45.24%  testing.(*B).runN
+         0     0% 54.46% 16824683.39us 27.36%  primitives_performance.(*RWMutexRingBufferPool).Get
+         0     0% 54.46% 16669139.47us 27.10%  primitives_performance.(*RWMutexRingBufferPool).Put
+         0     0% 54.46% 14106935.88us 22.94%  main.main
+14106935.88us 22.94% 77.39% 14106935.88us 22.94%  runtime.chanrecv1
+         0     0% 77.39% 14106935.88us 22.94%  runtime.main
+         0     0% 77.39% 14106935.88us 22.94%  testing.(*M).Run
+         0     0% 77.39% 13919109.04us 22.63%  testing.runBenchmarks
+         0     0% 77.39% 13919104.25us 22.63%  testing.(*B).Run
+         0     0% 77.39% 13919104.25us 22.63%  testing.runBenchmarks.func1
+         0     0% 77.39% 13918415us 22.63%  testing.(*B).run
+         0     0% 77.39% 13918415us 22.63%  testing.(*benchState).processBench
+         0     0% 77.39% 13915704.33us 22.63%  testing.(*B).doBench
+         0     0% 77.39% 13904038.75us 22.61%  primitives_performance.Benchmark_RWMutexRingBufferPool
+13904038.75us 22.61%   100% 13904038.75us 22.61%  sync.(*WaitGroup).Wait
+         0     0%   100% 13904038.75us 22.61%  testing.(*B).RunParallel
+         0     0%   100% 13904024.88us 22.61%  testing.(*B).doBench.gowrap1
+         0     0%   100% 13904024.88us 22.61%  testing.(*B).launch
+         0     0%   100% 187826.83us  0.31%  runtime/pprof.StopCPUProfile
+         0     0%   100% 187826.83us  0.31%  sync.(*Once).Do (inline)
+         0     0%   100% 187826.83us  0.31%  sync.(*Once).doSlow
+         0     0%   100% 187826.83us  0.31%  testing.(*M).Run.deferwrap1
+         0     0%   100% 187826.83us  0.31%  testing.(*M).after
+         0     0%   100% 187826.83us  0.31%  testing.(*M).after.func1
+         0     0%   100% 187826.83us  0.31%  testing.(*M).writeProfiles
+         0     0%   100% 187826.83us  0.31%  testing/internal/testdeps.TestDeps.StopCPUProfile
+         0     0%   100%  3399.92us 0.0055%  testing.(*B).run1
+         0     0%   100%    13.88us 2.3e-05%  testing.(*B).run1.func1
+         0     0%   100%     4.79us 7.8e-06%  runtime.GC
+         0     0%   100%     4.79us 7.8e-06%  runtime.gcBgMarkStartWorkers
+         0     0%   100%     4.79us 7.8e-06%  runtime.gcStart

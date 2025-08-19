@@ -1,0 +1,9 @@
+Total: 26.57s
+ROUTINE ======================== testing.(*B).doBench.gowrap1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     13.19s (flat, cum) 49.63% of Total
+         .     13.19s    296:	go b.launch()
+         .          .    297:	<-b.signal
+         .          .    298:	return b.result
+         .          .    299:}
+         .          .    300:
+         .          .    301:func predictN(goalns int64, prevIters int64, prevns int64, last int64) int {

@@ -1,0 +1,16 @@
+goos: darwin
+goarch: arm64
+pkg: primitives_performance
+cpu: Apple M1
+Benchmark_ChannelBasedPool-8   	 7931286	       133.0 ns/op	       0 B/op	       0 allocs/op
+Benchmark_ChannelBasedPool-8   	 9045510	       132.3 ns/op	       0 B/op	       0 allocs/op
+Benchmark_ChannelBasedPool-8   	 9005686	       133.1 ns/op	       0 B/op	       0 allocs/op
+Benchmark_ChannelBasedPool-8   	 9110812	       132.0 ns/op	       0 B/op	       0 allocs/op
+Benchmark_ChannelBasedPool-8   	 9013880	       133.5 ns/op	       0 B/op	       0 allocs/op
+Benchmark_ChannelBasedPool-8   	 8943343	       133.3 ns/op	       0 B/op	       0 allocs/op
+Benchmark_ChannelBasedPool-8   	 9037891	       132.2 ns/op	       0 B/op	       0 allocs/op
+Benchmark_ChannelBasedPool-8   	 9114130	       133.0 ns/op	       0 B/op	       0 allocs/op
+Benchmark_ChannelBasedPool-8   	 8991928	       131.8 ns/op	       0 B/op	       0 allocs/op
+Benchmark_ChannelBasedPool-8   	 8903044	       132.8 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	primitives_performance	13.587s

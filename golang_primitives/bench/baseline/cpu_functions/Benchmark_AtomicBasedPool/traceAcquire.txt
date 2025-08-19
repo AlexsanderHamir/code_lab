@@ -1,0 +1,10 @@
+Total: 108.20s
+ROUTINE ======================== runtime.traceAcquire in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/traceruntime.go
+      10ms       20ms (flat, cum) 0.018% of Total
+         .          .    186:func traceAcquire() traceLocker {
+      10ms       20ms    187:	if !traceEnabled() {
+         .          .    188:		return traceLocker{}
+         .          .    189:	}
+         .          .    190:	return traceAcquireEnabled()
+         .          .    191:}
+         .          .    192:

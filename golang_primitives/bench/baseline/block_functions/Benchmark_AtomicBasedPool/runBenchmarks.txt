@@ -1,0 +1,63 @@
+Total: 37.13s
+ROUTINE ======================== testing.runBenchmarks in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     18.49s (flat, cum) 49.80% of Total
+         .          .    673:func runBenchmarks(importPath string, matchString func(pat, str string) (bool, error), benchmarks []InternalBenchmark) bool {
+         .          .    674:	// If no flag was specified, don't run benchmarks.
+         .          .    675:	if len(*matchBenchmarks) == 0 {
+         .          .    676:		return true
+         .          .    677:	}
+         .          .    678:	// Collect matching benchmarks and determine longest name.
+         .          .    679:	maxprocs := 1
+         .          .    680:	for _, procs := range cpuList {
+         .          .    681:		if procs > maxprocs {
+         .          .    682:			maxprocs = procs
+         .          .    683:		}
+         .          .    684:	}
+         .          .    685:	bstate := &benchState{
+         .          .    686:		match:  newMatcher(matchString, *matchBenchmarks, "-test.bench", *skip),
+         .          .    687:		extLen: len(benchmarkName("", maxprocs)),
+         .          .    688:	}
+         .          .    689:	var bs []InternalBenchmark
+         .          .    690:	for _, Benchmark := range benchmarks {
+         .          .    691:		if _, matched, _ := bstate.match.fullName(nil, Benchmark.Name); matched {
+         .          .    692:			bs = append(bs, Benchmark)
+         .          .    693:			benchName := benchmarkName(Benchmark.Name, maxprocs)
+         .          .    694:			if l := len(benchName) + bstate.extLen + 1; l > bstate.maxLen {
+         .          .    695:				bstate.maxLen = l
+         .          .    696:			}
+         .          .    697:		}
+         .          .    698:	}
+         .          .    699:	main := &B{
+         .          .    700:		common: common{
+         .          .    701:			name:  "Main",
+         .          .    702:			w:     os.Stdout,
+         .          .    703:			bench: true,
+         .          .    704:		},
+         .          .    705:		importPath: importPath,
+         .          .    706:		benchFunc: func(b *B) {
+         .          .    707:			for _, Benchmark := range bs {
+         .          .    708:				b.Run(Benchmark.Name, Benchmark.F)
+         .          .    709:			}
+         .          .    710:		},
+         .          .    711:		benchTime: benchTime,
+         .          .    712:		bstate:    bstate,
+         .          .    713:	}
+         .          .    714:	if Verbose() {
+         .          .    715:		main.chatty = newChattyPrinter(main.w)
+         .          .    716:	}
+         .     18.49s    717:	main.runN(1)
+         .          .    718:	return !main.failed
+         .          .    719:}
+         .          .    720:
+         .          .    721:// processBench runs bench b for the configured CPU counts and prints the results.
+         .          .    722:func (s *benchState) processBench(b *B) {
+ROUTINE ======================== testing.runBenchmarks.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     18.49s (flat, cum) 49.80% of Total
+         .          .    706:		benchFunc: func(b *B) {
+         .          .    707:			for _, Benchmark := range bs {
+         .     18.49s    708:				b.Run(Benchmark.Name, Benchmark.F)
+         .          .    709:			}
+         .          .    710:		},
+         .          .    711:		benchTime: benchTime,
+         .          .    712:		bstate:    bstate,
+         .          .    713:	}

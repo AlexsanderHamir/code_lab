@@ -1,0 +1,104 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*profBuf).read in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/profbuf.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    429:func (b *profBuf) read(mode profBufReadMode) (data []uint64, tags []unsafe.Pointer, eof bool) {
+         .          .    430:	if b == nil {
+         .          .    431:		return nil, nil, true
+         .          .    432:	}
+         .          .    433:
+         .          .    434:	br := b.rNext
+         .          .    435:
+         .          .    436:	// Commit previous read, returning that part of the ring to the writer.
+         .          .    437:	// First clear tags that have now been read, both to avoid holding
+         .          .    438:	// up the memory they point at for longer than necessary
+         .          .    439:	// and so that b.write can assume it is always overwriting
+         .          .    440:	// nil tag entries (see comment in b.write).
+         .          .    441:	rPrev := b.r.load()
+         .          .    442:	if rPrev != br {
+         .          .    443:		ntag := countSub(br.tagCount(), rPrev.tagCount())
+         .          .    444:		ti := int(rPrev.tagCount() % uint32(len(b.tags)))
+         .          .    445:		for i := 0; i < ntag; i++ {
+         .          .    446:			b.tags[ti] = nil
+         .          .    447:			if ti++; ti == len(b.tags) {
+         .          .    448:				ti = 0
+         .          .    449:			}
+         .          .    450:		}
+         .          .    451:		b.r.store(br)
+         .          .    452:	}
+         .          .    453:
+         .          .    454:Read:
+      10ms       10ms    455:	bw := b.w.load()
+         .          .    456:	numData := countSub(bw.dataCount(), br.dataCount())
+         .          .    457:	if numData == 0 {
+         .          .    458:		if b.hasOverflow() {
+         .          .    459:			// No data to read, but there is overflow to report.
+         .          .    460:			// Racing with writer flushing b.overflow into a real record.
+ROUTINE ======================== runtime.goready in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    454:func goready(gp *g, traceskip int) {
+         .       10ms    455:	systemstack(func() {
+         .          .    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+ROUTINE ======================== runtime.goroutineReady.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    455:	systemstack(func() {
+         .       10ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {
+ROUTINE ======================== runtime.pthread_cond_wait in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+     190ms      190ms (flat, cum)  0.18% of Total
+         .          .    546:func pthread_cond_wait(c *pthreadcond, m *pthreadmutex) int32 {
+     190ms      190ms    547:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_cond_wait_trampoline)), unsafe.Pointer(&c))
+         .          .    548:	KeepAlive(c)
+         .          .    549:	KeepAlive(m)
+         .          .    550:	return ret
+         .          .    551:}
+         .          .    552:func pthread_cond_wait_trampoline()
+ROUTINE ======================== runtime.ready in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .   1040:func ready(gp *g, traceskip int, next bool) {
+         .          .   1041:	status := readgstatus(gp)
+         .          .   1042:
+         .          .   1043:	// Mark runnable.
+         .          .   1044:	mp := acquirem() // disable preemption because it can be holding p in a local var
+         .          .   1045:	if status&^_Gscan != _Gwaiting {
+         .          .   1046:		dumpgstatus(gp)
+         .          .   1047:		throw("bad g->status in ready")
+         .          .   1048:	}
+         .          .   1049:
+         .          .   1050:	// status is Gwaiting or Gscanwaiting, make Grunnable and put on runq
+         .          .   1051:	trace := traceAcquire()
+         .          .   1052:	casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   1053:	if trace.ok() {
+         .          .   1054:		trace.GoUnpark(gp, traceskip)
+         .          .   1055:		traceRelease(trace)
+         .          .   1056:	}
+         .          .   1057:	runqput(mp.p.ptr(), gp, next)
+         .       10ms   1058:	wakep()
+         .          .   1059:	releasem(mp)
+         .          .   1060:}
+         .          .   1061:
+         .          .   1062:// freezeStopWait is a large value that freezetheworld sets
+         .          .   1063:// sched.stopwait to in order to request that all Gs permanently stop.
+ROUTINE ======================== runtime/pprof.readProfile in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/cpuprof.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    243:func runtime_pprof_readProfile() ([]uint64, []unsafe.Pointer, bool) {
+         .          .    244:	lock(&cpuprof.lock)
+         .          .    245:	log := cpuprof.log
+         .          .    246:	unlock(&cpuprof.lock)
+         .          .    247:	readMode := profBufBlocking
+         .          .    248:	if GOOS == "darwin" || GOOS == "ios" {
+         .          .    249:		readMode = profBufNonBlocking // For #61768; on Darwin notes are not async-signal-safe.  See sigNoteSetup in os_darwin.go.
+         .          .    250:	}
+         .       10ms    251:	data, tags, eof := log.read(readMode)
+         .          .    252:	if len(data) == 0 && eof {
+         .          .    253:		lock(&cpuprof.lock)
+         .          .    254:		cpuprof.log = nil
+         .          .    255:		unlock(&cpuprof.lock)
+         .          .    256:	}

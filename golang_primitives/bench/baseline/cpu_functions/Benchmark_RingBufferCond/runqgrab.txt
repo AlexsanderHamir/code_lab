@@ -1,0 +1,55 @@
+Total: 52.38s
+ROUTINE ======================== runtime.runqgrab in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      80ms     18.64s (flat, cum) 35.59% of Total
+         .          .   6934:func runqgrab(pp *p, batch *[256]guintptr, batchHead uint32, stealRunNextG bool) uint32 {
+      10ms       10ms   6935:	for {
+         .          .   6936:		h := atomic.LoadAcq(&pp.runqhead) // load-acquire, synchronize with other consumers
+         .          .   6937:		t := atomic.LoadAcq(&pp.runqtail) // load-acquire, synchronize with the producer
+         .          .   6938:		n := t - h
+         .          .   6939:		n = n - n/2
+         .          .   6940:		if n == 0 {
+      30ms       30ms   6941:			if stealRunNextG {
+         .          .   6942:				// Try to steal from pp.runnext.
+      10ms       10ms   6943:				if next := pp.runnext; next != 0 {
+      10ms       10ms   6944:					if pp.status == _Prunning {
+         .          .   6945:						// Sleep to ensure that pp isn't about to run the g
+         .          .   6946:						// we are about to steal.
+         .          .   6947:						// The important use case here is when the g running
+         .          .   6948:						// on pp ready()s another g and then almost
+         .          .   6949:						// immediately blocks. Instead of stealing runnext
+         .          .   6950:						// in this window, back off to give pp a chance to
+         .          .   6951:						// schedule runnext. This will avoid thrashing gs
+         .          .   6952:						// between different Ps.
+         .          .   6953:						// A sync chan send/recv takes ~50ns as of time of
+         .          .   6954:						// writing, so 3us gives ~50x overshoot.
+         .          .   6955:						if !osHasLowResTimer {
+         .     18.56s   6956:							usleep(3)
+         .          .   6957:						} else {
+         .          .   6958:							// On some platforms system timer granularity is
+         .          .   6959:							// 1-15ms, which is way too much for this
+         .          .   6960:							// optimization. So just yield.
+         .          .   6961:							osyield()
+         .          .   6962:						}
+         .          .   6963:					}
+         .          .   6964:					if !pp.runnext.cas(next, 0) {
+         .          .   6965:						continue
+         .          .   6966:					}
+         .          .   6967:					batch[batchHead%uint32(len(batch))] = next
+         .          .   6968:					return 1
+         .          .   6969:				}
+         .          .   6970:			}
+         .          .   6971:			return 0
+         .          .   6972:		}
+      10ms       10ms   6973:		if n > uint32(len(pp.runq)/2) { // read inconsistent h and t
+         .          .   6974:			continue
+         .          .   6975:		}
+         .          .   6976:		for i := uint32(0); i < n; i++ {
+         .          .   6977:			g := pp.runq[(h+i)%uint32(len(pp.runq))]
+         .          .   6978:			batch[(batchHead+i)%uint32(len(batch))] = g
+         .          .   6979:		}
+      10ms       10ms   6980:		if atomic.CasRel(&pp.runqhead, h, h+n) { // cas-release, commits consume
+         .          .   6981:			return n
+         .          .   6982:		}
+         .          .   6983:	}
+         .          .   6984:}
+         .          .   6985:

@@ -1,0 +1,148 @@
+Total: 7.05MB
+ROUTINE ======================== main.main in _testmain.go
+         0     1.16MB (flat, cum) 16.41% of Total
+ Error: could not find file _testmain.go on path /Users/alexsandergomes/Documents/experiments/golang_primitives
+ROUTINE ======================== runtime.main in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0     1.16MB (flat, cum) 16.41% of Total
+         .          .    147:func main() {
+         .          .    148:	mp := getg().m
+         .          .    149:
+         .          .    150:	// Racectx of m0->g0 is used only as the parent of the main goroutine.
+         .          .    151:	// It must not be used for anything else.
+         .          .    152:	mp.g0.racectx = 0
+         .          .    153:
+         .          .    154:	// Max stack size is 1 GB on 64-bit, 250 MB on 32-bit.
+         .          .    155:	// Using decimal instead of binary GB and MB because
+         .          .    156:	// they look nicer in the stack overflow failure message.
+         .          .    157:	if goarch.PtrSize == 8 {
+         .          .    158:		maxstacksize = 1000000000
+         .          .    159:	} else {
+         .          .    160:		maxstacksize = 250000000
+         .          .    161:	}
+         .          .    162:
+         .          .    163:	// An upper limit for max stack size. Used to avoid random crashes
+         .          .    164:	// after calling SetMaxStack and trying to allocate a stack that is too big,
+         .          .    165:	// since stackalloc works with 32-bit sizes.
+         .          .    166:	maxstackceiling = 2 * maxstacksize
+         .          .    167:
+         .          .    168:	// Allow newproc to start new Ms.
+         .          .    169:	mainStarted = true
+         .          .    170:
+         .          .    171:	if haveSysmon {
+         .          .    172:		systemstack(func() {
+         .          .    173:			newm(sysmon, nil, -1)
+         .          .    174:		})
+         .          .    175:	}
+         .          .    176:
+         .          .    177:	// Lock the main goroutine onto this, the main OS thread,
+         .          .    178:	// during initialization. Most programs won't care, but a few
+         .          .    179:	// do require certain calls to be made by the main thread.
+         .          .    180:	// Those can arrange for main.main to run in the main thread
+         .          .    181:	// by calling runtime.LockOSThread during initialization
+         .          .    182:	// to preserve the lock.
+         .          .    183:	lockOSThread()
+         .          .    184:
+         .          .    185:	if mp != &m0 {
+         .          .    186:		throw("runtime.main not on m0")
+         .          .    187:	}
+         .          .    188:
+         .          .    189:	// Record when the world started.
+         .          .    190:	// Must be before doInit for tracing init.
+         .          .    191:	runtimeInitTime = nanotime()
+         .          .    192:	if runtimeInitTime == 0 {
+         .          .    193:		throw("nanotime returning zero")
+         .          .    194:	}
+         .          .    195:
+         .          .    196:	if debug.inittrace != 0 {
+         .          .    197:		inittrace.id = getg().goid
+         .          .    198:		inittrace.active = true
+         .          .    199:	}
+         .          .    200:
+         .          .    201:	doInit(runtime_inittasks) // Must be before defer.
+         .          .    202:
+         .          .    203:	// Defer unlock so that runtime.Goexit during init does the unlock too.
+         .          .    204:	needUnlock := true
+         .          .    205:	defer func() {
+         .          .    206:		if needUnlock {
+         .          .    207:			unlockOSThread()
+         .          .    208:		}
+         .          .    209:	}()
+         .          .    210:
+         .          .    211:	gcenable()
+         .          .    212:
+         .          .    213:	main_init_done = make(chan bool)
+         .          .    214:	if iscgo {
+         .          .    215:		if _cgo_pthread_key_created == nil {
+         .          .    216:			throw("_cgo_pthread_key_created missing")
+         .          .    217:		}
+         .          .    218:
+         .          .    219:		if _cgo_thread_start == nil {
+         .          .    220:			throw("_cgo_thread_start missing")
+         .          .    221:		}
+         .          .    222:		if GOOS != "windows" {
+         .          .    223:			if _cgo_setenv == nil {
+         .          .    224:				throw("_cgo_setenv missing")
+         .          .    225:			}
+         .          .    226:			if _cgo_unsetenv == nil {
+         .          .    227:				throw("_cgo_unsetenv missing")
+         .          .    228:			}
+         .          .    229:		}
+         .          .    230:		if _cgo_notify_runtime_init_done == nil {
+         .          .    231:			throw("_cgo_notify_runtime_init_done missing")
+         .          .    232:		}
+         .          .    233:
+         .          .    234:		// Set the x_crosscall2_ptr C function pointer variable point to crosscall2.
+         .          .    235:		if set_crosscall2 == nil {
+         .          .    236:			throw("set_crosscall2 missing")
+         .          .    237:		}
+         .          .    238:		set_crosscall2()
+         .          .    239:
+         .          .    240:		// Start the template thread in case we enter Go from
+         .          .    241:		// a C-created thread and need to create a new thread.
+         .          .    242:		startTemplateThread()
+         .          .    243:		cgocall(_cgo_notify_runtime_init_done, nil)
+         .          .    244:	}
+         .          .    245:
+         .          .    246:	// Run the initializing tasks. Depending on build mode this
+         .          .    247:	// list can arrive a few different ways, but it will always
+         .          .    248:	// contain the init tasks computed by the linker for all the
+         .          .    249:	// packages in the program (excluding those added at runtime
+         .          .    250:	// by package plugin). Run through the modules in dependency
+         .          .    251:	// order (the order they are initialized by the dynamic
+         .          .    252:	// loader, i.e. they are added to the moduledata linked list).
+         .          .    253:	for m := &firstmoduledata; m != nil; m = m.next {
+         .          .    254:		doInit(m.inittasks)
+         .          .    255:	}
+         .          .    256:
+         .          .    257:	// Disable init tracing after main init done to avoid overhead
+         .          .    258:	// of collecting statistics in malloc and newproc
+         .          .    259:	inittrace.active = false
+         .          .    260:
+         .          .    261:	close(main_init_done)
+         .          .    262:
+         .          .    263:	needUnlock = false
+         .          .    264:	unlockOSThread()
+         .          .    265:
+         .          .    266:	if isarchive || islibrary {
+         .          .    267:		// A program compiled with -buildmode=c-archive or c-shared
+         .          .    268:		// has a main, but it is not executed.
+         .          .    269:		if GOARCH == "wasm" {
+         .          .    270:			// On Wasm, pause makes it return to the host.
+         .          .    271:			// Unlike cgo callbacks where Ms are created on demand,
+         .          .    272:			// on Wasm we have only one M. So we keep this M (and this
+         .          .    273:			// G) for callbacks.
+         .          .    274:			// Using the caller's SP unwinds this frame and backs to
+         .          .    275:			// goexit. The -16 is: 8 for goexit's (fake) return PC,
+         .          .    276:			// and pause's epilogue pops 8.
+         .          .    277:			pause(sys.GetCallerSP() - 16) // should not return
+         .          .    278:			panic("unreachable")
+         .          .    279:		}
+         .          .    280:		return
+         .          .    281:	}
+         .          .    282:	fn := main_main // make an indirect call, as the linker doesn't know the address of the main package when laying down the runtime
+         .     1.16MB    283:	fn()
+         .          .    284:	if raceenabled {
+         .          .    285:		runExitHooks(0) // run hooks now, since racefini does not return
+         .          .    286:		racefini()
+         .          .    287:	}
+         .          .    288:

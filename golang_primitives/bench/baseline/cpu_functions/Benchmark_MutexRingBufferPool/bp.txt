@@ -1,0 +1,9 @@
+Total: 52.53s
+ROUTINE ======================== runtime.(*bucket).bp in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      10ms       10ms (flat, cum) 0.019% of Total
+      10ms       10ms    266:func (b *bucket) bp() *blockRecord {
+         .          .    267:	if b.typ != blockProfile && b.typ != mutexProfile {
+         .          .    268:		throw("bad use of bucket.bp")
+         .          .    269:	}
+         .          .    270:	data := add(unsafe.Pointer(b), unsafe.Sizeof(*b)+b.nstk*unsafe.Sizeof(uintptr(0)))
+         .          .    271:	return (*blockRecord)(data)

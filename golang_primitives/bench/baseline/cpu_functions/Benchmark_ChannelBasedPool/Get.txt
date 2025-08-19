@@ -1,0 +1,11 @@
+Total: 30.68s
+ROUTINE ======================== primitives_performance.(*ChannelBasedPool).Get in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+      10ms     15.19s (flat, cum) 49.51% of Total
+         .          .    170:func (p *ChannelBasedPool) Get() *testObject {
+         .          .    171:	select {
+      10ms     15.19s    172:	case obj := <-p.objects:
+         .          .    173:		return obj
+         .          .    174:	default:
+         .          .    175:		return p.allocator()
+         .          .    176:	}
+         .          .    177:}

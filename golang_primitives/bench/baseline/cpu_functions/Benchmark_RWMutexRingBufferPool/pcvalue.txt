@@ -1,0 +1,40 @@
+Total: 48.01s
+ROUTINE ======================== runtime.pcvalue in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      90ms       90ms (flat, cum)  0.19% of Total
+      10ms       10ms    979:func pcvalue(f funcInfo, off uint32, targetpc uintptr, strict bool) (int32, uintptr) {
+         .          .    980:	// If true, when we get a cache hit, still look up the data and make sure it
+         .          .    981:	// matches the cached contents.
+         .          .    982:	const debugCheckCache = false
+         .          .    983:
+         .          .    984:	if off == 0 {
+         .          .    985:		return -1, 0
+         .          .    986:	}
+         .          .    987:
+         .          .    988:	// Check the cache. This speeds up walks of deep stacks, which
+         .          .    989:	// tend to have the same recursive functions over and over,
+         .          .    990:	// or repetitive stacks between goroutines.
+         .          .    991:	var checkVal int32
+         .          .    992:	var checkPC uintptr
+         .          .    993:	ck := pcvalueCacheKey(targetpc)
+         .          .    994:	{
+         .          .    995:		mp := acquirem()
+         .          .    996:		cache := &mp.pcvalueCache
+         .          .    997:		// The cache can be used by the signal handler on this M. Avoid
+         .          .    998:		// re-entrant use of the cache. The signal handler can also write inUse,
+         .          .    999:		// but will always restore its value, so we can use a regular increment
+         .          .   1000:		// even if we get signaled in the middle of it.
+      20ms       20ms   1001:		cache.inUse++
+         .          .   1002:		if cache.inUse == 1 {
+         .          .   1003:			for i := range cache.entries[ck] {
+         .          .   1004:				// We check off first because we're more
+         .          .   1005:				// likely to have multiple entries with
+         .          .   1006:				// different offsets for the same targetpc
+         .          .   1007:				// than the other way around, so we'll usually
+         .          .   1008:				// fail in the first clause.
+         .          .   1009:				ent := &cache.entries[ck][i]
+      60ms       60ms   1010:				if ent.off == off && ent.targetpc == targetpc {
+         .          .   1011:					val, pc := ent.val, ent.valPC
+         .          .   1012:					if debugCheckCache {
+         .          .   1013:						checkVal, checkPC = ent.val, ent.valPC
+         .          .   1014:						break
+         .          .   1015:					} else {

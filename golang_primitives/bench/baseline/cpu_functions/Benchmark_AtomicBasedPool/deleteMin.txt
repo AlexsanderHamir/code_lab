@@ -1,0 +1,16 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*timers).deleteMin in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    520:func (ts *timers) deleteMin() {
+         .          .    521:	assertLockHeld(&ts.mu)
+         .          .    522:	t := ts.heap[0].timer
+         .          .    523:	if t.ts != ts {
+         .          .    524:		throw("wrong timers")
+         .          .    525:	}
+         .          .    526:	t.ts = nil
+      10ms       10ms    527:	last := len(ts.heap) - 1
+         .          .    528:	if last > 0 {
+         .          .    529:		ts.heap[0] = ts.heap[last]
+         .          .    530:	}
+         .          .    531:	ts.heap[last] = timerWhen{}
+         .          .    532:	ts.heap = ts.heap[:last]

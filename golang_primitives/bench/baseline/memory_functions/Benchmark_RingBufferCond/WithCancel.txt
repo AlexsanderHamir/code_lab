@@ -1,0 +1,13 @@
+Total: 6.30MB
+ROUTINE ======================== context.withCancel in /opt/homebrew/Cellar/go/1.24.3/libexec/src/context/context.go
+  512.04kB   512.04kB (flat, cum)  7.94% of Total
+         .          .    273:func withCancel(parent Context) *cancelCtx {
+         .          .    274:	if parent == nil {
+         .          .    275:		panic("cannot create context from nil parent")
+         .          .    276:	}
+  512.04kB   512.04kB    277:	c := &cancelCtx{}
+         .          .    278:	c.propagateCancel(parent, c)
+         .          .    279:	return c
+         .          .    280:}
+         .          .    281:
+         .          .    282:// Cause returns a non-nil error explaining why c was canceled.

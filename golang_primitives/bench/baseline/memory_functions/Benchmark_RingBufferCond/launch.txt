@@ -1,0 +1,35 @@
+Total: 6.30MB
+ROUTINE ======================== testing.(*B).launch in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0   512.04kB (flat, cum)  7.94% of Total
+         .          .    328:func (b *B) launch() {
+         .          .    329:	// Signal that we're done whether we return normally
+         .          .    330:	// or by FailNow's runtime.Goexit.
+         .          .    331:	defer func() {
+         .          .    332:		b.signal <- true
+         .          .    333:	}()
+         .          .    334:
+         .          .    335:	// b.Loop does its own ramp-up logic so we just need to run it once.
+         .          .    336:	// If b.loop.n is non zero, it means b.Loop has already run.
+         .          .    337:	if b.loop.n == 0 {
+         .          .    338:		// Run the benchmark for at least the specified amount of time.
+         .          .    339:		if b.benchTime.n > 0 {
+         .          .    340:			// We already ran a single iteration in run1.
+         .          .    341:			// If -benchtime=1x was requested, use that result.
+         .          .    342:			// See https://golang.org/issue/32051.
+         .          .    343:			if b.benchTime.n > 1 {
+         .          .    344:				b.runN(b.benchTime.n)
+         .          .    345:			}
+         .          .    346:		} else {
+         .          .    347:			d := b.benchTime.d
+         .          .    348:			for n := int64(1); !b.failed && b.duration < d && n < 1e9; {
+         .          .    349:				last := n
+         .          .    350:				// Predict required iterations.
+         .          .    351:				goalns := d.Nanoseconds()
+         .          .    352:				prevIters := int64(b.N)
+         .          .    353:				n = int64(predictN(goalns, prevIters, b.duration.Nanoseconds(), last))
+         .   512.04kB    354:				b.runN(int(n))
+         .          .    355:			}
+         .          .    356:		}
+         .          .    357:	}
+         .          .    358:	b.result = BenchmarkResult{b.N, b.duration, b.bytes, b.netAllocs, b.netBytes, b.extra}
+         .          .    359:}

@@ -1,0 +1,18 @@
+Total: 9.28MB
+ROUTINE ======================== primitives_performance.NewMutexRingBufferPool in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+         0        1MB (flat, cum) 10.78% of Total
+         .          .     76:func NewMutexRingBufferPool(capacity int, allocator func() *testObject, cleaner func(*testObject)) *MutexRingBufferPool {
+         .          .     77:	pool := &MutexRingBufferPool{
+         .          .     78:		ringBuffer: NewRingBuffer[*testObject](capacity),
+         .          .     79:		allocator:  allocator,
+         .          .     80:		cleaner:    cleaner,
+         .          .     81:	}
+         .          .     82:
+         .          .     83:	// Pre-populate the pool
+         .          .     84:	for range capacity {
+         .        1MB     85:		pool.ringBuffer.Push(allocator())
+         .          .     86:	}
+         .          .     87:
+         .          .     88:	return pool
+         .          .     89:}
+         .          .     90:

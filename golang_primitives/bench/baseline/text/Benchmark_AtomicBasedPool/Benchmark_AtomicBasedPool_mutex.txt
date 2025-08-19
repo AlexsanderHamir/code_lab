@@ -1,0 +1,6 @@
+File: primitives_performance.test
+Type: delay
+Time: 2025-08-19 12:51:21 PDT
+Showing nodes accounting for 11.05ms, 100% of 11.05ms total
+      flat  flat%   sum%        cum   cum%
+   11.05ms   100%   100%    11.05ms   100%  runtime._LostContendedRuntimeLock

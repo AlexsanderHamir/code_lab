@@ -1,0 +1,23 @@
+Total: 52.53s
+ROUTINE ======================== runtime.funcdata in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      30ms       30ms (flat, cum) 0.057% of Total
+         .          .   1229:func funcdata(f funcInfo, i uint8) unsafe.Pointer {
+      20ms       20ms   1230:	if i < 0 || i >= f.nfuncdata {
+         .          .   1231:		return nil
+         .          .   1232:	}
+         .          .   1233:	base := f.datap.gofunc // load gofunc address early so that we calculate during cache misses
+         .          .   1234:	p := uintptr(unsafe.Pointer(&f.nfuncdata)) + unsafe.Sizeof(f.nfuncdata) + uintptr(f.npcdata)*4 + uintptr(i)*4
+         .          .   1235:	off := *(*uint32)(unsafe.Pointer(p))
+         .          .   1236:	// Return off == ^uint32(0) ? 0 : f.datap.gofunc + uintptr(off), but without branches.
+         .          .   1237:	// The compiler calculates mask on most architectures using conditional assignment.
+         .          .   1238:	var mask uintptr
+         .          .   1239:	if off == ^uint32(0) {
+         .          .   1240:		mask = 1
+         .          .   1241:	}
+         .          .   1242:	mask--
+      10ms       10ms   1243:	raw := base + uintptr(off)
+         .          .   1244:	return unsafe.Pointer(raw & mask)
+         .          .   1245:}
+         .          .   1246:
+         .          .   1247:// step advances to the next pc, value pair in the encoded table.
+         .          .   1248:func step(p []byte, pc *uintptr, val *int32, first bool) (newp []byte, ok bool) {

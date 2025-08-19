@@ -1,0 +1,37 @@
+Total: 10.13MB
+ROUTINE ======================== runtime/pprof.(*profileBuilder).build in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/proto.go
+         0     1.45MB (flat, cum) 14.32% of Total
+         .          .    348:func (b *profileBuilder) build() {
+         .          .    349:	b.end = time.Now()
+         .          .    350:
+         .          .    351:	b.pb.int64Opt(tagProfile_TimeNanos, b.start.UnixNano())
+         .          .    352:	if b.havePeriod { // must be CPU profile
+         .          .    353:		b.pbValueType(tagProfile_SampleType, "samples", "count")
+         .          .    354:		b.pbValueType(tagProfile_SampleType, "cpu", "nanoseconds")
+         .          .    355:		b.pb.int64Opt(tagProfile_DurationNanos, b.end.Sub(b.start).Nanoseconds())
+         .          .    356:		b.pbValueType(tagProfile_PeriodType, "cpu", "nanoseconds")
+         .          .    357:		b.pb.int64Opt(tagProfile_Period, b.period)
+         .          .    358:	}
+         .          .    359:
+         .          .    360:	values := []int64{0, 0}
+         .          .    361:	var locs []uint64
+         .          .    362:
+         .          .    363:	for e := b.m.all; e != nil; e = e.nextAll {
+         .          .    364:		values[0] = e.count
+         .          .    365:		values[1] = e.count * b.period
+         .          .    366:
+         .          .    367:		var labels func()
+         .          .    368:		if e.tag != nil {
+         .          .    369:			labels = func() {
+         .          .    370:				for _, lbl := range (*labelMap)(e.tag).list {
+         .          .    371:					b.pbLabel(tagSample_Label, lbl.key, lbl.value, 0)
+         .          .    372:				}
+         .          .    373:			}
+         .          .    374:		}
+         .          .    375:
+         .     1.45MB    376:		locs = b.appendLocsForStack(locs[:0], e.stk)
+         .          .    377:
+         .          .    378:		b.pbSample(values, locs, labels)
+         .          .    379:	}
+         .          .    380:
+         .          .    381:	for i, m := range b.mem {

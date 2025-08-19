@@ -1,0 +1,17 @@
+Total: 52.53s
+ROUTINE ======================== runtime.(*lockTimer).begin in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0       70ms (flat, cum)  0.13% of Total
+         .          .    685:func (lt *lockTimer) begin() {
+         .          .    686:	rate := int64(atomic.Load64(&mutexprofilerate))
+         .          .    687:
+         .          .    688:	lt.timeRate = gTrackingPeriod
+         .          .    689:	if rate != 0 && rate < lt.timeRate {
+         .          .    690:		lt.timeRate = rate
+         .          .    691:	}
+         .          .    692:	if int64(cheaprand())%lt.timeRate == 0 {
+         .       70ms    693:		lt.timeStart = nanotime()
+         .          .    694:	}
+         .          .    695:
+         .          .    696:	if rate > 0 && int64(cheaprand())%rate == 0 {
+         .          .    697:		lt.tickStart = cputicks()
+         .          .    698:	}

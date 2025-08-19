@@ -1,0 +1,12 @@
+Total: 52.38s
+ROUTINE ======================== runtime.mutexWaitListHead in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    109:func mutexWaitListHead(v uintptr) muintptr {
+         .          .    110:	if highBits := v &^ mutexMMask; highBits == 0 {
+         .          .    111:		return 0
+      10ms       10ms    112:	} else if m0bits := muintptr(unsafe.Pointer(&m0)); highBits == uintptr(m0bits)&^mutexMMask {
+         .          .    113:		return m0bits
+         .          .    114:	} else {
+         .          .    115:		return muintptr(highBits + mutexMOffset)
+         .          .    116:	}
+         .          .    117:}

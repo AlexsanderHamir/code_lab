@@ -1,0 +1,13 @@
+Total: 30.68s
+ROUTINE ======================== primitives_performance.(*ChannelBasedPool).Put in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+         0     15.44s (flat, cum) 50.33% of Total
+         .          .    179:func (p *ChannelBasedPool) Put(obj *testObject) {
+         .          .    180:	p.cleaner(obj)
+         .          .    181:
+         .          .    182:	// Select isn't used because we don't want to drop objects.
+         .     15.44s    183:	p.objects <- obj
+         .          .    184:}
+         .          .    185:
+         .          .    186:// Mutex-protected slice-based implementation for comparison
+         .          .    187:type MutexBasedPool struct {
+         .          .    188:	objects   []*testObject

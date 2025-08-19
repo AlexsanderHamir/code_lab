@@ -1,0 +1,10 @@
+Total: 37.13s
+ROUTINE ======================== runtime.chanrecv1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/chan.go
+    18.65s     18.65s (flat, cum) 50.24% of Total
+         .          .    505:func chanrecv1(c *hchan, elem unsafe.Pointer) {
+    18.65s     18.65s    506:	chanrecv(c, elem, true)
+         .          .    507:}
+         .          .    508:
+         .          .    509://go:nosplit
+         .          .    510:func chanrecv2(c *hchan, elem unsafe.Pointer) (received bool) {
+         .          .    511:	_, received = chanrecv(c, elem, true)

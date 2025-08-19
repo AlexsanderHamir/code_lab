@@ -1,0 +1,11 @@
+Total: 8.43MB
+ROUTINE ======================== compress/flate.NewWriter in /opt/homebrew/Cellar/go/1.24.3/libexec/src/compress/flate/deflate.go
+  902.59kB     1.41MB (flat, cum) 16.76% of Total
+         .          .    662:func NewWriter(w io.Writer, level int) (*Writer, error) {
+  902.59kB   902.59kB    663:	var dw Writer
+         .   544.67kB    664:	if err := dw.d.init(w, level); err != nil {
+         .          .    665:		return nil, err
+         .          .    666:	}
+         .          .    667:	return &dw, nil
+         .          .    668:}
+         .          .    669:

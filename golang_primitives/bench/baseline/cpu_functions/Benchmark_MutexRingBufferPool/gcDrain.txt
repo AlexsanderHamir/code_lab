@@ -1,0 +1,97 @@
+Total: 52.53s
+ROUTINE ======================== runtime.gcDrain in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgcmark.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .   1149:func gcDrain(gcw *gcWork, flags gcDrainFlags) {
+         .          .   1150:	if !writeBarrier.enabled {
+         .          .   1151:		throw("gcDrain phase incorrect")
+         .          .   1152:	}
+         .          .   1153:
+         .          .   1154:	// N.B. We must be running in a non-preemptible context, so it's
+         .          .   1155:	// safe to hold a reference to our P here.
+         .          .   1156:	gp := getg().m.curg
+         .          .   1157:	pp := gp.m.p.ptr()
+         .          .   1158:	preemptible := flags&gcDrainUntilPreempt != 0
+         .          .   1159:	flushBgCredit := flags&gcDrainFlushBgCredit != 0
+         .          .   1160:	idle := flags&gcDrainIdle != 0
+         .          .   1161:
+         .          .   1162:	initScanWork := gcw.heapScanWork
+         .          .   1163:
+         .          .   1164:	// checkWork is the scan work before performing the next
+         .          .   1165:	// self-preempt check.
+         .          .   1166:	checkWork := int64(1<<63 - 1)
+         .          .   1167:	var check func() bool
+         .          .   1168:	if flags&(gcDrainIdle|gcDrainFractional) != 0 {
+         .          .   1169:		checkWork = initScanWork + drainCheckThreshold
+         .          .   1170:		if idle {
+         .          .   1171:			check = pollWork
+         .          .   1172:		} else if flags&gcDrainFractional != 0 {
+         .          .   1173:			check = pollFractionalWorkerExit
+         .          .   1174:		}
+         .          .   1175:	}
+         .          .   1176:
+         .          .   1177:	// Drain root marking jobs.
+         .          .   1178:	if work.markrootNext < work.markrootJobs {
+         .          .   1179:		// Stop if we're preemptible, if someone wants to STW, or if
+         .          .   1180:		// someone is calling forEachP.
+         .          .   1181:		for !(gp.preempt && (preemptible || sched.gcwaiting.Load() || pp.runSafePointFn != 0)) {
+         .          .   1182:			job := atomic.Xadd(&work.markrootNext, +1) - 1
+         .          .   1183:			if job >= work.markrootJobs {
+         .          .   1184:				break
+         .          .   1185:			}
+         .          .   1186:			markroot(gcw, job, flushBgCredit)
+         .          .   1187:			if check != nil && check() {
+         .          .   1188:				goto done
+         .          .   1189:			}
+         .          .   1190:		}
+         .          .   1191:	}
+         .          .   1192:
+         .          .   1193:	// Drain heap marking jobs.
+         .          .   1194:	//
+         .          .   1195:	// Stop if we're preemptible, if someone wants to STW, or if
+         .          .   1196:	// someone is calling forEachP.
+         .          .   1197:	//
+         .          .   1198:	// TODO(mknyszek): Consider always checking gp.preempt instead
+         .          .   1199:	// of having the preempt flag, and making an exception for certain
+         .          .   1200:	// mark workers in retake. That might be simpler than trying to
+         .          .   1201:	// enumerate all the reasons why we might want to preempt, even
+         .          .   1202:	// if we're supposed to be mostly non-preemptible.
+         .          .   1203:	for !(gp.preempt && (preemptible || sched.gcwaiting.Load() || pp.runSafePointFn != 0)) {
+         .          .   1204:		// Try to keep work available on the global queue. We used to
+         .          .   1205:		// check if there were waiting workers, but it's better to
+         .          .   1206:		// just keep work available than to make workers wait. In the
+         .          .   1207:		// worst case, we'll do O(log(_WorkbufSize)) unnecessary
+         .          .   1208:		// balances.
+         .          .   1209:		if work.full == 0 {
+         .          .   1210:			gcw.balance()
+         .          .   1211:		}
+         .          .   1212:
+         .          .   1213:		b := gcw.tryGetFast()
+         .          .   1214:		if b == 0 {
+         .          .   1215:			b = gcw.tryGet()
+         .          .   1216:			if b == 0 {
+         .          .   1217:				// Flush the write barrier
+         .          .   1218:				// buffer; this may create
+         .          .   1219:				// more work.
+         .          .   1220:				wbBufFlush()
+         .          .   1221:				b = gcw.tryGet()
+         .          .   1222:			}
+         .          .   1223:		}
+         .          .   1224:		if b == 0 {
+         .          .   1225:			// Unable to get work.
+         .          .   1226:			break
+         .          .   1227:		}
+         .       10ms   1228:		scanobject(b, gcw)
+         .          .   1229:
+         .          .   1230:		// Flush background scan work credit to the global
+         .          .   1231:		// account if we've accumulated enough locally so
+         .          .   1232:		// mutator assists can draw on it.
+         .          .   1233:		if gcw.heapScanWork >= gcCreditSlack {
+ROUTINE ======================== runtime.gcDrainMarkWorkerIdle in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgcmark.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .   1099:func gcDrainMarkWorkerIdle(gcw *gcWork) {
+         .       10ms   1100:	gcDrain(gcw, gcDrainIdle|gcDrainUntilPreempt|gcDrainFlushBgCredit)
+         .          .   1101:}
+         .          .   1102:
+         .          .   1103:// gcDrainMarkWorkerDedicated is a wrapper for gcDrain that exists to better account
+         .          .   1104:// mark time in profiles.
+         .          .   1105:func gcDrainMarkWorkerDedicated(gcw *gcWork, untilPreempt bool) {

@@ -1,0 +1,123 @@
+File: primitives_performance.test
+Type: cpu
+Time: 2025-08-19 12:50:09 PDT
+Duration: 14.01s, Total samples = 52.53s (375.02%)
+Showing nodes accounting for 52.53s, 100% of 52.53s total
+      flat  flat%   sum%        cum   cum%
+    30.49s 58.04% 58.04%     30.50s 58.06%  runtime.usleep
+     0.01s 0.019% 58.06%     26.27s 50.01%  primitives_performance.Benchmark_MutexRingBufferPool.func1
+         0     0% 58.06%     26.27s 50.01%  testing.(*B).RunParallel.func1
+         0     0% 58.06%     25.63s 48.79%  runtime.mcall
+     0.04s 0.076% 58.14%     25.62s 48.77%  runtime.park_m
+         0     0% 58.14%     25.11s 47.80%  runtime.schedule
+     0.02s 0.038% 58.18%     24.02s 45.73%  runtime.findRunnable
+     0.13s  0.25% 58.42%     19.63s 37.37%  runtime.lock2
+         0     0% 58.42%     19.63s 37.37%  runtime.lockWithRank (inline)
+     0.12s  0.23% 58.65%     18.82s 35.83%  runtime.stealWork
+     0.03s 0.057% 58.71%     18.63s 35.47%  runtime.runqsteal
+     0.04s 0.076% 58.79%     18.60s 35.41%  runtime.runqgrab
+     0.69s  1.31% 60.10%     15.53s 29.56%  internal/sync.(*Mutex).Unlock (inline)
+         0     0% 60.10%     15.53s 29.56%  sync.(*Mutex).Unlock
+     0.05s 0.095% 60.19%     14.84s 28.25%  internal/sync.(*Mutex).unlockSlow
+     0.02s 0.038% 60.23%     14.79s 28.16%  internal/sync.runtime_Semrelease
+     0.07s  0.13% 60.37%     14.77s 28.12%  runtime.semrelease1
+     0.06s  0.11% 60.48%     13.80s 26.27%  primitives_performance.(*MutexRingBufferPool).Get
+     0.04s 0.076% 60.56%     12.44s 23.68%  primitives_performance.(*MutexRingBufferPool).Put
+         0     0% 60.56%     11.94s 22.73%  runtime.osyield (inline)
+         0     0% 60.56%     11.90s 22.65%  runtime.semasleep
+    11.87s 22.60% 83.15%     11.87s 22.60%  runtime.pthread_cond_wait
+     0.08s  0.15% 83.30%     10.52s 20.03%  internal/sync.(*Mutex).Lock (inline)
+         0     0% 83.30%     10.52s 20.03%  sync.(*Mutex).Lock (inline)
+     2.88s  5.48% 88.79%     10.44s 19.87%  internal/sync.(*Mutex).lockSlow
+         0     0% 88.79%      7.25s 13.80%  internal/sync.runtime_SemacquireMutex
+     0.07s  0.13% 88.92%      7.25s 13.80%  runtime.semacquire1
+         0     0% 88.92%      4.61s  8.78%  runtime.stopm
+         0     0% 88.92%      4.46s  8.49%  runtime.mPark (inline)
+         0     0% 88.92%      4.46s  8.49%  runtime.notesleep
+         0     0% 88.92%      3.81s  7.25%  runtime.semawakeup
+     3.73s  7.10% 96.02%      3.73s  7.10%  runtime.pthread_cond_signal
+         0     0% 96.02%      2.60s  4.95%  runtime.unlock (inline)
+     0.19s  0.36% 96.38%      2.60s  4.95%  runtime.unlock2
+         0     0% 96.38%      2.60s  4.95%  runtime.unlockWithRank (inline)
+     0.04s 0.076% 96.46%      2.24s  4.26%  runtime.unlock2Wake
+         0     0% 96.46%      1.68s  3.20%  runtime.wakep
+         0     0% 96.46%      1.61s  3.06%  runtime.notewakeup
+         0     0% 96.46%      1.61s  3.06%  runtime.startm
+         0     0% 96.46%      1.07s  2.04%  runtime.lock (inline)
+         0     0% 96.46%      1.07s  2.04%  runtime.resetspinning
+     0.01s 0.019% 96.48%      0.84s  1.60%  runtime.saveblockevent
+         0     0% 96.48%      0.66s  1.26%  runtime.systemstack
+     0.02s 0.038% 96.52%      0.65s  1.24%  runtime.ready
+         0     0% 96.52%      0.65s  1.24%  runtime.readyWithTime.goready.func1
+     0.01s 0.019% 96.54%      0.51s  0.97%  runtime.saveBlockEventStack
+         0     0% 96.54%      0.51s  0.97%  sync.event
+     0.02s 0.038% 96.57%      0.47s  0.89%  runtime.fpTracebackPartialExpand
+         0     0% 96.57%      0.45s  0.86%  runtime.parkunlock_c
+         0     0% 96.57%      0.35s  0.67%  runtime.nanotime (inline)
+     0.33s  0.63% 97.20%      0.35s  0.67%  runtime.nanotime1
+         0     0% 97.20%      0.33s  0.63%  runtime.blockevent
+         0     0% 97.20%      0.26s  0.49%  runtime.(*inlineUnwinder).resolveInternal (inline)
+         0     0% 97.20%      0.26s  0.49%  runtime.pcdatavalue1
+     0.14s  0.27% 97.47%      0.25s  0.48%  runtime.pcvalue
+         0     0% 97.47%      0.19s  0.36%  runtime.(*mLockProfile).recordUnlock
+     0.02s 0.038% 97.51%      0.19s  0.36%  runtime.(*mLockProfile).store
+     0.03s 0.057% 97.56%      0.17s  0.32%  runtime.(*inlineUnwinder).next
+     0.16s   0.3% 97.87%      0.16s   0.3%  runtime.cansemacquire (inline)
+         0     0% 97.87%      0.16s   0.3%  runtime.newInlineUnwinder
+         0     0% 97.87%      0.12s  0.23%  internal/sync.runtime_nanotime
+     0.08s  0.15% 98.02%      0.11s  0.21%  runtime.findfunc
+     0.11s  0.21% 98.23%      0.11s  0.21%  runtime.procyield
+         0     0% 98.23%      0.10s  0.19%  internal/sync.runtime_doSpin
+     0.10s  0.19% 98.42%      0.10s  0.19%  runtime.pthread_mutex_unlock
+     0.03s 0.057% 98.48%      0.10s  0.19%  runtime.readyWithTime
+     0.05s 0.095% 98.57%      0.09s  0.17%  internal/sync.runtime_canSpin
+         0     0% 98.57%      0.09s  0.17%  runtime.cputicks (inline)
+     0.08s  0.15% 98.72%      0.08s  0.15%  primitives_performance.(*RingBuffer[go.shape.*uint8]).Push (inline)
+         0     0% 98.72%      0.07s  0.13%  runtime.(*lockTimer).begin
+     0.05s 0.095% 98.82%      0.07s  0.13%  runtime.(*semaRoot).dequeue
+     0.03s 0.057% 98.88%      0.07s  0.13%  runtime.casgstatus
+     0.04s 0.076% 98.95%      0.05s 0.095%  runtime.(*timers).check
+     0.05s 0.095% 99.05%      0.05s 0.095%  runtime.stkbucket
+         0     0% 99.05%      0.04s 0.076%  runtime.(*lockTimer).end
+     0.04s 0.076% 99.12%      0.04s 0.076%  runtime.releasem (inline)
+     0.04s 0.076% 99.20%      0.04s 0.076%  runtime.runqempty (inline)
+     0.02s 0.038% 99.24%      0.04s 0.076%  runtime.step
+     0.03s 0.057% 99.30%      0.03s 0.057%  runtime.(*moduledata).textAddr
+         0     0% 99.30%      0.03s 0.057%  runtime.checkRunqsNoP
+     0.03s 0.057% 99.35%      0.03s 0.057%  runtime.findmoduledatap (inline)
+         0     0% 99.35%      0.03s 0.057%  runtime.funcInfo.entry (inline)
+     0.03s 0.057% 99.41%      0.03s 0.057%  runtime.funcdata (inline)
+         0     0% 99.41%      0.03s 0.057%  runtime.goready (inline)
+     0.03s 0.057% 99.47%      0.03s 0.057%  runtime.libcCall
+     0.03s 0.057% 99.52%      0.03s 0.057%  runtime.releaseSudog
+     0.02s 0.038% 99.56%      0.02s 0.038%  internal/runtime/atomic.(*Uint32).Add (inline)
+     0.02s 0.038% 99.60%      0.02s 0.038%  runtime.(*randomEnum).next (inline)
+     0.02s 0.038% 99.64%      0.02s 0.038%  runtime.acquirem (inline)
+         0     0% 99.64%      0.02s 0.038%  runtime.execute
+     0.02s 0.038% 99.68%      0.02s 0.038%  runtime.readvarint (inline)
+     0.02s 0.038% 99.71%      0.02s 0.038%  testing.(*PB).Next (inline)
+     0.01s 0.019% 99.73%      0.01s 0.019%  internal/runtime/atomic.(*Bool).Load (inline)
+     0.01s 0.019% 99.75%      0.01s 0.019%  internal/runtime/atomic.(*Int32).Load (inline)
+     0.01s 0.019% 99.77%      0.01s 0.019%  internal/runtime/atomic.(*Uint32).CompareAndSwap (inline)
+     0.01s 0.019% 99.79%      0.01s 0.019%  primitives_performance.(*RingBuffer[go.shape.*uint8]).Pop (inline)
+     0.01s 0.019% 99.81%      0.01s 0.019%  runtime.(*bucket).bp
+     0.01s 0.019% 99.83%      0.01s 0.019%  runtime.(*mspan).heapBitsSmallForAddr
+         0     0% 99.83%      0.01s 0.019%  runtime.(*mspan).typePointersOfUnchecked
+     0.01s 0.019% 99.85%      0.01s 0.019%  runtime.(*randomOrder).start (inline)
+     0.01s 0.019% 99.87%      0.01s 0.019%  runtime.(*timeHistogram).record
+     0.01s 0.019% 99.89%      0.01s 0.019%  runtime.acquireSudog
+     0.01s 0.019% 99.90%      0.01s 0.019%  runtime.cheaprand (inline)
+         0     0% 99.90%      0.01s 0.019%  runtime.cheaprandn (inline)
+     0.01s 0.019% 99.92%      0.01s 0.019%  runtime.fpTracebackPartialExpand.func1 (inline)
+         0     0% 99.92%      0.01s 0.019%  runtime.gcBgMarkWorker
+         0     0% 99.92%      0.01s 0.019%  runtime.gcBgMarkWorker.func2
+         0     0% 99.92%      0.01s 0.019%  runtime.gcDrain
+         0     0% 99.92%      0.01s 0.019%  runtime.gcDrainMarkWorkerIdle (inline)
+         0     0% 99.92%      0.01s 0.019%  runtime.goexit0
+     0.01s 0.019% 99.94%      0.01s 0.019%  runtime.pMask.read (inline)
+     0.01s 0.019%   100%      0.01s 0.019%  runtime.pcdatastart (inline)
+         0     0%   100%      0.01s 0.019%  runtime.pidleget
+         0     0%   100%      0.01s 0.019%  runtime.pidlegetSpinning
+     0.01s 0.019%   100%      0.01s 0.019%  runtime.pidleput
+     0.01s 0.019%   100%      0.01s 0.019%  runtime.pthread_mutex_lock
+         0     0%   100%      0.01s 0.019%  runtime.scanobject

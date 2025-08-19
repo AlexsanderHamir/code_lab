@@ -1,0 +1,18 @@
+Total: 48.01s
+ROUTINE ======================== internal/runtime/atomic.(*Uint32).Add in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+      40ms       40ms (flat, cum) 0.083% of Total
+         .          .    290:func (u *Uint32) Add(delta int32) uint32 {
+      40ms       40ms    291:	return Xadd(&u.value, delta)
+         .          .    292:}
+         .          .    293:
+         .          .    294:// Uint64 is an atomically accessed uint64 value.
+         .          .    295://
+         .          .    296:// 8-byte aligned on all platforms, unlike a regular uint64.
+ROUTINE ======================== sync/atomic.(*Int32).Add in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/atomic/type.go
+     580ms      580ms (flat, cum)  1.21% of Total
+     580ms      580ms     88:func (x *Int32) Add(delta int32) (new int32) { return AddInt32(&x.v, delta) }
+         .          .     89:
+         .          .     90:// And atomically performs a bitwise AND operation on x using the bitmask
+         .          .     91:// provided as mask and returns the old value.
+         .          .     92:func (x *Int32) And(mask int32) (old int32) { return AndInt32(&x.v, mask) }
+         .          .     93:

@@ -1,0 +1,14 @@
+Total: 30.68s
+ROUTINE ======================== runtime.startTheWorldWithSema in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .   1676:func startTheWorldWithSema(now int64, w worldStop) int64 {
+         .          .   1677:	assertWorldStopped()
+         .          .   1678:
+         .          .   1679:	mp := acquirem() // disable preemption because it can be holding p in a local var
+         .          .   1680:	if netpollinited() {
+         .       10ms   1681:		list, delta := netpoll(0) // non-blocking
+         .          .   1682:		injectglist(&list)
+         .          .   1683:		netpollAdjustWaiters(delta)
+         .          .   1684:	}
+         .          .   1685:	lock(&sched.lock)
+         .          .   1686:

@@ -1,0 +1,35 @@
+Total: 6.30MB
+ROUTINE ======================== runtime.mcall in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/asm_arm64.s
+         0        2MB (flat, cum) 31.81% of Total
+         .          .    167:TEXT runtime·mcall<ABIInternal>(SB), NOSPLIT|NOFRAME, $0-8
+         .          .    168:	MOVD	R0, R26				// context
+         .          .    169:
+         .          .    170:	// Save caller state in g->sched
+         .          .    171:	MOVD	RSP, R0
+         .          .    172:	MOVD	R0, (g_sched+gobuf_sp)(g)
+         .          .    173:	MOVD	R29, (g_sched+gobuf_bp)(g)
+         .          .    174:	MOVD	LR, (g_sched+gobuf_pc)(g)
+         .          .    175:	MOVD	$0, (g_sched+gobuf_lr)(g)
+         .          .    176:
+         .          .    177:	// Switch to m->g0 & its stack, call fn.
+         .          .    178:	MOVD	g, R3
+         .          .    179:	MOVD	g_m(g), R8
+         .          .    180:	MOVD	m_g0(R8), g
+         .          .    181:	BL	runtime·save_g(SB)
+         .          .    182:	CMP	g, R3
+         .          .    183:	BNE	2(PC)
+         .          .    184:	B	runtime·badmcall(SB)
+         .          .    185:
+         .          .    186:	MOVD	(g_sched+gobuf_sp)(g), R0
+         .          .    187:	MOVD	R0, RSP	// sp = m->g0->sched.sp
+         .          .    188:	MOVD	(g_sched+gobuf_bp)(g), R29
+         .          .    189:	MOVD	R3, R0				// arg = g
+         .          .    190:	MOVD	$0, -16(RSP)			// dummy LR
+         .          .    191:	SUB	$16, RSP
+         .          .    192:	MOVD	0(R26), R4			// code pointer
+         .        2MB    193:	BL	(R4)
+         .          .    194:	B	runtime·badmcall2(SB)
+         .          .    195:
+         .          .    196:// systemstack_switch is a dummy routine that systemstack leaves at the bottom
+         .          .    197:// of the G stack. We need to distinguish the routine that
+         .          .    198:// lives at the bottom of the G stack from the one that lives

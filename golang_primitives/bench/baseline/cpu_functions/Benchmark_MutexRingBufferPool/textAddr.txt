@@ -1,0 +1,12 @@
+Total: 52.53s
+ROUTINE ======================== runtime.(*moduledata).textAddr in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      30ms       30ms (flat, cum) 0.057% of Total
+      10ms       10ms    681:func (md *moduledata) textAddr(off32 uint32) uintptr {
+         .          .    682:	off := uintptr(off32)
+         .          .    683:	res := md.text + off
+      20ms       20ms    684:	if len(md.textsectmap) > 1 {
+         .          .    685:		for i, sect := range md.textsectmap {
+         .          .    686:			// For the last section, include the end address (etext), as it is included in the functab.
+         .          .    687:			if off >= sect.vaddr && off < sect.end || (i == len(md.textsectmap)-1 && off == sect.end) {
+         .          .    688:				res = sect.baseaddr + off - sect.vaddr
+         .          .    689:				break

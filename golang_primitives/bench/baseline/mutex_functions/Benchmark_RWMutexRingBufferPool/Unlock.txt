@@ -1,0 +1,32 @@
+Total: 59.56s
+ROUTINE ======================== sync.(*Mutex).Unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/mutex.go
+    31.54s     31.54s (flat, cum) 52.96% of Total
+         .          .     64:func (m *Mutex) Unlock() {
+    31.54s     31.54s     65:	m.mu.Unlock()
+         .          .     66:}
+ROUTINE ======================== sync.(*RWMutex).Unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/rwmutex.go
+         0     31.54s (flat, cum) 52.96% of Total
+         .          .    201:func (rw *RWMutex) Unlock() {
+         .          .    202:	if race.Enabled {
+         .          .    203:		race.Read(unsafe.Pointer(&rw.w))
+         .          .    204:		race.Release(unsafe.Pointer(&rw.readerSem))
+         .          .    205:		race.Disable()
+         .          .    206:	}
+         .          .    207:
+         .          .    208:	// Announce to readers there is no active writer.
+         .          .    209:	r := rw.readerCount.Add(rwmutexMaxReaders)
+         .          .    210:	if r >= rwmutexMaxReaders {
+         .          .    211:		race.Enable()
+         .          .    212:		fatal("sync: Unlock of unlocked RWMutex")
+         .          .    213:	}
+         .          .    214:	// Unblock blocked readers, if any.
+         .          .    215:	for i := 0; i < int(r); i++ {
+         .          .    216:		runtime_Semrelease(&rw.readerSem, false, 0)
+         .          .    217:	}
+         .          .    218:	// Allow other writers to proceed.
+         .     31.54s    219:	rw.w.Unlock()
+         .          .    220:	if race.Enabled {
+         .          .    221:		race.Enable()
+         .          .    222:	}
+         .          .    223:}
+         .          .    224:

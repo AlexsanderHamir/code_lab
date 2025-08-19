@@ -1,0 +1,17 @@
+Total: 52.38s
+ROUTINE ======================== runtime.step in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .   1248:func step(p []byte, pc *uintptr, val *int32, first bool) (newp []byte, ok bool) {
+         .          .   1249:	// For both uvdelta and pcdelta, the common case (~70%)
+         .          .   1250:	// is that they are a single byte. If so, avoid calling readvarint.
+         .          .   1251:	uvdelta := uint32(p[0])
+         .          .   1252:	if uvdelta == 0 && !first {
+         .          .   1253:		return nil, false
+         .          .   1254:	}
+         .          .   1255:	n := uint32(1)
+      10ms       10ms   1256:	if uvdelta&0x80 != 0 {
+         .          .   1257:		n, uvdelta = readvarint(p)
+         .          .   1258:	}
+         .          .   1259:	*val += int32(-(uvdelta & 1) ^ (uvdelta >> 1))
+         .          .   1260:	p = p[n:]
+         .          .   1261:

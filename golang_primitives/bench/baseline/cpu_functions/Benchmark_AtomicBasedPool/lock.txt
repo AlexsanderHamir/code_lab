@@ -1,0 +1,298 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*lockTimer).begin in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    685:func (lt *lockTimer) begin() {
+         .          .    686:	rate := int64(atomic.Load64(&mutexprofilerate))
+         .          .    687:
+         .          .    688:	lt.timeRate = gTrackingPeriod
+         .          .    689:	if rate != 0 && rate < lt.timeRate {
+         .          .    690:		lt.timeRate = rate
+         .          .    691:	}
+         .          .    692:	if int64(cheaprand())%lt.timeRate == 0 {
+         .       10ms    693:		lt.timeStart = nanotime()
+         .          .    694:	}
+         .          .    695:
+         .          .    696:	if rate > 0 && int64(cheaprand())%rate == 0 {
+         .          .    697:		lt.tickStart = cputicks()
+         .          .    698:	}
+ROUTINE ======================== runtime.(*mLockProfile).recordUnlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      20ms       30ms (flat, cum) 0.028% of Total
+         .          .    772:func (prof *mLockProfile) recordUnlock(l *mutex) {
+         .          .    773:	if uintptr(unsafe.Pointer(l)) == prof.pending {
+         .          .    774:		prof.captureStack()
+         .          .    775:	}
+      10ms       10ms    776:	if gp := getg(); gp.m.locks == 1 && gp.m.mLockProfile.haveStack {
+         .       10ms    777:		prof.store()
+         .          .    778:	}
+      10ms       10ms    779:}
+         .          .    780:
+         .          .    781:func (prof *mLockProfile) captureStack() {
+         .          .    782:	if debug.profstackdepth == 0 {
+         .          .    783:		// profstackdepth is set to 0 by the user, so mp.profStack is nil and we
+         .          .    784:		// can't record a stack trace.
+ROUTINE ======================== runtime.(*timer).unlockAndRun in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      10ms       30ms (flat, cum) 0.028% of Total
+         .          .   1062:func (t *timer) unlockAndRun(now int64) {
+         .          .   1063:	t.trace("unlockAndRun")
+         .          .   1064:	assertLockHeld(&t.mu)
+         .          .   1065:	if t.ts != nil {
+         .          .   1066:		assertLockHeld(&t.ts.mu)
+         .          .   1067:	}
+         .          .   1068:	if raceenabled {
+         .          .   1069:		// Note that we are running on a system stack,
+         .          .   1070:		// so there is no chance of getg().m being reassigned
+         .          .   1071:		// out from under us while this function executes.
+         .          .   1072:		tsLocal := &getg().m.p.ptr().timers
+         .          .   1073:		if tsLocal.raceCtx == 0 {
+         .          .   1074:			tsLocal.raceCtx = racegostart(abi.FuncPCABIInternal((*timers).run) + sys.PCQuantum)
+         .          .   1075:		}
+         .          .   1076:		raceacquirectx(tsLocal.raceCtx, unsafe.Pointer(t))
+         .          .   1077:	}
+         .          .   1078:
+         .          .   1079:	if t.state&(timerModified|timerZombie) != 0 {
+         .          .   1080:		badTimer()
+         .          .   1081:	}
+         .          .   1082:
+         .          .   1083:	f := t.f
+         .          .   1084:	arg := t.arg
+         .          .   1085:	seq := t.seq
+         .          .   1086:	var next int64
+         .          .   1087:	delay := now - t.when
+         .          .   1088:	if t.period > 0 {
+         .          .   1089:		// Leave in heap but adjust next time to fire.
+         .          .   1090:		next = t.when + t.period*(1+delay/t.period)
+      10ms       10ms   1091:		if next < 0 { // check for overflow.
+         .          .   1092:			next = maxWhen
+         .          .   1093:		}
+         .          .   1094:	} else {
+         .          .   1095:		next = 0
+         .          .   1096:	}
+         .          .   1097:	ts := t.ts
+         .          .   1098:	t.when = next
+         .          .   1099:	if t.state&timerHeaped != 0 {
+         .          .   1100:		t.state |= timerModified
+         .          .   1101:		if next == 0 {
+         .          .   1102:			t.state |= timerZombie
+         .          .   1103:			t.ts.zombies.Add(1)
+         .          .   1104:		}
+         .       10ms   1105:		t.updateHeap()
+         .          .   1106:	}
+         .          .   1107:
+         .          .   1108:	async := debug.asynctimerchan.Load() != 0
+         .          .   1109:	if !async && t.isChan && t.period == 0 {
+         .          .   1110:		// Tell Stop/Reset that we are sending a value.
+         .          .   1111:		if t.isSending.Add(1) < 0 {
+         .          .   1112:			throw("too many concurrent timer firings")
+         .          .   1113:		}
+         .          .   1114:	}
+         .          .   1115:
+         .          .   1116:	t.unlock()
+         .          .   1117:
+         .          .   1118:	if raceenabled {
+         .          .   1119:		// Temporarily use the current P's racectx for g0.
+         .          .   1120:		gp := getg()
+         .          .   1121:		if gp.racectx != 0 {
+         .          .   1122:			throw("unexpected racectx")
+         .          .   1123:		}
+         .          .   1124:		gp.racectx = gp.m.p.ptr().timers.raceCtx
+         .          .   1125:	}
+         .          .   1126:
+         .          .   1127:	if ts != nil {
+         .          .   1128:		ts.unlock()
+         .          .   1129:	}
+         .          .   1130:
+         .          .   1131:	if ts != nil && ts.syncGroup != nil {
+         .          .   1132:		// Temporarily use the timer's synctest group for the G running this timer.
+         .          .   1133:		gp := getg()
+         .          .   1134:		if gp.syncGroup != nil {
+         .          .   1135:			throw("unexpected syncgroup set")
+         .          .   1136:		}
+         .          .   1137:		gp.syncGroup = ts.syncGroup
+         .          .   1138:		ts.syncGroup.changegstatus(gp, _Gdead, _Grunning)
+         .          .   1139:	}
+         .          .   1140:
+         .          .   1141:	if !async && t.isChan {
+         .          .   1142:		// For a timer channel, we want to make sure that no stale sends
+         .          .   1143:		// happen after a t.stop or t.modify, but we cannot hold t.mu
+         .          .   1144:		// during the actual send (which f does) due to lock ordering.
+         .          .   1145:		// It can happen that we are holding t's lock above, we decide
+         .          .   1146:		// it's time to send a time value (by calling f), grab the parameters,
+         .          .   1147:		// unlock above, and then a t.stop or t.modify changes the timer
+         .          .   1148:		// and returns. At that point, the send needs not to happen after all.
+         .          .   1149:		// The way we arrange for it not to happen is that t.stop and t.modify
+         .          .   1150:		// both increment t.seq while holding both t.mu and t.sendLock.
+         .          .   1151:		// We copied the seq value above while holding t.mu.
+         .          .   1152:		// Now we can acquire t.sendLock (which will be held across the send)
+         .          .   1153:		// and double-check that t.seq is still the seq value we saw above.
+         .          .   1154:		// If not, the timer has been updated and we should skip the send.
+         .          .   1155:		// We skip the send by reassigning f to a no-op function.
+         .          .   1156:		//
+         .          .   1157:		// The isSending field tells t.stop or t.modify that we have
+         .          .   1158:		// started to send the value. That lets them correctly return
+         .          .   1159:		// true meaning that no value was sent.
+         .          .   1160:		lock(&t.sendLock)
+         .          .   1161:
+         .          .   1162:		if t.period == 0 {
+         .          .   1163:			// We are committed to possibly sending a value
+         .          .   1164:			// based on seq, so no need to keep telling
+         .          .   1165:			// stop/modify that we are sending.
+         .          .   1166:			if t.isSending.Add(-1) < 0 {
+         .          .   1167:				throw("mismatched isSending updates")
+         .          .   1168:			}
+         .          .   1169:		}
+         .          .   1170:
+         .          .   1171:		if t.seq != seq {
+         .          .   1172:			f = func(any, uintptr, int64) {}
+         .          .   1173:		}
+         .          .   1174:	}
+         .          .   1175:
+         .       10ms   1176:	f(arg, seq, delay)
+         .          .   1177:
+         .          .   1178:	if !async && t.isChan {
+         .          .   1179:		unlock(&t.sendLock)
+         .          .   1180:	}
+         .          .   1181:
+ROUTINE ======================== runtime.lock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+         0      200ms (flat, cum)  0.18% of Total
+         .          .    149:func lock(l *mutex) {
+         .      200ms    150:	lockWithRank(l, getLockRank(l))
+         .          .    151:}
+         .          .    152:
+         .          .    153:func lock2(l *mutex) {
+         .          .    154:	gp := getg()
+         .          .    155:	if gp.m.locks < 0 {
+ROUTINE ======================== runtime.lock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+     120ms      200ms (flat, cum)  0.18% of Total
+         .          .    153:func lock2(l *mutex) {
+         .          .    154:	gp := getg()
+      10ms       10ms    155:	if gp.m.locks < 0 {
+         .          .    156:		throw("runtime·lock: lock count")
+         .          .    157:	}
+         .          .    158:	gp.m.locks++
+         .          .    159:
+      20ms       20ms    160:	k8 := key8(&l.key)
+         .          .    161:
+         .          .    162:	// Speculative grab for lock.
+      70ms       70ms    163:	v8 := atomic.Xchg8(k8, mutexLocked)
+         .          .    164:	if v8&mutexLocked == 0 {
+      10ms       10ms    165:		if v8&mutexSleeping != 0 {
+         .          .    166:			atomic.Or8(k8, mutexSleeping)
+         .          .    167:		}
+         .          .    168:		return
+         .          .    169:	}
+         .          .    170:	semacreate(gp.m)
+         .          .    171:
+         .          .    172:	timer := &lockTimer{lock: l}
+         .       10ms    173:	timer.begin()
+         .          .    174:	// On uniprocessors, no point spinning.
+         .          .    175:	// On multiprocessors, spin for mutexActiveSpinCount attempts.
+         .          .    176:	spin := 0
+         .          .    177:	if ncpu > 1 {
+         .          .    178:		spin = mutexActiveSpinCount
+         .          .    179:	}
+         .          .    180:
+         .          .    181:	var weSpin, atTail bool
+         .          .    182:	v := atomic.Loaduintptr(&l.key)
+         .          .    183:tryAcquire:
+         .          .    184:	for i := 0; ; i++ {
+         .          .    185:		if v&mutexLocked == 0 {
+         .          .    186:			if weSpin {
+         .          .    187:				next := (v &^ mutexSpinning) | mutexSleeping | mutexLocked
+         .          .    188:				if next&^mutexMMask == 0 {
+         .          .    189:					// The fast-path Xchg8 may have cleared mutexSleeping. Fix
+         .          .    190:					// the hint so unlock2 knows when to use its slow path.
+         .          .    191:					next = next &^ mutexSleeping
+         .          .    192:				}
+         .          .    193:				if atomic.Casuintptr(&l.key, v, next) {
+         .          .    194:					timer.end()
+         .          .    195:					return
+         .          .    196:				}
+         .          .    197:			} else {
+         .          .    198:				prev8 := atomic.Xchg8(k8, mutexLocked|mutexSleeping)
+         .          .    199:				if prev8&mutexLocked == 0 {
+         .          .    200:					timer.end()
+         .          .    201:					return
+         .          .    202:				}
+         .          .    203:			}
+         .          .    204:			v = atomic.Loaduintptr(&l.key)
+         .          .    205:			continue tryAcquire
+         .          .    206:		}
+         .          .    207:
+      10ms       10ms    208:		if !weSpin && v&mutexSpinning == 0 && atomic.Casuintptr(&l.key, v, v|mutexSpinning) {
+         .          .    209:			v |= mutexSpinning
+         .          .    210:			weSpin = true
+         .          .    211:		}
+         .          .    212:
+         .          .    213:		if weSpin || atTail || mutexPreferLowLatency(l) {
+         .          .    214:			if i < spin {
+         .          .    215:				procyield(mutexActiveSpinSize)
+         .          .    216:				v = atomic.Loaduintptr(&l.key)
+         .          .    217:				continue tryAcquire
+         .          .    218:			} else if i < spin+mutexPassiveSpinCount {
+         .       70ms    219:				osyield() // TODO: Consider removing this step. See https://go.dev/issue/69268.
+         .          .    220:				v = atomic.Loaduintptr(&l.key)
+         .          .    221:				continue tryAcquire
+         .          .    222:			}
+         .          .    223:		}
+         .          .    224:
+ROUTINE ======================== runtime.lockWithRank in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lockrank_off.go
+         0      200ms (flat, cum)  0.18% of Total
+         .          .     23:func lockWithRank(l *mutex, rank lockRank) {
+         .      200ms     24:	lock2(l)
+         .          .     25:}
+         .          .     26:
+         .          .     27:// This function may be called in nosplit context and thus must be nosplit.
+         .          .     28://
+         .          .     29://go:nosplit
+ROUTINE ======================== runtime.saveBlockEventStack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    859:func saveBlockEventStack(cycles, rate int64, stk []uintptr, which bucketType) {
+         .       10ms    860:	b := stkbucket(which, 0, stk, true)
+         .          .    861:	bp := b.bp()
+         .          .    862:
+         .          .    863:	lock(&profBlockLock)
+         .          .    864:	// We want to up-scale the count and cycles according to the
+         .          .    865:	// probability that the event was sampled. For block profile events,
+ROUTINE ======================== runtime.unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+         0      120ms (flat, cum)  0.11% of Total
+         .          .    252:func unlock(l *mutex) {
+         .      120ms    253:	unlockWithRank(l)
+         .          .    254:}
+         .          .    255:
+         .          .    256:// We might not be holding a p in this code.
+         .          .    257://
+         .          .    258://go:nowritebarrier
+ROUTINE ======================== runtime.unlock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+      90ms      120ms (flat, cum)  0.11% of Total
+      10ms       10ms    259:func unlock2(l *mutex) {
+         .          .    260:	gp := getg()
+         .          .    261:
+      10ms       10ms    262:	prev8 := atomic.Xchg8(key8(&l.key), 0)
+         .          .    263:	if prev8&mutexLocked == 0 {
+         .          .    264:		throw("unlock of unlocked lock")
+         .          .    265:	}
+         .          .    266:
+      30ms       30ms    267:	if prev8&mutexSleeping != 0 {
+         .          .    268:		unlock2Wake(l)
+         .          .    269:	}
+         .          .    270:
+         .       30ms    271:	gp.m.mLockProfile.recordUnlock(l)
+      10ms       10ms    272:	gp.m.locks--
+         .          .    273:	if gp.m.locks < 0 {
+         .          .    274:		throw("runtime·unlock: lock count")
+         .          .    275:	}
+      30ms       30ms    276:	if gp.m.locks == 0 && gp.preempt { // restore the preemption request in case we've cleared it in newstack
+         .          .    277:		gp.stackguard0 = stackPreempt
+         .          .    278:	}
+         .          .    279:}
+         .          .    280:
+         .          .    281:// unlock2Wake updates the list of Ms waiting on l, waking an M if necessary.
+ROUTINE ======================== runtime.unlockWithRank in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lockrank_off.go
+         0      120ms (flat, cum)  0.11% of Total
+         .          .     34:func unlockWithRank(l *mutex) {
+         .      120ms     35:	unlock2(l)
+         .          .     36:}
+         .          .     37:
+         .          .     38:// This function may be called in nosplit context and thus must be nosplit.
+         .          .     39://
+         .          .     40://go:nosplit

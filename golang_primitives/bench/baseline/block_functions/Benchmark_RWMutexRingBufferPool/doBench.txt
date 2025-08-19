@@ -1,0 +1,19 @@
+Total: 61.50s
+ROUTINE ======================== testing.(*B).doBench in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     13.92s (flat, cum) 22.63% of Total
+         .          .    295:func (b *B) doBench() BenchmarkResult {
+         .          .    296:	go b.launch()
+         .     13.92s    297:	<-b.signal
+         .          .    298:	return b.result
+         .          .    299:}
+         .          .    300:
+         .          .    301:func predictN(goalns int64, prevIters int64, prevns int64, last int64) int {
+         .          .    302:	if prevns == 0 {
+ROUTINE ======================== testing.(*B).doBench.gowrap1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     13.90s (flat, cum) 22.61% of Total
+         .     13.90s    296:	go b.launch()
+         .          .    297:	<-b.signal
+         .          .    298:	return b.result
+         .          .    299:}
+         .          .    300:
+         .          .    301:func predictN(goalns int64, prevIters int64, prevns int64, last int64) int {

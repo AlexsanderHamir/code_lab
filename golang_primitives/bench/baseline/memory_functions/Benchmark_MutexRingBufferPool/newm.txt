@@ -1,0 +1,22 @@
+Total: 9.28MB
+ROUTINE ======================== runtime.newm in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0     1.50MB (flat, cum) 16.20% of Total
+         .          .   2759:func newm(fn func(), pp *p, id int64) {
+         .          .   2760:	// allocm adds a new M to allm, but they do not start until created by
+         .          .   2761:	// the OS in newm1 or the template thread.
+         .          .   2762:	//
+         .          .   2763:	// doAllThreadsSyscall requires that every M in allm will eventually
+         .          .   2764:	// start and be signal-able, even with a STW.
+         .          .   2765:	//
+         .          .   2766:	// Disable preemption here until we start the thread to ensure that
+         .          .   2767:	// newm is not preempted between allocm and starting the new thread,
+         .          .   2768:	// ensuring that anything added to allm is guaranteed to eventually
+         .          .   2769:	// start.
+         .          .   2770:	acquirem()
+         .          .   2771:
+         .     1.50MB   2772:	mp := allocm(pp, fn, id)
+         .          .   2773:	mp.nextp.set(pp)
+         .          .   2774:	mp.sigmask = initSigmask
+         .          .   2775:	if gp := getg(); gp != nil && gp.m != nil && (gp.m.lockedExt != 0 || gp.m.incgo) && GOOS != "plan9" {
+         .          .   2776:		// We're on a locked M or a thread that may have been
+         .          .   2777:		// started by C. The kernel state of this thread may

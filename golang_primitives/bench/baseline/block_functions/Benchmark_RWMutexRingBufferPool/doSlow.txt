@@ -1,0 +1,11 @@
+Total: 61.50s
+ROUTINE ======================== sync.(*Once).doSlow in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/once.go
+         0   187.83ms (flat, cum)  0.31% of Total
+         .          .     73:func (o *Once) doSlow(f func()) {
+         .          .     74:	o.m.Lock()
+         .          .     75:	defer o.m.Unlock()
+         .          .     76:	if o.done.Load() == 0 {
+         .          .     77:		defer o.done.Store(1)
+         .   187.83ms     78:		f()
+         .          .     79:	}
+         .          .     80:}

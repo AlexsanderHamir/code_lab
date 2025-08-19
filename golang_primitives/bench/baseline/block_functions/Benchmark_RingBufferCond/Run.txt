@@ -1,0 +1,492 @@
+Total: 64.37s
+ROUTINE ======================== runtime.GC in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgc.go
+         0     1.96us (flat, cum) 3e-06% of Total
+         .          .    467:func GC() {
+         .          .    468:	// We consider a cycle to be: sweep termination, mark, mark
+         .          .    469:	// termination, and sweep. This function shouldn't return
+         .          .    470:	// until a full cycle has been completed, from beginning to
+         .          .    471:	// end. Hence, we always want to finish up the current cycle
+         .          .    472:	// and start a new one. That means:
+         .          .    473:	//
+         .          .    474:	// 1. In sweep termination, mark, or mark termination of cycle
+         .          .    475:	// N, wait until mark termination N completes and transitions
+         .          .    476:	// to sweep N.
+         .          .    477:	//
+         .          .    478:	// 2. In sweep N, help with sweep N.
+         .          .    479:	//
+         .          .    480:	// At this point we can begin a full cycle N+1.
+         .          .    481:	//
+         .          .    482:	// 3. Trigger cycle N+1 by starting sweep termination N+1.
+         .          .    483:	//
+         .          .    484:	// 4. Wait for mark termination N+1 to complete.
+         .          .    485:	//
+         .          .    486:	// 5. Help with sweep N+1 until it's done.
+         .          .    487:	//
+         .          .    488:	// This all has to be written to deal with the fact that the
+         .          .    489:	// GC may move ahead on its own. For example, when we block
+         .          .    490:	// until mark termination N, we may wake up in cycle N+2.
+         .          .    491:
+         .          .    492:	// Wait until the current sweep termination, mark, and mark
+         .          .    493:	// termination complete.
+         .          .    494:	n := work.cycles.Load()
+         .          .    495:	gcWaitOnMark(n)
+         .          .    496:
+         .          .    497:	// We're now in sweep N or later. Trigger GC cycle N+1, which
+         .          .    498:	// will first finish sweep N if necessary and then enter sweep
+         .          .    499:	// termination N+1.
+         .     1.96us    500:	gcStart(gcTrigger{kind: gcTriggerCycle, n: n + 1})
+         .          .    501:
+         .          .    502:	// Wait for mark termination N+1 to complete.
+         .          .    503:	gcWaitOnMark(n + 1)
+         .          .    504:
+         .          .    505:	// Finish sweep N+1 before returning. We do this both to
+ROUTINE ======================== runtime.chanrecv1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/chan.go
+    14.11s     14.11s (flat, cum) 21.92% of Total
+         .          .    505:func chanrecv1(c *hchan, elem unsafe.Pointer) {
+    14.11s     14.11s    506:	chanrecv(c, elem, true)
+         .          .    507:}
+         .          .    508:
+         .          .    509://go:nosplit
+         .          .    510:func chanrecv2(c *hchan, elem unsafe.Pointer) (received bool) {
+         .          .    511:	_, received = chanrecv(c, elem, true)
+ROUTINE ======================== runtime.gcBgMarkStartWorkers in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgc.go
+         0     1.96us (flat, cum) 3e-06% of Total
+         .          .   1316:func gcBgMarkStartWorkers() {
+         .          .   1317:	// Background marking is performed by per-P G's. Ensure that each P has
+         .          .   1318:	// a background GC G.
+         .          .   1319:	//
+         .          .   1320:	// Worker Gs don't exit if gomaxprocs is reduced. If it is raised
+         .          .   1321:	// again, we can reuse the old workers; no need to create new workers.
+         .          .   1322:	if gcBgMarkWorkerCount >= gomaxprocs {
+         .          .   1323:		return
+         .          .   1324:	}
+         .          .   1325:
+         .          .   1326:	// Increment mp.locks when allocating. We are called within gcStart,
+         .          .   1327:	// and thus must not trigger another gcStart via an allocation. gcStart
+         .          .   1328:	// bails when allocating with locks held, so simulate that for these
+         .          .   1329:	// allocations.
+         .          .   1330:	//
+         .          .   1331:	// TODO(prattmic): cleanup gcStart to use a more explicit "in gcStart"
+         .          .   1332:	// check for bailing.
+         .          .   1333:	mp := acquirem()
+         .          .   1334:	ready := make(chan struct{}, 1)
+         .          .   1335:	releasem(mp)
+         .          .   1336:
+         .          .   1337:	for gcBgMarkWorkerCount < gomaxprocs {
+         .          .   1338:		mp := acquirem() // See above, we allocate a closure here.
+         .          .   1339:		go gcBgMarkWorker(ready)
+         .          .   1340:		releasem(mp)
+         .          .   1341:
+         .          .   1342:		// N.B. we intentionally wait on each goroutine individually
+         .          .   1343:		// rather than starting all in a batch and then waiting once
+         .          .   1344:		// afterwards. By running one goroutine at a time, we can take
+         .          .   1345:		// advantage of runnext to bounce back and forth between
+         .          .   1346:		// workers and this goroutine. In an overloaded application,
+         .          .   1347:		// this can reduce GC start latency by prioritizing these
+         .          .   1348:		// goroutines rather than waiting on the end of the run queue.
+         .     1.96us   1349:		<-ready
+         .          .   1350:		// The worker is now guaranteed to be added to the pool before
+         .          .   1351:		// its P's next findRunnableGCWorker.
+         .          .   1352:
+         .          .   1353:		gcBgMarkWorkerCount++
+         .          .   1354:	}
+ROUTINE ======================== runtime.gcStart in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgc.go
+         0     1.96us (flat, cum) 3e-06% of Total
+         .          .    629:func gcStart(trigger gcTrigger) {
+         .          .    630:	// Since this is called from malloc and malloc is called in
+         .          .    631:	// the guts of a number of libraries that might be holding
+         .          .    632:	// locks, don't attempt to start GC in non-preemptible or
+         .          .    633:	// potentially unstable situations.
+         .          .    634:	mp := acquirem()
+         .          .    635:	if gp := getg(); gp == mp.g0 || mp.locks > 1 || mp.preemptoff != "" {
+         .          .    636:		releasem(mp)
+         .          .    637:		return
+         .          .    638:	}
+         .          .    639:	releasem(mp)
+         .          .    640:	mp = nil
+         .          .    641:
+         .          .    642:	if gp := getg(); gp.syncGroup != nil {
+         .          .    643:		// Disassociate the G from its synctest bubble while allocating.
+         .          .    644:		// This is less elegant than incrementing the group's active count,
+         .          .    645:		// but avoids any contamination between GC and synctest.
+         .          .    646:		sg := gp.syncGroup
+         .          .    647:		gp.syncGroup = nil
+         .          .    648:		defer func() {
+         .          .    649:			gp.syncGroup = sg
+         .          .    650:		}()
+         .          .    651:	}
+         .          .    652:
+         .          .    653:	// Pick up the remaining unswept/not being swept spans concurrently
+         .          .    654:	//
+         .          .    655:	// This shouldn't happen if we're being invoked in background
+         .          .    656:	// mode since proportional sweep should have just finished
+         .          .    657:	// sweeping everything, but rounding errors, etc, may leave a
+         .          .    658:	// few spans unswept. In forced mode, this is necessary since
+         .          .    659:	// GC can be forced at any point in the sweeping cycle.
+         .          .    660:	//
+         .          .    661:	// We check the transition condition continuously here in case
+         .          .    662:	// this G gets delayed in to the next GC cycle.
+         .          .    663:	for trigger.test() && sweepone() != ^uintptr(0) {
+         .          .    664:	}
+         .          .    665:
+         .          .    666:	// Perform GC initialization and the sweep termination
+         .          .    667:	// transition.
+         .          .    668:	semacquire(&work.startSema)
+         .          .    669:	// Re-check transition condition under transition lock.
+         .          .    670:	if !trigger.test() {
+         .          .    671:		semrelease(&work.startSema)
+         .          .    672:		return
+         .          .    673:	}
+         .          .    674:
+         .          .    675:	// In gcstoptheworld debug mode, upgrade the mode accordingly.
+         .          .    676:	// We do this after re-checking the transition condition so
+         .          .    677:	// that multiple goroutines that detect the heap trigger don't
+         .          .    678:	// start multiple STW GCs.
+         .          .    679:	mode := gcBackgroundMode
+         .          .    680:	if debug.gcstoptheworld == 1 {
+         .          .    681:		mode = gcForceMode
+         .          .    682:	} else if debug.gcstoptheworld == 2 {
+         .          .    683:		mode = gcForceBlockMode
+         .          .    684:	}
+         .          .    685:
+         .          .    686:	// Ok, we're doing it! Stop everybody else
+         .          .    687:	semacquire(&gcsema)
+         .          .    688:	semacquire(&worldsema)
+         .          .    689:
+         .          .    690:	// For stats, check if this GC was forced by the user.
+         .          .    691:	// Update it under gcsema to avoid gctrace getting wrong values.
+         .          .    692:	work.userForced = trigger.kind == gcTriggerCycle
+         .          .    693:
+         .          .    694:	trace := traceAcquire()
+         .          .    695:	if trace.ok() {
+         .          .    696:		trace.GCStart()
+         .          .    697:		traceRelease(trace)
+         .          .    698:	}
+         .          .    699:
+         .          .    700:	// Check that all Ps have finished deferred mcache flushes.
+         .          .    701:	for _, p := range allp {
+         .          .    702:		if fg := p.mcache.flushGen.Load(); fg != mheap_.sweepgen {
+         .          .    703:			println("runtime: p", p.id, "flushGen", fg, "!= sweepgen", mheap_.sweepgen)
+         .          .    704:			throw("p mcache not flushed")
+         .          .    705:		}
+         .          .    706:	}
+         .          .    707:
+         .     1.96us    708:	gcBgMarkStartWorkers()
+         .          .    709:
+         .          .    710:	systemstack(gcResetMarkState)
+         .          .    711:
+         .          .    712:	work.stwprocs, work.maxprocs = gomaxprocs, gomaxprocs
+         .          .    713:	if work.stwprocs > ncpu {
+ROUTINE ======================== runtime.main in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0     14.11s (flat, cum) 21.92% of Total
+         .          .    147:func main() {
+         .          .    148:	mp := getg().m
+         .          .    149:
+         .          .    150:	// Racectx of m0->g0 is used only as the parent of the main goroutine.
+         .          .    151:	// It must not be used for anything else.
+         .          .    152:	mp.g0.racectx = 0
+         .          .    153:
+         .          .    154:	// Max stack size is 1 GB on 64-bit, 250 MB on 32-bit.
+         .          .    155:	// Using decimal instead of binary GB and MB because
+         .          .    156:	// they look nicer in the stack overflow failure message.
+         .          .    157:	if goarch.PtrSize == 8 {
+         .          .    158:		maxstacksize = 1000000000
+         .          .    159:	} else {
+         .          .    160:		maxstacksize = 250000000
+         .          .    161:	}
+         .          .    162:
+         .          .    163:	// An upper limit for max stack size. Used to avoid random crashes
+         .          .    164:	// after calling SetMaxStack and trying to allocate a stack that is too big,
+         .          .    165:	// since stackalloc works with 32-bit sizes.
+         .          .    166:	maxstackceiling = 2 * maxstacksize
+         .          .    167:
+         .          .    168:	// Allow newproc to start new Ms.
+         .          .    169:	mainStarted = true
+         .          .    170:
+         .          .    171:	if haveSysmon {
+         .          .    172:		systemstack(func() {
+         .          .    173:			newm(sysmon, nil, -1)
+         .          .    174:		})
+         .          .    175:	}
+         .          .    176:
+         .          .    177:	// Lock the main goroutine onto this, the main OS thread,
+         .          .    178:	// during initialization. Most programs won't care, but a few
+         .          .    179:	// do require certain calls to be made by the main thread.
+         .          .    180:	// Those can arrange for main.main to run in the main thread
+         .          .    181:	// by calling runtime.LockOSThread during initialization
+         .          .    182:	// to preserve the lock.
+         .          .    183:	lockOSThread()
+         .          .    184:
+         .          .    185:	if mp != &m0 {
+         .          .    186:		throw("runtime.main not on m0")
+         .          .    187:	}
+         .          .    188:
+         .          .    189:	// Record when the world started.
+         .          .    190:	// Must be before doInit for tracing init.
+         .          .    191:	runtimeInitTime = nanotime()
+         .          .    192:	if runtimeInitTime == 0 {
+         .          .    193:		throw("nanotime returning zero")
+         .          .    194:	}
+         .          .    195:
+         .          .    196:	if debug.inittrace != 0 {
+         .          .    197:		inittrace.id = getg().goid
+         .          .    198:		inittrace.active = true
+         .          .    199:	}
+         .          .    200:
+         .          .    201:	doInit(runtime_inittasks) // Must be before defer.
+         .          .    202:
+         .          .    203:	// Defer unlock so that runtime.Goexit during init does the unlock too.
+         .          .    204:	needUnlock := true
+         .          .    205:	defer func() {
+         .          .    206:		if needUnlock {
+         .          .    207:			unlockOSThread()
+         .          .    208:		}
+         .          .    209:	}()
+         .          .    210:
+         .          .    211:	gcenable()
+         .          .    212:
+         .          .    213:	main_init_done = make(chan bool)
+         .          .    214:	if iscgo {
+         .          .    215:		if _cgo_pthread_key_created == nil {
+         .          .    216:			throw("_cgo_pthread_key_created missing")
+         .          .    217:		}
+         .          .    218:
+         .          .    219:		if _cgo_thread_start == nil {
+         .          .    220:			throw("_cgo_thread_start missing")
+         .          .    221:		}
+         .          .    222:		if GOOS != "windows" {
+         .          .    223:			if _cgo_setenv == nil {
+         .          .    224:				throw("_cgo_setenv missing")
+         .          .    225:			}
+         .          .    226:			if _cgo_unsetenv == nil {
+         .          .    227:				throw("_cgo_unsetenv missing")
+         .          .    228:			}
+         .          .    229:		}
+         .          .    230:		if _cgo_notify_runtime_init_done == nil {
+         .          .    231:			throw("_cgo_notify_runtime_init_done missing")
+         .          .    232:		}
+         .          .    233:
+         .          .    234:		// Set the x_crosscall2_ptr C function pointer variable point to crosscall2.
+         .          .    235:		if set_crosscall2 == nil {
+         .          .    236:			throw("set_crosscall2 missing")
+         .          .    237:		}
+         .          .    238:		set_crosscall2()
+         .          .    239:
+         .          .    240:		// Start the template thread in case we enter Go from
+         .          .    241:		// a C-created thread and need to create a new thread.
+         .          .    242:		startTemplateThread()
+         .          .    243:		cgocall(_cgo_notify_runtime_init_done, nil)
+         .          .    244:	}
+         .          .    245:
+         .          .    246:	// Run the initializing tasks. Depending on build mode this
+         .          .    247:	// list can arrive a few different ways, but it will always
+         .          .    248:	// contain the init tasks computed by the linker for all the
+         .          .    249:	// packages in the program (excluding those added at runtime
+         .          .    250:	// by package plugin). Run through the modules in dependency
+         .          .    251:	// order (the order they are initialized by the dynamic
+         .          .    252:	// loader, i.e. they are added to the moduledata linked list).
+         .          .    253:	for m := &firstmoduledata; m != nil; m = m.next {
+         .          .    254:		doInit(m.inittasks)
+         .          .    255:	}
+         .          .    256:
+         .          .    257:	// Disable init tracing after main init done to avoid overhead
+         .          .    258:	// of collecting statistics in malloc and newproc
+         .          .    259:	inittrace.active = false
+         .          .    260:
+         .          .    261:	close(main_init_done)
+         .          .    262:
+         .          .    263:	needUnlock = false
+         .          .    264:	unlockOSThread()
+         .          .    265:
+         .          .    266:	if isarchive || islibrary {
+         .          .    267:		// A program compiled with -buildmode=c-archive or c-shared
+         .          .    268:		// has a main, but it is not executed.
+         .          .    269:		if GOARCH == "wasm" {
+         .          .    270:			// On Wasm, pause makes it return to the host.
+         .          .    271:			// Unlike cgo callbacks where Ms are created on demand,
+         .          .    272:			// on Wasm we have only one M. So we keep this M (and this
+         .          .    273:			// G) for callbacks.
+         .          .    274:			// Using the caller's SP unwinds this frame and backs to
+         .          .    275:			// goexit. The -16 is: 8 for goexit's (fake) return PC,
+         .          .    276:			// and pause's epilogue pops 8.
+         .          .    277:			pause(sys.GetCallerSP() - 16) // should not return
+         .          .    278:			panic("unreachable")
+         .          .    279:		}
+         .          .    280:		return
+         .          .    281:	}
+         .          .    282:	fn := main_main // make an indirect call, as the linker doesn't know the address of the main package when laying down the runtime
+         .     14.11s    283:	fn()
+         .          .    284:	if raceenabled {
+         .          .    285:		runExitHooks(0) // run hooks now, since racefini does not return
+         .          .    286:		racefini()
+         .          .    287:	}
+         .          .    288:
+ROUTINE ======================== runtime/pprof.StopCPUProfile in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/pprof.go
+         0   166.13ms (flat, cum)  0.26% of Total
+         .          .    892:func StopCPUProfile() {
+         .          .    893:	cpu.Lock()
+         .          .    894:	defer cpu.Unlock()
+         .          .    895:
+         .          .    896:	if !cpu.profiling {
+         .          .    897:		return
+         .          .    898:	}
+         .          .    899:	cpu.profiling = false
+         .          .    900:	runtime.SetCPUProfileRate(0)
+         .   166.13ms    901:	<-cpu.done
+         .          .    902:}
+         .          .    903:
+         .          .    904:// countBlock returns the number of records in the blocking profile.
+         .          .    905:func countBlock() int {
+         .          .    906:	n, _ := runtime.BlockProfile(nil)
+ROUTINE ======================== testing.(*B).run in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     13.94s (flat, cum) 21.66% of Total
+         .          .    275:func (b *B) run() {
+         .          .    276:	labelsOnce.Do(func() {
+         .          .    277:		fmt.Fprintf(b.w, "goos: %s\n", runtime.GOOS)
+         .          .    278:		fmt.Fprintf(b.w, "goarch: %s\n", runtime.GOARCH)
+         .          .    279:		if b.importPath != "" {
+         .          .    280:			fmt.Fprintf(b.w, "pkg: %s\n", b.importPath)
+         .          .    281:		}
+         .          .    282:		if cpu := sysinfo.CPUName(); cpu != "" {
+         .          .    283:			fmt.Fprintf(b.w, "cpu: %s\n", cpu)
+         .          .    284:		}
+         .          .    285:	})
+         .          .    286:	if b.bstate != nil {
+         .          .    287:		// Running go test --test.bench
+         .     13.94s    288:		b.bstate.processBench(b) // Must call doBench.
+         .          .    289:	} else {
+         .          .    290:		// Running func Benchmark.
+         .          .    291:		b.doBench()
+         .          .    292:	}
+         .          .    293:}
+ROUTINE ======================== testing.(*B).run1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     3.01ms (flat, cum) 0.0047% of Total
+         .          .    231:func (b *B) run1() bool {
+         .          .    232:	if bstate := b.bstate; bstate != nil {
+         .          .    233:		// Extend maxLen, if needed.
+         .          .    234:		if n := len(b.name) + bstate.extLen + 1; n > bstate.maxLen {
+         .          .    235:			bstate.maxLen = n + 8 // Add additional slack to avoid too many jumps in size.
+         .          .    236:		}
+         .          .    237:	}
+         .          .    238:	go func() {
+         .          .    239:		// Signal that we're done whether we return normally
+         .          .    240:		// or by FailNow's runtime.Goexit.
+         .          .    241:		defer func() {
+         .          .    242:			b.signal <- true
+         .          .    243:		}()
+         .          .    244:
+         .          .    245:		b.runN(1)
+         .          .    246:	}()
+         .     3.01ms    247:	<-b.signal
+         .          .    248:	if b.failed {
+         .          .    249:		fmt.Fprintf(b.w, "%s--- FAIL: %s\n%s", b.chatty.prefix(), b.name, b.output)
+         .          .    250:		return false
+         .          .    251:	}
+         .          .    252:	// Only print the output if we know we are not going to proceed.
+ROUTINE ======================== testing.(*B).run1.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0    16.62us (flat, cum) 2.6e-05% of Total
+         .          .    238:	go func() {
+         .          .    239:		// Signal that we're done whether we return normally
+         .          .    240:		// or by FailNow's runtime.Goexit.
+         .          .    241:		defer func() {
+         .          .    242:			b.signal <- true
+         .          .    243:		}()
+         .          .    244:
+         .    16.62us    245:		b.runN(1)
+         .          .    246:	}()
+         .          .    247:	<-b.signal
+         .          .    248:	if b.failed {
+         .          .    249:		fmt.Fprintf(b.w, "%s--- FAIL: %s\n%s", b.chatty.prefix(), b.name, b.output)
+         .          .    250:		return false
+ROUTINE ======================== testing.(*B).runN in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     27.87s (flat, cum) 43.30% of Total
+         .          .    197:func (b *B) runN(n int) {
+         .          .    198:	benchmarkLock.Lock()
+         .          .    199:	defer benchmarkLock.Unlock()
+         .          .    200:	ctx, cancelCtx := context.WithCancel(context.Background())
+         .          .    201:	defer func() {
+         .          .    202:		b.runCleanup(normalPanic)
+         .          .    203:		b.checkRaces()
+         .          .    204:	}()
+         .          .    205:	// Try to get a comparable environment for each run
+         .          .    206:	// by clearing garbage from previous runs.
+         .     1.96us    207:	runtime.GC()
+         .          .    208:	b.resetRaces()
+         .          .    209:	b.N = n
+         .          .    210:	b.loop.n = 0
+         .          .    211:	b.loop.i = 0
+         .          .    212:	b.loop.done = false
+         .          .    213:	b.ctx = ctx
+         .          .    214:	b.cancelCtx = cancelCtx
+         .          .    215:
+         .          .    216:	b.parallelism = 1
+         .          .    217:	b.ResetTimer()
+         .          .    218:	b.StartTimer()
+         .     27.87s    219:	b.benchFunc(b)
+         .          .    220:	b.StopTimer()
+         .          .    221:	b.previousN = n
+         .          .    222:	b.previousDuration = b.duration
+         .          .    223:
+         .          .    224:	if b.loop.n > 0 && !b.loop.done && !b.failed {
+ROUTINE ======================== testing.runBenchmarks in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     13.94s (flat, cum) 21.66% of Total
+         .          .    673:func runBenchmarks(importPath string, matchString func(pat, str string) (bool, error), benchmarks []InternalBenchmark) bool {
+         .          .    674:	// If no flag was specified, don't run benchmarks.
+         .          .    675:	if len(*matchBenchmarks) == 0 {
+         .          .    676:		return true
+         .          .    677:	}
+         .          .    678:	// Collect matching benchmarks and determine longest name.
+         .          .    679:	maxprocs := 1
+         .          .    680:	for _, procs := range cpuList {
+         .          .    681:		if procs > maxprocs {
+         .          .    682:			maxprocs = procs
+         .          .    683:		}
+         .          .    684:	}
+         .          .    685:	bstate := &benchState{
+         .          .    686:		match:  newMatcher(matchString, *matchBenchmarks, "-test.bench", *skip),
+         .          .    687:		extLen: len(benchmarkName("", maxprocs)),
+         .          .    688:	}
+         .          .    689:	var bs []InternalBenchmark
+         .          .    690:	for _, Benchmark := range benchmarks {
+         .          .    691:		if _, matched, _ := bstate.match.fullName(nil, Benchmark.Name); matched {
+         .          .    692:			bs = append(bs, Benchmark)
+         .          .    693:			benchName := benchmarkName(Benchmark.Name, maxprocs)
+         .          .    694:			if l := len(benchName) + bstate.extLen + 1; l > bstate.maxLen {
+         .          .    695:				bstate.maxLen = l
+         .          .    696:			}
+         .          .    697:		}
+         .          .    698:	}
+         .          .    699:	main := &B{
+         .          .    700:		common: common{
+         .          .    701:			name:  "Main",
+         .          .    702:			w:     os.Stdout,
+         .          .    703:			bench: true,
+         .          .    704:		},
+         .          .    705:		importPath: importPath,
+         .          .    706:		benchFunc: func(b *B) {
+         .          .    707:			for _, Benchmark := range bs {
+         .          .    708:				b.Run(Benchmark.Name, Benchmark.F)
+         .          .    709:			}
+         .          .    710:		},
+         .          .    711:		benchTime: benchTime,
+         .          .    712:		bstate:    bstate,
+         .          .    713:	}
+         .          .    714:	if Verbose() {
+         .          .    715:		main.chatty = newChattyPrinter(main.w)
+         .          .    716:	}
+         .     13.94s    717:	main.runN(1)
+         .          .    718:	return !main.failed
+         .          .    719:}
+         .          .    720:
+         .          .    721:// processBench runs bench b for the configured CPU counts and prints the results.
+         .          .    722:func (s *benchState) processBench(b *B) {
+ROUTINE ======================== testing.runBenchmarks.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     13.94s (flat, cum) 21.66% of Total
+         .          .    706:		benchFunc: func(b *B) {
+         .          .    707:			for _, Benchmark := range bs {
+         .     13.94s    708:				b.Run(Benchmark.Name, Benchmark.F)
+         .          .    709:			}
+         .          .    710:		},
+         .          .    711:		benchTime: benchTime,
+         .          .    712:		bstate:    bstate,
+         .          .    713:	}

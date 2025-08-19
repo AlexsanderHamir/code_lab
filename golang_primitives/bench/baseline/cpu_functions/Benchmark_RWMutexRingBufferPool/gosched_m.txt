@@ -1,0 +1,10 @@
+Total: 48.01s
+ROUTINE ======================== runtime.gosched_m in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.021% of Total
+         .          .   4182:func gosched_m(gp *g) {
+         .       10ms   4183:	goschedImpl(gp, false)
+         .          .   4184:}
+         .          .   4185:
+         .          .   4186:// goschedguarded is a forbidden-states-avoided version of gosched_m.
+         .          .   4187:func goschedguarded_m(gp *g) {
+         .          .   4188:	if !canPreemptM(gp.m) {

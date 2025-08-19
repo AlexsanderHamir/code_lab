@@ -1,0 +1,28 @@
+Total: 48.01s
+ROUTINE ======================== internal/runtime/atomic.(*Bool).Load in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+      10ms       30ms (flat, cum) 0.062% of Total
+         .          .    167:func (b *Bool) Load() bool {
+      10ms       30ms    168:	return b.u.Load() != 0
+         .          .    169:}
+         .          .    170:
+         .          .    171:// Store updates the value atomically.
+         .          .    172://
+         .          .    173://go:nosplit
+ROUTINE ======================== internal/runtime/atomic.(*Uint32).Load in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+      20ms       20ms (flat, cum) 0.042% of Total
+         .          .    193:func (u *Uint32) Load() uint32 {
+      20ms       20ms    194:	return Load(&u.value)
+         .          .    195:}
+         .          .    196:
+         .          .    197:// LoadAcquire is a partially unsynchronized version
+         .          .    198:// of Load that relaxes ordering constraints. Other threads
+         .          .    199:// may observe operations that precede this operation to
+ROUTINE ======================== internal/runtime/atomic.(*Uint8).Load in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+      20ms       20ms (flat, cum) 0.042% of Total
+         .          .    123:func (u *Uint8) Load() uint8 {
+      20ms       20ms    124:	return Load8(&u.value)
+         .          .    125:}
+         .          .    126:
+         .          .    127:// Store updates the value atomically.
+         .          .    128://
+         .          .    129://go:nosplit

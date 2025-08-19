@@ -1,0 +1,19 @@
+Total: 10.13MB
+ROUTINE ======================== primitives_performance.NewAtomicBasedPool in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+    1.51MB     2.51MB (flat, cum) 24.80% of Total
+         .          .    294:func NewAtomicBasedPool(capacity int, allocator func() *testObject, cleaner func(*testObject)) *AtomicBasedPool {
+         .          .    295:	pool := &AtomicBasedPool{
+    1.51MB     1.51MB    296:		objects:   make([]*testObject, capacity),
+         .          .    297:		capacity:  int64(capacity),
+         .          .    298:		allocator: allocator,
+         .          .    299:		cleaner:   cleaner,
+         .          .    300:	}
+         .          .    301:
+         .          .    302:	// Pre-populate the pool
+         .          .    303:	for i := range capacity {
+         .        1MB    304:		pool.objects[i] = allocator()
+         .          .    305:	}
+         .          .    306:
+         .          .    307:	return pool
+         .          .    308:}
+         .          .    309:

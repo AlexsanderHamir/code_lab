@@ -1,0 +1,18 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*guintptr).cas in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/runtime2.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    246:func (gp *guintptr) cas(old, new guintptr) bool {
+      10ms       10ms    247:	return atomic.Casuintptr((*uintptr)(unsafe.Pointer(gp)), uintptr(old), uintptr(new))
+         .          .    248:}
+         .          .    249:
+         .          .    250://go:nosplit
+         .          .    251:func (gp *g) guintptr() guintptr {
+         .          .    252:	return guintptr(unsafe.Pointer(gp))
+ROUTINE ======================== runtime.puintptr.ptr in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/runtime2.go
+      30ms       30ms (flat, cum) 0.028% of Total
+      30ms       30ms    267:func (pp puintptr) ptr() *p { return (*p)(unsafe.Pointer(pp)) }
+         .          .    268:
+         .          .    269://go:nosplit
+         .          .    270:func (pp *puintptr) set(p *p) { *pp = puintptr(unsafe.Pointer(p)) }
+         .          .    271:
+         .          .    272:// muintptr is a *m that is not tracked by the garbage collector.

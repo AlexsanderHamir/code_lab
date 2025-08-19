@@ -1,0 +1,63 @@
+Total: 48.01s
+ROUTINE ======================== runtime.semacquire1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+     100ms     10.26s (flat, cum) 21.37% of Total
+         .          .    142:func semacquire1(addr *uint32, lifo bool, profile semaProfileFlags, skipframes int, reason waitReason) {
+         .          .    143:	gp := getg()
+      10ms       10ms    144:	if gp != gp.m.curg {
+         .          .    145:		throw("semacquire not on the G stack")
+         .          .    146:	}
+         .          .    147:
+         .          .    148:	// Easy case.
+         .       50ms    149:	if cansemacquire(addr) {
+         .          .    150:		return
+         .          .    151:	}
+         .          .    152:
+         .          .    153:	// Harder case:
+         .          .    154:	//	increment waiter count
+         .          .    155:	//	try cansemacquire one more time, return if succeeded
+         .          .    156:	//	enqueue itself as a waiter
+         .          .    157:	//	sleep
+         .          .    158:	//	(waiter descriptor is dequeued by signaler)
+         .          .    159:	s := acquireSudog()
+         .          .    160:	root := semtable.rootFor(addr)
+         .          .    161:	t0 := int64(0)
+         .          .    162:	s.releasetime = 0
+         .          .    163:	s.acquiretime = 0
+         .          .    164:	s.ticket = 0
+         .          .    165:	if profile&semaBlockProfile != 0 && blockprofilerate > 0 {
+      10ms       70ms    166:		t0 = cputicks()
+         .          .    167:		s.releasetime = -1
+         .          .    168:	}
+      10ms       10ms    169:	if profile&semaMutexProfile != 0 && mutexprofilerate > 0 {
+         .          .    170:		if t0 == 0 {
+         .          .    171:			t0 = cputicks()
+         .          .    172:		}
+         .          .    173:		s.acquiretime = t0
+         .          .    174:	}
+         .          .    175:	for {
+         .      7.97s    176:		lockWithRank(&root.lock, lockRankRoot)
+         .          .    177:		// Add ourselves to nwait to disable "easy case" in semrelease.
+         .          .    178:		root.nwait.Add(1)
+         .          .    179:		// Check cansemacquire to avoid missed wakeup.
+      50ms      180ms    180:		if cansemacquire(addr) {
+         .       10ms    181:			root.nwait.Add(-1)
+         .      1.66s    182:			unlock(&root.lock)
+         .          .    183:			break
+         .          .    184:		}
+         .          .    185:		// Any semrelease after the cansemacquire knows we're waiting
+         .          .    186:		// (we set nwait above), so go to sleep.
+         .       10ms    187:		root.queue(addr, s, lifo)
+         .          .    188:		goparkunlock(&root.lock, reason, traceBlockSync, 4+skipframes)
+      10ms       90ms    189:		if s.ticket != 0 || cansemacquire(addr) {
+         .          .    190:			break
+         .          .    191:		}
+         .          .    192:	}
+         .          .    193:	if s.releasetime > 0 {
+         .      190ms    194:		blockevent(s.releasetime-t0, 3+skipframes)
+         .          .    195:	}
+      10ms       10ms    196:	releaseSudog(s)
+         .          .    197:}
+         .          .    198:
+         .          .    199:func semrelease(addr *uint32) {
+         .          .    200:	semrelease1(addr, false, 0)
+         .          .    201:}

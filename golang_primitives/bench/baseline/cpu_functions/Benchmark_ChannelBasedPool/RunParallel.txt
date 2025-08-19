@@ -1,0 +1,59 @@
+Total: 30.68s
+ROUTINE ======================== testing.(*B).RunParallel in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .    930:func (b *B) RunParallel(body func(*PB)) {
+         .          .    931:	if b.N == 0 {
+         .          .    932:		return // Nothing to do when probing.
+         .          .    933:	}
+         .          .    934:	// Calculate grain size as number of iterations that take ~100µs.
+         .          .    935:	// 100µs is enough to amortize the overhead and provide sufficient
+         .          .    936:	// dynamic load balancing.
+         .          .    937:	grain := uint64(0)
+         .          .    938:	if b.previousN > 0 && b.previousDuration > 0 {
+         .          .    939:		grain = 1e5 * uint64(b.previousN) / uint64(b.previousDuration)
+         .          .    940:	}
+         .          .    941:	if grain < 1 {
+         .          .    942:		grain = 1
+         .          .    943:	}
+         .          .    944:	// We expect the inner loop and function call to take at least 10ns,
+         .          .    945:	// so do not do more than 100µs/10ns=1e4 iterations.
+         .          .    946:	if grain > 1e4 {
+         .          .    947:		grain = 1e4
+         .          .    948:	}
+         .          .    949:
+         .          .    950:	var n atomic.Uint64
+         .          .    951:	numProcs := b.parallelism * runtime.GOMAXPROCS(0)
+         .          .    952:	var wg sync.WaitGroup
+         .          .    953:	wg.Add(numProcs)
+         .          .    954:	for p := 0; p < numProcs; p++ {
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+         .          .    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .          .    962:			body(pb)
+         .          .    963:		}()
+         .          .    964:	}
+         .       10ms    965:	wg.Wait()
+         .          .    966:	if n.Load() <= uint64(b.N) && !b.Failed() {
+         .          .    967:		b.Fatal("RunParallel: body exited without pb.Next() == false")
+         .          .    968:	}
+         .          .    969:}
+         .          .    970:
+ROUTINE ======================== testing.(*B).RunParallel.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     30.63s (flat, cum) 99.84% of Total
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+         .          .    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .     30.63s    962:			body(pb)
+         .          .    963:		}()
+         .          .    964:	}
+         .          .    965:	wg.Wait()
+         .          .    966:	if n.Load() <= uint64(b.N) && !b.Failed() {
+         .          .    967:		b.Fatal("RunParallel: body exited without pb.Next() == false")

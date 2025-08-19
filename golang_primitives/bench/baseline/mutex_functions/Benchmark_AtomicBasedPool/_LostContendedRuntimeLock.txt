@@ -1,0 +1,9 @@
+Total: 11.05ms
+ROUTINE ======================== runtime._LostContendedRuntimeLock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+   11.05ms    11.05ms (flat, cum)   100% of Total
+   11.05ms    11.05ms   5447:func _LostContendedRuntimeLock()  { _LostContendedRuntimeLock() }
+         .          .   5448:func _VDSO()                      { _VDSO() }
+         .          .   5449:
+         .          .   5450:// Called if we receive a SIGPROF signal.
+         .          .   5451:// Called by the signal handler, may run during STW.
+         .          .   5452://

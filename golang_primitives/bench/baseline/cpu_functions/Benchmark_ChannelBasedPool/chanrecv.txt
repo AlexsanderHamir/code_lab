@@ -1,0 +1,112 @@
+Total: 30.68s
+ROUTINE ======================== runtime.chanrecv in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/chan.go
+      20ms     15.18s (flat, cum) 49.48% of Total
+         .          .    521:func chanrecv(c *hchan, ep unsafe.Pointer, block bool) (selected, received bool) {
+         .          .    522:	// raceenabled: don't need to check ep, as it is always on the stack
+         .          .    523:	// or is new memory allocated by reflect.
+         .          .    524:
+         .          .    525:	if debugChan {
+         .          .    526:		print("chanrecv: chan=", c, "\n")
+         .          .    527:	}
+         .          .    528:
+      10ms       10ms    529:	if c == nil {
+         .          .    530:		if !block {
+         .          .    531:			return
+         .          .    532:		}
+         .          .    533:		gopark(nil, nil, waitReasonChanReceiveNilChan, traceBlockForever, 2)
+         .          .    534:		throw("unreachable")
+         .          .    535:	}
+         .          .    536:
+         .          .    537:	if c.synctest && getg().syncGroup == nil {
+         .          .    538:		panic(plainError("receive on synctest channel from outside bubble"))
+         .          .    539:	}
+         .          .    540:
+         .          .    541:	if c.timer != nil {
+         .          .    542:		c.timer.maybeRunChan()
+         .          .    543:	}
+         .          .    544:
+         .          .    545:	// Fast path: check for failed non-blocking operation without acquiring the lock.
+         .          .    546:	if !block && empty(c) {
+         .          .    547:		// After observing that the channel is not ready for receiving, we observe whether the
+         .          .    548:		// channel is closed.
+         .          .    549:		//
+         .          .    550:		// Reordering of these checks could lead to incorrect behavior when racing with a close.
+         .          .    551:		// For example, if the channel was open and not empty, was closed, and then drained,
+         .          .    552:		// reordered reads could incorrectly indicate "open and empty". To prevent reordering,
+         .          .    553:		// we use atomic loads for both checks, and rely on emptying and closing to happen in
+         .          .    554:		// separate critical sections under the same lock.  This assumption fails when closing
+         .          .    555:		// an unbuffered channel with a blocked send, but that is an error condition anyway.
+         .          .    556:		if atomic.Load(&c.closed) == 0 {
+         .          .    557:			// Because a channel cannot be reopened, the later observation of the channel
+         .          .    558:			// being not closed implies that it was also not closed at the moment of the
+         .          .    559:			// first observation. We behave as if we observed the channel at that moment
+         .          .    560:			// and report that the receive cannot proceed.
+         .          .    561:			return
+         .          .    562:		}
+         .          .    563:		// The channel is irreversibly closed. Re-check whether the channel has any pending data
+         .          .    564:		// to receive, which could have arrived between the empty and closed checks above.
+         .          .    565:		// Sequential consistency is also required here, when racing with such a send.
+         .          .    566:		if empty(c) {
+         .          .    567:			// The channel is irreversibly closed and empty.
+         .          .    568:			if raceenabled {
+         .          .    569:				raceacquire(c.raceaddr())
+         .          .    570:			}
+         .          .    571:			if ep != nil {
+         .          .    572:				typedmemclr(c.elemtype, ep)
+         .          .    573:			}
+         .          .    574:			return true, false
+         .          .    575:		}
+         .          .    576:	}
+         .          .    577:
+         .          .    578:	var t0 int64
+         .          .    579:	if blockprofilerate > 0 {
+         .      480ms    580:		t0 = cputicks()
+         .          .    581:	}
+         .          .    582:
+         .      9.95s    583:	lock(&c.lock)
+         .          .    584:
+         .          .    585:	if c.closed != 0 {
+         .          .    586:		if c.qcount == 0 {
+         .          .    587:			if raceenabled {
+         .          .    588:				raceacquire(c.raceaddr())
+         .          .    589:			}
+         .          .    590:			unlock(&c.lock)
+         .          .    591:			if ep != nil {
+         .          .    592:				typedmemclr(c.elemtype, ep)
+         .          .    593:			}
+         .          .    594:			return true, false
+         .          .    595:		}
+         .          .    596:		// The channel has been closed, but the channel's buffer have data.
+         .          .    597:	} else {
+         .          .    598:		// Just found waiting sender with not closed.
+         .       10ms    599:		if sg := c.sendq.dequeue(); sg != nil {
+         .          .    600:			// Found a waiting sender. If buffer is size 0, receive value
+         .          .    601:			// directly from sender. Otherwise, receive from head of queue
+         .          .    602:			// and add sender's value to the tail of the queue (both map to
+         .          .    603:			// the same buffer slot because the queue is full).
+         .          .    604:			recv(c, sg, ep, func() { unlock(&c.lock) }, 3)
+         .          .    605:			return true, true
+         .          .    606:		}
+         .          .    607:	}
+         .          .    608:
+      10ms       10ms    609:	if c.qcount > 0 {
+         .          .    610:		// Receive directly from queue
+         .          .    611:		qp := chanbuf(c, c.recvx)
+         .          .    612:		if raceenabled {
+         .          .    613:			racenotify(c, c.recvx, nil)
+         .          .    614:		}
+         .          .    615:		if ep != nil {
+         .          .    616:			typedmemmove(c.elemtype, ep, qp)
+         .          .    617:		}
+         .       10ms    618:		typedmemclr(c.elemtype, qp)
+         .          .    619:		c.recvx++
+         .          .    620:		if c.recvx == c.dataqsiz {
+         .          .    621:			c.recvx = 0
+         .          .    622:		}
+         .          .    623:		c.qcount--
+         .      4.71s    624:		unlock(&c.lock)
+         .          .    625:		return true, true
+         .          .    626:	}
+         .          .    627:
+         .          .    628:	if !block {
+         .          .    629:		unlock(&c.lock)

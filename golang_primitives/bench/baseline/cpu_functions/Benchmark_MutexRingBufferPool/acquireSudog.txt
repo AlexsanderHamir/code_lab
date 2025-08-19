@@ -1,0 +1,35 @@
+Total: 52.53s
+ROUTINE ======================== runtime.acquireSudog in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    461:func acquireSudog() *sudog {
+         .          .    462:	// Delicate dance: the semaphore implementation calls
+         .          .    463:	// acquireSudog, acquireSudog calls new(sudog),
+         .          .    464:	// new calls malloc, malloc can call the garbage collector,
+         .          .    465:	// and the garbage collector calls the semaphore implementation
+         .          .    466:	// in stopTheWorld.
+         .          .    467:	// Break the cycle by doing acquirem/releasem around new(sudog).
+         .          .    468:	// The acquirem/releasem increments m.locks during new(sudog),
+         .          .    469:	// which keeps the garbage collector from being invoked.
+         .          .    470:	mp := acquirem()
+         .          .    471:	pp := mp.p.ptr()
+         .          .    472:	if len(pp.sudogcache) == 0 {
+         .          .    473:		lock(&sched.sudoglock)
+         .          .    474:		// First, try to grab a batch from central cache.
+         .          .    475:		for len(pp.sudogcache) < cap(pp.sudogcache)/2 && sched.sudogcache != nil {
+         .          .    476:			s := sched.sudogcache
+         .          .    477:			sched.sudogcache = s.next
+         .          .    478:			s.next = nil
+         .          .    479:			pp.sudogcache = append(pp.sudogcache, s)
+         .          .    480:		}
+         .          .    481:		unlock(&sched.sudoglock)
+         .          .    482:		// If the central cache is empty, allocate a new one.
+         .          .    483:		if len(pp.sudogcache) == 0 {
+         .          .    484:			pp.sudogcache = append(pp.sudogcache, new(sudog))
+         .          .    485:		}
+         .          .    486:	}
+      10ms       10ms    487:	n := len(pp.sudogcache)
+         .          .    488:	s := pp.sudogcache[n-1]
+         .          .    489:	pp.sudogcache[n-1] = nil
+         .          .    490:	pp.sudogcache = pp.sudogcache[:n-1]
+         .          .    491:	if s.elem != nil {
+         .          .    492:		throw("acquireSudog: found s.elem != nil in cache")

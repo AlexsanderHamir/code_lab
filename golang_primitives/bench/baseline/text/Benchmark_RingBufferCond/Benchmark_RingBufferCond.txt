@@ -1,0 +1,16 @@
+goos: darwin
+goarch: arm64
+pkg: primitives_performance
+cpu: Apple M1
+Benchmark_RingBufferCond-8   	 5381307	       198.6 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RingBufferCond-8   	 6102961	       198.2 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RingBufferCond-8   	 6114356	       198.7 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RingBufferCond-8   	 6057290	       198.1 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RingBufferCond-8   	 6061954	       198.5 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RingBufferCond-8   	 6032218	       199.2 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RingBufferCond-8   	 6082304	       197.7 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RingBufferCond-8   	 6041551	       198.1 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RingBufferCond-8   	 6070713	       198.4 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RingBufferCond-8   	 6055286	       198.9 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	primitives_performance	14.316s

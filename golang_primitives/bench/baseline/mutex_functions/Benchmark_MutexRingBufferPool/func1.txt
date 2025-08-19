@@ -1,0 +1,27 @@
+Total: 47.86s
+ROUTINE ======================== primitives_performance.Benchmark_MutexRingBufferPool.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     34.03s (flat, cum) 71.11% of Total
+         .          .     16:	b.RunParallel(func(pb *testing.PB) {
+         .          .     17:		for pb.Next() {
+         .     18.22s     18:			obj := pool.Get()
+         .     15.81s     19:			pool.Put(obj)
+         .          .     20:		}
+         .          .     21:	})
+         .          .     22:}
+         .          .     23:
+         .          .     24:// Benchmark: RWMutex-protected ring buffer pool
+ROUTINE ======================== testing.(*B).RunParallel.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     34.03s (flat, cum) 71.11% of Total
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+         .          .    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .     34.03s    962:			body(pb)
+         .          .    963:		}()
+         .          .    964:	}
+         .          .    965:	wg.Wait()
+         .          .    966:	if n.Load() <= uint64(b.N) && !b.Failed() {
+         .          .    967:		b.Fatal("RunParallel: body exited without pb.Next() == false")

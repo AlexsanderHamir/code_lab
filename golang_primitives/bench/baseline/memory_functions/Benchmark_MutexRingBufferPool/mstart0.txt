@@ -1,0 +1,35 @@
+Total: 9.28MB
+ROUTINE ======================== runtime.mstart0 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0        1MB (flat, cum) 10.80% of Total
+         .          .   1782:func mstart0() {
+         .          .   1783:	gp := getg()
+         .          .   1784:
+         .          .   1785:	osStack := gp.stack.lo == 0
+         .          .   1786:	if osStack {
+         .          .   1787:		// Initialize stack bounds from system stack.
+         .          .   1788:		// Cgo may have left stack size in stack.hi.
+         .          .   1789:		// minit may update the stack bounds.
+         .          .   1790:		//
+         .          .   1791:		// Note: these bounds may not be very accurate.
+         .          .   1792:		// We set hi to &size, but there are things above
+         .          .   1793:		// it. The 1024 is supposed to compensate this,
+         .          .   1794:		// but is somewhat arbitrary.
+         .          .   1795:		size := gp.stack.hi
+         .          .   1796:		if size == 0 {
+         .          .   1797:			size = 16384 * sys.StackGuardMultiplier
+         .          .   1798:		}
+         .          .   1799:		gp.stack.hi = uintptr(noescape(unsafe.Pointer(&size)))
+         .          .   1800:		gp.stack.lo = gp.stack.hi - size + 1024
+         .          .   1801:	}
+         .          .   1802:	// Initialize stack guard so that we can start calling regular
+         .          .   1803:	// Go code.
+         .          .   1804:	gp.stackguard0 = gp.stack.lo + stackGuard
+         .          .   1805:	// This is the g0, so we can also call go:systemstack
+         .          .   1806:	// functions, which check stackguard1.
+         .          .   1807:	gp.stackguard1 = gp.stackguard0
+         .        1MB   1808:	mstart1()
+         .          .   1809:
+         .          .   1810:	// Exit this thread.
+         .          .   1811:	if mStackIsSystemAllocated() {
+         .          .   1812:		// Windows, Solaris, illumos, Darwin, AIX and Plan 9 always system-allocate
+         .          .   1813:		// the stack, but put it in gp.stack before mstart,

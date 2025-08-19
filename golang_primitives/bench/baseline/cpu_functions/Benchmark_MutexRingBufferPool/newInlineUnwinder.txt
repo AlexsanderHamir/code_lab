@@ -1,0 +1,16 @@
+Total: 52.53s
+ROUTINE ======================== runtime.newInlineUnwinder in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtabinl.go
+         0      160ms (flat, cum)   0.3% of Total
+         .          .     67:func newInlineUnwinder(f funcInfo, pc uintptr) (inlineUnwinder, inlineFrame) {
+         .       30ms     68:	inldata := funcdata(f, abi.FUNCDATA_InlTree)
+         .          .     69:	if inldata == nil {
+         .          .     70:		return inlineUnwinder{f: f}, inlineFrame{pc: pc, index: -1}
+         .          .     71:	}
+         .          .     72:	inlTree := (*[1 << 20]inlinedCall)(inldata)
+         .          .     73:	u := inlineUnwinder{f: f, inlTree: inlTree}
+         .      130ms     74:	return u, u.resolveInternal(pc)
+         .          .     75:}
+         .          .     76:
+         .          .     77:func (u *inlineUnwinder) resolveInternal(pc uintptr) inlineFrame {
+         .          .     78:	return inlineFrame{
+         .          .     79:		pc: pc,

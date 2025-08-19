@@ -1,0 +1,15 @@
+Total: 52.38s
+ROUTINE ======================== runtime.runqget in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .   6868:func runqget(pp *p) (gp *g, inheritTime bool) {
+         .          .   6869:	// If there's a runnext, it's the next G to run.
+         .          .   6870:	next := pp.runnext
+         .          .   6871:	// If the runnext is non-0 and the CAS fails, it could only have been stolen by another P,
+         .          .   6872:	// because other Ps can race to set runnext to 0, but only the current P can set it to non-0.
+         .          .   6873:	// Hence, there's no need to retry this CAS if it fails.
+         .       10ms   6874:	if next != 0 && pp.runnext.cas(next, 0) {
+         .          .   6875:		return next.ptr(), true
+         .          .   6876:	}
+         .          .   6877:
+         .          .   6878:	for {
+         .          .   6879:		h := atomic.LoadAcq(&pp.runqhead) // load-acquire, synchronize with other consumers

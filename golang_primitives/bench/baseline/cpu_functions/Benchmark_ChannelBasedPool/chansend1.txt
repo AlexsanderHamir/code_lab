@@ -1,0 +1,10 @@
+Total: 30.68s
+ROUTINE ======================== runtime.chansend1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/chan.go
+         0     15.44s (flat, cum) 50.33% of Total
+         .          .    160:func chansend1(c *hchan, elem unsafe.Pointer) {
+         .     15.44s    161:	chansend(c, elem, true, sys.GetCallerPC())
+         .          .    162:}
+         .          .    163:
+         .          .    164:/*
+         .          .    165: * generic single channel send/recv
+         .          .    166: * If block is not nil,

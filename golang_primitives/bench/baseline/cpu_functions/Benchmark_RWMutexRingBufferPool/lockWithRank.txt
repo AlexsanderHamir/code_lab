@@ -1,0 +1,19 @@
+Total: 48.01s
+ROUTINE ======================== runtime.lockWithRank in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lockrank_off.go
+         0     20.55s (flat, cum) 42.80% of Total
+         .          .     23:func lockWithRank(l *mutex, rank lockRank) {
+         .     20.55s     24:	lock2(l)
+         .          .     25:}
+         .          .     26:
+         .          .     27:// This function may be called in nosplit context and thus must be nosplit.
+         .          .     28://
+         .          .     29://go:nosplit
+ROUTINE ======================== runtime.unlockWithRank in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lockrank_off.go
+         0      6.01s (flat, cum) 12.52% of Total
+         .          .     34:func unlockWithRank(l *mutex) {
+         .      6.01s     35:	unlock2(l)
+         .          .     36:}
+         .          .     37:
+         .          .     38:// This function may be called in nosplit context and thus must be nosplit.
+         .          .     39://
+         .          .     40://go:nosplit

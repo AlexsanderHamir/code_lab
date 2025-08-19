@@ -1,0 +1,10 @@
+Total: 10.13MB
+ROUTINE ======================== compress/flate.newDeflateFast in /opt/homebrew/Cellar/go/1.24.3/libexec/src/compress/flate/deflatefast.go
+  583.01kB   583.01kB (flat, cum)  5.62% of Total
+         .          .     63:func newDeflateFast() *deflateFast {
+  583.01kB   583.01kB     64:	return &deflateFast{cur: maxStoreBlockSize, prev: make([]byte, 0, maxStoreBlockSize)}
+         .          .     65:}
+         .          .     66:
+         .          .     67:// encode encodes a block given in src and appends tokens
+         .          .     68:// to dst and returns the result.
+         .          .     69:func (e *deflateFast) encode(dst []token, src []byte) []token {

@@ -1,0 +1,42 @@
+Total: 63.70s
+ROUTINE ======================== runtime.gcBgMarkStartWorkers in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgc.go
+         0     4.54us (flat, cum) 7.1e-06% of Total
+         .          .   1316:func gcBgMarkStartWorkers() {
+         .          .   1317:	// Background marking is performed by per-P G's. Ensure that each P has
+         .          .   1318:	// a background GC G.
+         .          .   1319:	//
+         .          .   1320:	// Worker Gs don't exit if gomaxprocs is reduced. If it is raised
+         .          .   1321:	// again, we can reuse the old workers; no need to create new workers.
+         .          .   1322:	if gcBgMarkWorkerCount >= gomaxprocs {
+         .          .   1323:		return
+         .          .   1324:	}
+         .          .   1325:
+         .          .   1326:	// Increment mp.locks when allocating. We are called within gcStart,
+         .          .   1327:	// and thus must not trigger another gcStart via an allocation. gcStart
+         .          .   1328:	// bails when allocating with locks held, so simulate that for these
+         .          .   1329:	// allocations.
+         .          .   1330:	//
+         .          .   1331:	// TODO(prattmic): cleanup gcStart to use a more explicit "in gcStart"
+         .          .   1332:	// check for bailing.
+         .          .   1333:	mp := acquirem()
+         .          .   1334:	ready := make(chan struct{}, 1)
+         .          .   1335:	releasem(mp)
+         .          .   1336:
+         .          .   1337:	for gcBgMarkWorkerCount < gomaxprocs {
+         .          .   1338:		mp := acquirem() // See above, we allocate a closure here.
+         .          .   1339:		go gcBgMarkWorker(ready)
+         .          .   1340:		releasem(mp)
+         .          .   1341:
+         .          .   1342:		// N.B. we intentionally wait on each goroutine individually
+         .          .   1343:		// rather than starting all in a batch and then waiting once
+         .          .   1344:		// afterwards. By running one goroutine at a time, we can take
+         .          .   1345:		// advantage of runnext to bounce back and forth between
+         .          .   1346:		// workers and this goroutine. In an overloaded application,
+         .          .   1347:		// this can reduce GC start latency by prioritizing these
+         .          .   1348:		// goroutines rather than waiting on the end of the run queue.
+         .     4.54us   1349:		<-ready
+         .          .   1350:		// The worker is now guaranteed to be added to the pool before
+         .          .   1351:		// its P's next findRunnableGCWorker.
+         .          .   1352:
+         .          .   1353:		gcBgMarkWorkerCount++
+         .          .   1354:	}

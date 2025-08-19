@@ -1,0 +1,34 @@
+File: primitives_performance.test
+Type: delay
+Time: 2025-08-19 12:51:21 PDT
+Showing nodes accounting for 37125483.05us, 100% of 37125483.05us total
+      flat  flat%   sum%        cum   cum%
+         0     0%     0% 36962696.51us 99.56%  testing.(*B).runN
+         0     0%     0% 18651243.09us 50.24%  main.main
+18651243.09us 50.24% 50.24% 18651243.09us 50.24%  runtime.chanrecv1
+         0     0% 50.24% 18651243.09us 50.24%  runtime.main
+         0     0% 50.24% 18651243.09us 50.24%  testing.(*M).Run
+         0     0% 50.24% 18488456.55us 49.80%  testing.runBenchmarks
+         0     0% 50.24% 18488454.84us 49.80%  testing.(*B).Run
+         0     0% 50.24% 18488454.84us 49.80%  testing.runBenchmarks.func1
+         0     0% 50.24% 18488166.26us 49.80%  testing.(*B).run
+         0     0% 50.24% 18488166.26us 49.80%  testing.(*benchState).processBench
+         0     0% 50.24% 18485516.26us 49.79%  testing.(*B).doBench
+         0     0% 50.24% 18474239.96us 49.76%  primitives_performance.Benchmark_AtomicBasedPool
+18474239.96us 49.76%   100% 18474239.96us 49.76%  sync.(*WaitGroup).Wait
+         0     0%   100% 18474239.96us 49.76%  testing.(*B).RunParallel
+         0     0%   100% 18474225.88us 49.76%  testing.(*B).doBench.gowrap1
+         0     0%   100% 18474225.88us 49.76%  testing.(*B).launch
+         0     0%   100% 162786.54us  0.44%  runtime/pprof.StopCPUProfile
+         0     0%   100% 162786.54us  0.44%  sync.(*Once).Do (inline)
+         0     0%   100% 162786.54us  0.44%  sync.(*Once).doSlow
+         0     0%   100% 162786.54us  0.44%  testing.(*M).Run.deferwrap1
+         0     0%   100% 162786.54us  0.44%  testing.(*M).after
+         0     0%   100% 162786.54us  0.44%  testing.(*M).after.func1
+         0     0%   100% 162786.54us  0.44%  testing.(*M).writeProfiles
+         0     0%   100% 162786.54us  0.44%  testing/internal/testdeps.TestDeps.StopCPUProfile
+         0     0%   100%  2938.58us 0.0079%  testing.(*B).run1
+         0     0%   100%    14.08us 3.8e-05%  testing.(*B).run1.func1
+         0     0%   100%     1.71us 4.6e-06%  runtime.GC
+         0     0%   100%     1.71us 4.6e-06%  runtime.gcBgMarkStartWorkers
+         0     0%   100%     1.71us 4.6e-06%  runtime.gcStart

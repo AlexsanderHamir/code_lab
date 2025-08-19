@@ -1,0 +1,14 @@
+File: primitives_performance.test
+Type: delay
+Time: 2025-08-19 12:50:42 PDT
+Showing nodes accounting for 59.56s, 100% of 59.56s total
+      flat  flat%   sum%        cum   cum%
+         0     0%     0%     31.54s 52.96%  primitives_performance.Benchmark_RWMutexRingBufferPool.func1
+    31.54s 52.96% 52.96%     31.54s 52.96%  sync.(*Mutex).Unlock (inline)
+         0     0% 52.96%     31.54s 52.96%  sync.(*RWMutex).Unlock
+         0     0% 52.96%     31.54s 52.96%  testing.(*B).RunParallel.func1
+    28.02s 47.04%   100%     28.02s 47.04%  runtime._LostContendedRuntimeLock
+         0     0%   100%     15.79s 26.52%  primitives_performance.(*RWMutexRingBufferPool).Get
+         0     0%   100%     15.79s 26.52%  primitives_performance.(*RWMutexRingBufferPool).Get.deferwrap1
+         0     0%   100%     15.75s 26.44%  primitives_performance.(*RWMutexRingBufferPool).Put
+         0     0%   100%     15.75s 26.44%  primitives_performance.(*RWMutexRingBufferPool).Put.deferwrap1

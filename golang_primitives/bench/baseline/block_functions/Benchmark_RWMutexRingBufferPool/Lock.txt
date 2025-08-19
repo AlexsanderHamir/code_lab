@@ -1,0 +1,24 @@
+Total: 61.50s
+ROUTINE ======================== sync.(*Mutex).Lock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/mutex.go
+    33.49s     33.49s (flat, cum) 54.46% of Total
+         .          .     45:func (m *Mutex) Lock() {
+    33.49s     33.49s     46:	m.mu.Lock()
+         .          .     47:}
+         .          .     48:
+         .          .     49:// TryLock tries to lock m and reports whether it succeeded.
+         .          .     50://
+         .          .     51:// Note that while correct uses of TryLock do exist, they are rare,
+ROUTINE ======================== sync.(*RWMutex).Lock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/rwmutex.go
+         0     33.49s (flat, cum) 54.46% of Total
+         .          .    144:func (rw *RWMutex) Lock() {
+         .          .    145:	if race.Enabled {
+         .          .    146:		race.Read(unsafe.Pointer(&rw.w))
+         .          .    147:		race.Disable()
+         .          .    148:	}
+         .          .    149:	// First, resolve competition with other writers.
+         .     33.49s    150:	rw.w.Lock()
+         .          .    151:	// Announce to readers there is a pending writer.
+         .          .    152:	r := rw.readerCount.Add(-rwmutexMaxReaders) + rwmutexMaxReaders
+         .          .    153:	// Wait for active readers.
+         .          .    154:	if r != 0 && rw.readerWait.Add(r) != 0 {
+         .          .    155:		runtime_SemacquireRWMutex(&rw.writerSem, false, 0)

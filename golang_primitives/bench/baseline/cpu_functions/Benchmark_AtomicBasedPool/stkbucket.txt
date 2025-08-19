@@ -1,0 +1,9 @@
+Total: 108.20s
+ROUTINE ======================== runtime.stkbucket in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+      10ms       10ms    275:func stkbucket(typ bucketType, size uintptr, stk []uintptr, alloc bool) *bucket {
+         .          .    276:	bh := (*buckhashArray)(buckhash.Load())
+         .          .    277:	if bh == nil {
+         .          .    278:		lock(&profInsertLock)
+         .          .    279:		// check again under the lock
+         .          .    280:		bh = (*buckhashArray)(buckhash.Load())

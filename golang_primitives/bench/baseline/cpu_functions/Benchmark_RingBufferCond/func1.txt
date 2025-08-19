@@ -1,0 +1,46 @@
+Total: 52.38s
+ROUTINE ======================== primitives_performance.Benchmark_RingBufferCond.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+      10ms     26.18s (flat, cum) 49.98% of Total
+         .          .     80:	b.RunParallel(func(pb *testing.PB) {
+         .       30ms     81:		for pb.Next() {
+         .     13.06s     82:			obj := pool.Get()
+      10ms     13.09s     83:			pool.Put(obj)
+         .          .     84:		}
+         .          .     85:	})
+         .          .     86:}
+ROUTINE ======================== runtime.fpTracebackPartialExpand.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      20ms       20ms (flat, cum) 0.038% of Total
+         .          .    581:	skipOrAdd := func(retPC uintptr) bool {
+      10ms       10ms    582:		if skip > 0 {
+         .          .    583:			skip--
+         .          .    584:		} else if n < len(pcBuf) {
+      10ms       10ms    585:			pcBuf[n] = retPC
+         .          .    586:			n++
+         .          .    587:		}
+         .          .    588:		return n < len(pcBuf)
+         .          .    589:	}
+         .          .    590:	for n < len(pcBuf) && fp != nil {
+ROUTINE ======================== runtime.readyWithTime.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      700ms (flat, cum)  1.34% of Total
+         .          .    455:	systemstack(func() {
+         .      700ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {
+ROUTINE ======================== testing.(*B).RunParallel.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     26.18s (flat, cum) 49.98% of Total
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+         .          .    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .     26.18s    962:			body(pb)
+         .          .    963:		}()
+         .          .    964:	}
+         .          .    965:	wg.Wait()
+         .          .    966:	if n.Load() <= uint64(b.N) && !b.Failed() {
+         .          .    967:		b.Fatal("RunParallel: body exited without pb.Next() == false")

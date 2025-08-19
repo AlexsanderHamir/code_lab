@@ -1,0 +1,10 @@
+Total: 30.68s
+ROUTINE ======================== runtime.pthread_cond_signal in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+     9.24s      9.24s (flat, cum) 30.12% of Total
+         .          .    567:func pthread_cond_signal(c *pthreadcond) int32 {
+     9.24s      9.24s    568:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_cond_signal_trampoline)), unsafe.Pointer(&c))
+         .          .    569:	KeepAlive(c)
+         .          .    570:	return ret
+         .          .    571:}
+         .          .    572:func pthread_cond_signal_trampoline()
+         .          .    573:

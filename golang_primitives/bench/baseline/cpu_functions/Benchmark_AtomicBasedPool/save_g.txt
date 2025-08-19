@@ -1,0 +1,25 @@
+Total: 108.20s
+ROUTINE ======================== runtime.save_g in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/tls_arm64.s
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .     32:TEXT runtime·save_g(SB),NOSPLIT,$0
+         .          .     33:#ifndef GOOS_darwin
+         .          .     34:#ifndef GOOS_openbsd
+         .          .     35:#ifndef GOOS_windows
+         .          .     36:	MOVB	runtime·iscgo(SB), R0
+         .          .     37:	CBZ	R0, nocgo
+         .          .     38:#endif
+         .          .     39:#endif
+         .          .     40:#endif
+         .          .     41:
+         .          .     42:	MRS_TPIDR_R0
+         .          .     43:#ifdef TLS_darwin
+         .          .     44:	// Darwin sometimes returns unaligned pointers
+         .          .     45:	AND	$0xfffffffffffffff8, R0
+         .          .     46:#endif
+         .          .     47:	MOVD	runtime·tls_g(SB), R27
+      10ms       10ms     48:	MOVD	g, (R0)(R27)
+         .          .     49:
+         .          .     50:nocgo:
+         .          .     51:	RET
+         .          .     52:
+         .          .     53:#ifdef TLSG_IS_VARIABLE

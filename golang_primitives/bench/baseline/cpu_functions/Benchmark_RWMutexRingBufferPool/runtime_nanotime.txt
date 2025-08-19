@@ -1,0 +1,6 @@
+Total: 48.01s
+ROUTINE ======================== internal/sync.runtime_nanotime in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+         0      160ms (flat, cum)  0.33% of Total
+         .          .    709:func internal_sync_nanotime() int64 {
+         .      160ms    710:	return nanotime()
+         .          .    711:}

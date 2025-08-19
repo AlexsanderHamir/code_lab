@@ -1,0 +1,95 @@
+Total: 30.68s
+ROUTINE ======================== runtime.startm in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .   2937:func startm(pp *p, spinning, lockheld bool) {
+         .          .   2938:	// Disable preemption.
+         .          .   2939:	//
+         .          .   2940:	// Every owned P must have an owner that will eventually stop it in the
+         .          .   2941:	// event of a GC stop request. startm takes transient ownership of a P
+         .          .   2942:	// (either from argument or pidleget below) and transfers ownership to
+         .          .   2943:	// a started M, which will be responsible for performing the stop.
+         .          .   2944:	//
+         .          .   2945:	// Preemption must be disabled during this transient ownership,
+         .          .   2946:	// otherwise the P this is running on may enter GC stop while still
+         .          .   2947:	// holding the transient P, leaving that P in limbo and deadlocking the
+         .          .   2948:	// STW.
+         .          .   2949:	//
+         .          .   2950:	// Callers passing a non-nil P must already be in non-preemptible
+         .          .   2951:	// context, otherwise such preemption could occur on function entry to
+         .          .   2952:	// startm. Callers passing a nil P may be preemptible, so we must
+         .          .   2953:	// disable preemption before acquiring a P from pidleget below.
+         .          .   2954:	mp := acquirem()
+         .          .   2955:	if !lockheld {
+         .          .   2956:		lock(&sched.lock)
+         .          .   2957:	}
+         .          .   2958:	if pp == nil {
+         .          .   2959:		if spinning {
+         .          .   2960:			// TODO(prattmic): All remaining calls to this function
+         .          .   2961:			// with _p_ == nil could be cleaned up to find a P
+         .          .   2962:			// before calling startm.
+         .          .   2963:			throw("startm: P required for spinning=true")
+         .          .   2964:		}
+         .          .   2965:		pp, _ = pidleget(0)
+         .          .   2966:		if pp == nil {
+         .          .   2967:			if !lockheld {
+         .          .   2968:				unlock(&sched.lock)
+         .          .   2969:			}
+         .          .   2970:			releasem(mp)
+         .          .   2971:			return
+         .          .   2972:		}
+         .          .   2973:	}
+         .          .   2974:	nmp := mget()
+         .          .   2975:	if nmp == nil {
+         .          .   2976:		// No M is available, we must drop sched.lock and call newm.
+         .          .   2977:		// However, we already own a P to assign to the M.
+         .          .   2978:		//
+         .          .   2979:		// Once sched.lock is released, another G (e.g., in a syscall),
+         .          .   2980:		// could find no idle P while checkdead finds a runnable G but
+         .          .   2981:		// no running M's because this new M hasn't started yet, thus
+         .          .   2982:		// throwing in an apparent deadlock.
+         .          .   2983:		// This apparent deadlock is possible when startm is called
+         .          .   2984:		// from sysmon, which doesn't count as a running M.
+         .          .   2985:		//
+         .          .   2986:		// Avoid this situation by pre-allocating the ID for the new M,
+         .          .   2987:		// thus marking it as 'running' before we drop sched.lock. This
+         .          .   2988:		// new M will eventually run the scheduler to execute any
+         .          .   2989:		// queued G's.
+         .          .   2990:		id := mReserveID()
+         .          .   2991:		unlock(&sched.lock)
+         .          .   2992:
+         .          .   2993:		var fn func()
+         .          .   2994:		if spinning {
+         .          .   2995:			// The caller incremented nmspinning, so set m.spinning in the new M.
+         .          .   2996:			fn = mspinning
+         .          .   2997:		}
+         .          .   2998:		newm(fn, pp, id)
+         .          .   2999:
+         .          .   3000:		if lockheld {
+         .          .   3001:			lock(&sched.lock)
+         .          .   3002:		}
+         .          .   3003:		// Ownership transfer of pp committed by start in newm.
+         .          .   3004:		// Preemption is now safe.
+         .          .   3005:		releasem(mp)
+         .          .   3006:		return
+         .          .   3007:	}
+         .          .   3008:	if !lockheld {
+         .          .   3009:		unlock(&sched.lock)
+         .          .   3010:	}
+         .          .   3011:	if nmp.spinning {
+         .          .   3012:		throw("startm: m is spinning")
+         .          .   3013:	}
+         .          .   3014:	if nmp.nextp != 0 {
+         .          .   3015:		throw("startm: m has p")
+         .          .   3016:	}
+         .          .   3017:	if spinning && !runqempty(pp) {
+         .          .   3018:		throw("startm: p has runnable gs")
+         .          .   3019:	}
+         .          .   3020:	// The caller incremented nmspinning, so set m.spinning in the new M.
+         .          .   3021:	nmp.spinning = spinning
+         .          .   3022:	nmp.nextp.set(pp)
+         .       10ms   3023:	notewakeup(&nmp.park)
+         .          .   3024:	// Ownership transfer of pp committed by wakeup. Preemption is now
+         .          .   3025:	// safe.
+         .          .   3026:	releasem(mp)
+         .          .   3027:}
+         .          .   3028:

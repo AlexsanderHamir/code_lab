@@ -1,0 +1,11 @@
+Total: 48.01s
+ROUTINE ======================== runtime.(*moduledata).textOff in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      10ms       10ms (flat, cum) 0.021% of Total
+         .          .    706:func (md *moduledata) textOff(pc uintptr) (uint32, bool) {
+         .          .    707:	res := uint32(pc - md.text)
+      10ms       10ms    708:	if len(md.textsectmap) > 1 {
+         .          .    709:		for i, sect := range md.textsectmap {
+         .          .    710:			if sect.baseaddr > pc {
+         .          .    711:				// pc is not in any section.
+         .          .    712:				return 0, false
+         .          .    713:			}

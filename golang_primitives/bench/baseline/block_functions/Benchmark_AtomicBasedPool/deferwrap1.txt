@@ -1,0 +1,9 @@
+Total: 37.13s
+ROUTINE ======================== testing.(*M).Run.deferwrap1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/testing.go
+         0   162.79ms (flat, cum)  0.44% of Total
+         .   162.79ms   2134:	defer m.after()
+         .          .   2135:
+         .          .   2136:	// Run tests, examples, and benchmarks unless this is a fuzz worker process.
+         .          .   2137:	// Workers start after this is done by their parent process, and they should
+         .          .   2138:	// not repeat this work.
+         .          .   2139:	if !*isFuzzWorker {

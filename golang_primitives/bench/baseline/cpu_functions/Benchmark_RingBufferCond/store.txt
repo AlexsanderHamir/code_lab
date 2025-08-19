@@ -1,0 +1,36 @@
+Total: 52.38s
+ROUTINE ======================== runtime.(*mLockProfile).store in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0      180ms (flat, cum)  0.34% of Total
+         .          .    825:func (prof *mLockProfile) store() {
+         .          .    826:	// Report any contention we experience within this function as "lost"; it's
+         .          .    827:	// important that the act of reporting a contention event not lead to a
+         .          .    828:	// reportable contention event. This also means we can use prof.stack
+         .          .    829:	// without copying, since it won't change during this function.
+         .          .    830:	mp := acquirem()
+         .          .    831:	prof.disabled = true
+         .          .    832:
+         .          .    833:	nstk := int(debug.profstackdepth)
+         .          .    834:	for i := 0; i < nstk; i++ {
+         .          .    835:		if pc := prof.stack[i]; pc == 0 {
+         .          .    836:			nstk = i
+         .          .    837:			break
+         .          .    838:		}
+         .          .    839:	}
+         .          .    840:
+         .          .    841:	cycles, lost := prof.cycles, prof.cyclesLost
+         .          .    842:	prof.cycles, prof.cyclesLost = 0, 0
+         .          .    843:	prof.haveStack = false
+         .          .    844:
+         .          .    845:	rate := int64(atomic.Load64(&mutexprofilerate))
+         .      150ms    846:	saveBlockEventStack(cycles, rate, prof.stack[:nstk], mutexProfile)
+         .          .    847:	if lost > 0 {
+         .          .    848:		lostStk := [...]uintptr{
+         .          .    849:			logicalStackSentinel,
+         .          .    850:			abi.FuncPCABIInternal(_LostContendedRuntimeLock) + sys.PCQuantum,
+         .          .    851:		}
+         .       30ms    852:		saveBlockEventStack(lost, rate, lostStk[:], mutexProfile)
+         .          .    853:	}
+         .          .    854:
+         .          .    855:	prof.disabled = false
+         .          .    856:	releasem(mp)
+         .          .    857:}

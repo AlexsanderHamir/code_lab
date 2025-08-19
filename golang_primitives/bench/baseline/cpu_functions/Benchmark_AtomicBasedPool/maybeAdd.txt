@@ -1,0 +1,9 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*timer).maybeAdd in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+      10ms       10ms    660:func (t *timer) maybeAdd() {
+         .          .    661:	// Note: Not holding any locks on entry to t.maybeAdd,
+         .          .    662:	// so the current g can be rescheduled to a different M and P
+         .          .    663:	// at any time, including between the ts := assignment and the
+         .          .    664:	// call to ts.lock. If a reschedule happened then, we would be
+         .          .    665:	// adding t to some other P's timers, perhaps even a P that the scheduler

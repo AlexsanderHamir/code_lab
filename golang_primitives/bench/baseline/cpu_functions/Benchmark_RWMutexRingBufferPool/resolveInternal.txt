@@ -1,0 +1,14 @@
+Total: 48.01s
+ROUTINE ======================== runtime.(*inlineUnwinder).resolveInternal in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtabinl.go
+         0      120ms (flat, cum)  0.25% of Total
+         .          .     77:func (u *inlineUnwinder) resolveInternal(pc uintptr) inlineFrame {
+         .          .     78:	return inlineFrame{
+         .          .     79:		pc: pc,
+         .          .     80:		// Conveniently, this returns -1 if there's an error, which is the same
+         .          .     81:		// value we use for the outermost frame.
+         .      120ms     82:		index: pcdatavalue1(u.f, abi.PCDATA_InlTreeIndex, pc, false),
+         .          .     83:	}
+         .          .     84:}
+         .          .     85:
+         .          .     86:func (uf inlineFrame) valid() bool {
+         .          .     87:	return uf.pc != 0

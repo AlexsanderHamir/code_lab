@@ -1,0 +1,34 @@
+Total: 64.37s
+ROUTINE ======================== testing.(*benchState).processBench in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     13.94s (flat, cum) 21.66% of Total
+         .          .    722:func (s *benchState) processBench(b *B) {
+         .          .    723:	for i, procs := range cpuList {
+         .          .    724:		for j := uint(0); j < *count; j++ {
+         .          .    725:			runtime.GOMAXPROCS(procs)
+         .          .    726:			benchName := benchmarkName(b.name, procs)
+         .          .    727:
+         .          .    728:			// If it's chatty, we've already printed this information.
+         .          .    729:			if b.chatty == nil {
+         .          .    730:				fmt.Fprintf(b.w, "%-*s\t", s.maxLen, benchName)
+         .          .    731:			}
+         .          .    732:			// Recompute the running time for all but the first iteration.
+         .          .    733:			if i > 0 || j > 0 {
+         .          .    734:				b = &B{
+         .          .    735:					common: common{
+         .          .    736:						signal: make(chan bool),
+         .          .    737:						name:   b.name,
+         .          .    738:						w:      b.w,
+         .          .    739:						chatty: b.chatty,
+         .          .    740:						bench:  true,
+         .          .    741:					},
+         .          .    742:					benchFunc: b.benchFunc,
+         .          .    743:					benchTime: b.benchTime,
+         .          .    744:				}
+         .     2.71ms    745:				b.run1()
+         .          .    746:			}
+         .     13.94s    747:			r := b.doBench()
+         .          .    748:			if b.failed {
+         .          .    749:				// The output could be very long here, but probably isn't.
+         .          .    750:				// We print it all, regardless, because we don't want to trim the reason
+         .          .    751:				// the benchmark failed.
+         .          .    752:				fmt.Fprintf(b.w, "%s--- FAIL: %s\n%s", b.chatty.prefix(), benchName, b.output)

@@ -1,0 +1,88 @@
+Total: 26.57s
+ROUTINE ======================== runtime.gcStart in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgc.go
+         0     4.67us (flat, cum) 1.8e-05% of Total
+         .          .    629:func gcStart(trigger gcTrigger) {
+         .          .    630:	// Since this is called from malloc and malloc is called in
+         .          .    631:	// the guts of a number of libraries that might be holding
+         .          .    632:	// locks, don't attempt to start GC in non-preemptible or
+         .          .    633:	// potentially unstable situations.
+         .          .    634:	mp := acquirem()
+         .          .    635:	if gp := getg(); gp == mp.g0 || mp.locks > 1 || mp.preemptoff != "" {
+         .          .    636:		releasem(mp)
+         .          .    637:		return
+         .          .    638:	}
+         .          .    639:	releasem(mp)
+         .          .    640:	mp = nil
+         .          .    641:
+         .          .    642:	if gp := getg(); gp.syncGroup != nil {
+         .          .    643:		// Disassociate the G from its synctest bubble while allocating.
+         .          .    644:		// This is less elegant than incrementing the group's active count,
+         .          .    645:		// but avoids any contamination between GC and synctest.
+         .          .    646:		sg := gp.syncGroup
+         .          .    647:		gp.syncGroup = nil
+         .          .    648:		defer func() {
+         .          .    649:			gp.syncGroup = sg
+         .          .    650:		}()
+         .          .    651:	}
+         .          .    652:
+         .          .    653:	// Pick up the remaining unswept/not being swept spans concurrently
+         .          .    654:	//
+         .          .    655:	// This shouldn't happen if we're being invoked in background
+         .          .    656:	// mode since proportional sweep should have just finished
+         .          .    657:	// sweeping everything, but rounding errors, etc, may leave a
+         .          .    658:	// few spans unswept. In forced mode, this is necessary since
+         .          .    659:	// GC can be forced at any point in the sweeping cycle.
+         .          .    660:	//
+         .          .    661:	// We check the transition condition continuously here in case
+         .          .    662:	// this G gets delayed in to the next GC cycle.
+         .          .    663:	for trigger.test() && sweepone() != ^uintptr(0) {
+         .          .    664:	}
+         .          .    665:
+         .          .    666:	// Perform GC initialization and the sweep termination
+         .          .    667:	// transition.
+         .          .    668:	semacquire(&work.startSema)
+         .          .    669:	// Re-check transition condition under transition lock.
+         .          .    670:	if !trigger.test() {
+         .          .    671:		semrelease(&work.startSema)
+         .          .    672:		return
+         .          .    673:	}
+         .          .    674:
+         .          .    675:	// In gcstoptheworld debug mode, upgrade the mode accordingly.
+         .          .    676:	// We do this after re-checking the transition condition so
+         .          .    677:	// that multiple goroutines that detect the heap trigger don't
+         .          .    678:	// start multiple STW GCs.
+         .          .    679:	mode := gcBackgroundMode
+         .          .    680:	if debug.gcstoptheworld == 1 {
+         .          .    681:		mode = gcForceMode
+         .          .    682:	} else if debug.gcstoptheworld == 2 {
+         .          .    683:		mode = gcForceBlockMode
+         .          .    684:	}
+         .          .    685:
+         .          .    686:	// Ok, we're doing it! Stop everybody else
+         .          .    687:	semacquire(&gcsema)
+         .          .    688:	semacquire(&worldsema)
+         .          .    689:
+         .          .    690:	// For stats, check if this GC was forced by the user.
+         .          .    691:	// Update it under gcsema to avoid gctrace getting wrong values.
+         .          .    692:	work.userForced = trigger.kind == gcTriggerCycle
+         .          .    693:
+         .          .    694:	trace := traceAcquire()
+         .          .    695:	if trace.ok() {
+         .          .    696:		trace.GCStart()
+         .          .    697:		traceRelease(trace)
+         .          .    698:	}
+         .          .    699:
+         .          .    700:	// Check that all Ps have finished deferred mcache flushes.
+         .          .    701:	for _, p := range allp {
+         .          .    702:		if fg := p.mcache.flushGen.Load(); fg != mheap_.sweepgen {
+         .          .    703:			println("runtime: p", p.id, "flushGen", fg, "!= sweepgen", mheap_.sweepgen)
+         .          .    704:			throw("p mcache not flushed")
+         .          .    705:		}
+         .          .    706:	}
+         .          .    707:
+         .     4.67us    708:	gcBgMarkStartWorkers()
+         .          .    709:
+         .          .    710:	systemstack(gcResetMarkState)
+         .          .    711:
+         .          .    712:	work.stwprocs, work.maxprocs = gomaxprocs, gomaxprocs
+         .          .    713:	if work.stwprocs > ncpu {

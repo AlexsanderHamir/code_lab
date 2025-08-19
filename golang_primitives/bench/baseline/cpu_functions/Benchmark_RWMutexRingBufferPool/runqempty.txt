@@ -1,0 +1,14 @@
+Total: 48.01s
+ROUTINE ======================== runtime.runqempty in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       10ms (flat, cum) 0.021% of Total
+         .          .   6714:func runqempty(pp *p) bool {
+         .          .   6715:	// Defend against a race where 1) pp has G1 in runqnext but runqhead == runqtail,
+         .          .   6716:	// 2) runqput on pp kicks G1 to the runq, 3) runqget on pp empties runqnext.
+         .          .   6717:	// Simply observing that runqhead == runqtail and then observing that runqnext == nil
+         .          .   6718:	// does not mean the queue is empty.
+      10ms       10ms   6719:	for {
+         .          .   6720:		head := atomic.Load(&pp.runqhead)
+         .          .   6721:		tail := atomic.Load(&pp.runqtail)
+         .          .   6722:		runnext := atomic.Loaduintptr((*uintptr)(unsafe.Pointer(&pp.runnext)))
+         .          .   6723:		if tail == atomic.Load(&pp.runqtail) {
+         .          .   6724:			return head == tail && runnext == 0

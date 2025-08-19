@@ -1,0 +1,117 @@
+Total: 30.68s
+ROUTINE ======================== runtime.newstack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/stack.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .    966:func newstack() {
+         .          .    967:	thisg := getg()
+         .          .    968:	// TODO: double check all gp. shouldn't be getg().
+         .          .    969:	if thisg.m.morebuf.g.ptr().stackguard0 == stackFork {
+         .          .    970:		throw("stack growth after fork")
+         .          .    971:	}
+         .          .    972:	if thisg.m.morebuf.g.ptr() != thisg.m.curg {
+         .          .    973:		print("runtime: newstack called from g=", hex(thisg.m.morebuf.g), "\n"+"\tm=", thisg.m, " m->curg=", thisg.m.curg, " m->g0=", thisg.m.g0, " m->gsignal=", thisg.m.gsignal, "\n")
+         .          .    974:		morebuf := thisg.m.morebuf
+         .          .    975:		traceback(morebuf.pc, morebuf.sp, morebuf.lr, morebuf.g.ptr())
+         .          .    976:		throw("runtime: wrong goroutine in newstack")
+         .          .    977:	}
+         .          .    978:
+         .          .    979:	gp := thisg.m.curg
+         .          .    980:
+         .          .    981:	if thisg.m.curg.throwsplit {
+         .          .    982:		// Update syscallsp, syscallpc in case traceback uses them.
+         .          .    983:		morebuf := thisg.m.morebuf
+         .          .    984:		gp.syscallsp = morebuf.sp
+         .          .    985:		gp.syscallpc = morebuf.pc
+         .          .    986:		pcname, pcoff := "(unknown)", uintptr(0)
+         .          .    987:		f := findfunc(gp.sched.pc)
+         .          .    988:		if f.valid() {
+         .          .    989:			pcname = funcname(f)
+         .          .    990:			pcoff = gp.sched.pc - f.entry()
+         .          .    991:		}
+         .          .    992:		print("runtime: newstack at ", pcname, "+", hex(pcoff),
+         .          .    993:			" sp=", hex(gp.sched.sp), " stack=[", hex(gp.stack.lo), ", ", hex(gp.stack.hi), "]\n",
+         .          .    994:			"\tmorebuf={pc:", hex(morebuf.pc), " sp:", hex(morebuf.sp), " lr:", hex(morebuf.lr), "}\n",
+         .          .    995:			"\tsched={pc:", hex(gp.sched.pc), " sp:", hex(gp.sched.sp), " lr:", hex(gp.sched.lr), " ctxt:", gp.sched.ctxt, "}\n")
+         .          .    996:
+         .          .    997:		thisg.m.traceback = 2 // Include runtime frames
+         .          .    998:		traceback(morebuf.pc, morebuf.sp, morebuf.lr, gp)
+         .          .    999:		throw("runtime: stack split at bad time")
+         .          .   1000:	}
+         .          .   1001:
+         .          .   1002:	morebuf := thisg.m.morebuf
+         .          .   1003:	thisg.m.morebuf.pc = 0
+         .          .   1004:	thisg.m.morebuf.lr = 0
+         .          .   1005:	thisg.m.morebuf.sp = 0
+         .          .   1006:	thisg.m.morebuf.g = 0
+         .          .   1007:
+         .          .   1008:	// NOTE: stackguard0 may change underfoot, if another thread
+         .          .   1009:	// is about to try to preempt gp. Read it just once and use that same
+         .          .   1010:	// value now and below.
+         .          .   1011:	stackguard0 := atomic.Loaduintptr(&gp.stackguard0)
+         .          .   1012:
+         .          .   1013:	// Be conservative about where we preempt.
+         .          .   1014:	// We are interested in preempting user Go code, not runtime code.
+         .          .   1015:	// If we're holding locks, mallocing, or preemption is disabled, don't
+         .          .   1016:	// preempt.
+         .          .   1017:	// This check is very early in newstack so that even the status change
+         .          .   1018:	// from Grunning to Gwaiting and back doesn't happen in this case.
+         .          .   1019:	// That status change by itself can be viewed as a small preemption,
+         .          .   1020:	// because the GC might change Gwaiting to Gscanwaiting, and then
+         .          .   1021:	// this goroutine has to wait for the GC to finish before continuing.
+         .          .   1022:	// If the GC is in some way dependent on this goroutine (for example,
+         .          .   1023:	// it needs a lock held by the goroutine), that small preemption turns
+         .          .   1024:	// into a real deadlock.
+         .          .   1025:	preempt := stackguard0 == stackPreempt
+         .          .   1026:	if preempt {
+         .          .   1027:		if !canPreemptM(thisg.m) {
+         .          .   1028:			// Let the goroutine keep running for now.
+         .          .   1029:			// gp->preempt is set, so it will be preempted next time.
+         .          .   1030:			gp.stackguard0 = gp.stack.lo + stackGuard
+         .          .   1031:			gogo(&gp.sched) // never return
+         .          .   1032:		}
+         .          .   1033:	}
+         .          .   1034:
+         .          .   1035:	if gp.stack.lo == 0 {
+         .          .   1036:		throw("missing stack in newstack")
+         .          .   1037:	}
+         .          .   1038:	sp := gp.sched.sp
+         .          .   1039:	if goarch.ArchFamily == goarch.AMD64 || goarch.ArchFamily == goarch.I386 || goarch.ArchFamily == goarch.WASM {
+         .          .   1040:		// The call to morestack cost a word.
+         .          .   1041:		sp -= goarch.PtrSize
+         .          .   1042:	}
+         .          .   1043:	if stackDebug >= 1 || sp < gp.stack.lo {
+         .          .   1044:		print("runtime: newstack sp=", hex(sp), " stack=[", hex(gp.stack.lo), ", ", hex(gp.stack.hi), "]\n",
+         .          .   1045:			"\tmorebuf={pc:", hex(morebuf.pc), " sp:", hex(morebuf.sp), " lr:", hex(morebuf.lr), "}\n",
+         .          .   1046:			"\tsched={pc:", hex(gp.sched.pc), " sp:", hex(gp.sched.sp), " lr:", hex(gp.sched.lr), " ctxt:", gp.sched.ctxt, "}\n")
+         .          .   1047:	}
+         .          .   1048:	if sp < gp.stack.lo {
+         .          .   1049:		print("runtime: gp=", gp, ", goid=", gp.goid, ", gp->status=", hex(readgstatus(gp)), "\n ")
+         .          .   1050:		print("runtime: split stack overflow: ", hex(sp), " < ", hex(gp.stack.lo), "\n")
+         .          .   1051:		throw("runtime: split stack overflow")
+         .          .   1052:	}
+         .          .   1053:
+         .          .   1054:	if preempt {
+         .          .   1055:		if gp == thisg.m.g0 {
+         .          .   1056:			throw("runtime: preempt g0")
+         .          .   1057:		}
+         .          .   1058:		if thisg.m.p == 0 && thisg.m.locks == 0 {
+         .          .   1059:			throw("runtime: g is running but p is not")
+         .          .   1060:		}
+         .          .   1061:
+         .          .   1062:		if gp.preemptShrink {
+         .          .   1063:			// We're at a synchronous safe point now, so
+         .          .   1064:			// do the pending stack shrink.
+         .          .   1065:			gp.preemptShrink = false
+         .          .   1066:			shrinkstack(gp)
+         .          .   1067:		}
+         .          .   1068:
+         .          .   1069:		if gp.preemptStop {
+         .          .   1070:			preemptPark(gp) // never returns
+         .          .   1071:		}
+         .          .   1072:
+         .          .   1073:		// Act like goroutine called runtime.Gosched.
+         .       10ms   1074:		gopreempt_m(gp) // never return
+         .          .   1075:	}
+         .          .   1076:
+         .          .   1077:	// Allocate a bigger segment and move the stack.
+         .          .   1078:	oldsize := gp.stack.hi - gp.stack.lo
+         .          .   1079:	newsize := oldsize * 2

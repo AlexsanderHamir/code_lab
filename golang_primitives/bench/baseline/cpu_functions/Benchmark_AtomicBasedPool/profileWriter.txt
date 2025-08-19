@@ -1,0 +1,15 @@
+Total: 108.20s
+ROUTINE ======================== runtime/pprof.profileWriter in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/pprof.go
+         0       50ms (flat, cum) 0.046% of Total
+         .          .    867:func profileWriter(w io.Writer) {
+         .          .    868:	b := newProfileBuilder(w)
+         .          .    869:	var err error
+         .          .    870:	for {
+         .          .    871:		time.Sleep(100 * time.Millisecond)
+         .       10ms    872:		data, tags, eof := readProfile()
+         .       40ms    873:		if e := b.addCPUData(data, tags); e != nil && err == nil {
+         .          .    874:			err = e
+         .          .    875:		}
+         .          .    876:		if eof {
+         .          .    877:			break
+         .          .    878:		}

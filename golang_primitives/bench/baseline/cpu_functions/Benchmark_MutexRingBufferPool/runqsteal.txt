@@ -1,0 +1,12 @@
+Total: 52.53s
+ROUTINE ======================== runtime.runqsteal in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      30ms     18.63s (flat, cum) 35.47% of Total
+      20ms       20ms   6989:func runqsteal(pp, p2 *p, stealRunNextG bool) *g {
+         .          .   6990:	t := pp.runqtail
+         .     18.60s   6991:	n := runqgrab(p2, &pp.runq, t, stealRunNextG)
+      10ms       10ms   6992:	if n == 0 {
+         .          .   6993:		return nil
+         .          .   6994:	}
+         .          .   6995:	n--
+         .          .   6996:	gp := pp.runq[(t+n)%uint32(len(pp.runq))].ptr()
+         .          .   6997:	if n == 0 {

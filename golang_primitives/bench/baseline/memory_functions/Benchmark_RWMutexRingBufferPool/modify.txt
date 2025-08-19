@@ -1,0 +1,82 @@
+Total: 7.05MB
+ROUTINE ======================== runtime.(*timer).modify in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0   512.01kB (flat, cum)  7.10% of Total
+         .          .    547:func (t *timer) modify(when, period int64, f func(arg any, seq uintptr, delay int64), arg any, seq uintptr) bool {
+         .          .    548:	if when <= 0 {
+         .          .    549:		throw("timer when must be positive")
+         .          .    550:	}
+         .          .    551:	if period < 0 {
+         .          .    552:		throw("timer period must be non-negative")
+         .          .    553:	}
+         .          .    554:	async := debug.asynctimerchan.Load() != 0
+         .          .    555:
+         .          .    556:	if !async && t.isChan {
+         .          .    557:		lock(&t.sendLock)
+         .          .    558:	}
+         .          .    559:
+         .          .    560:	t.lock()
+         .          .    561:	if async {
+         .          .    562:		t.maybeRunAsync()
+         .          .    563:	}
+         .          .    564:	t.trace("modify")
+         .          .    565:	oldPeriod := t.period
+         .          .    566:	t.period = period
+         .          .    567:	if f != nil {
+         .          .    568:		t.f = f
+         .          .    569:		t.arg = arg
+         .          .    570:		t.seq = seq
+         .          .    571:	}
+         .          .    572:
+         .          .    573:	wake := false
+         .          .    574:	pending := t.when > 0
+         .          .    575:	t.when = when
+         .          .    576:	if t.state&timerHeaped != 0 {
+         .          .    577:		t.state |= timerModified
+         .          .    578:		if t.state&timerZombie != 0 {
+         .          .    579:			// In the heap but marked for removal (by a Stop).
+         .          .    580:			// Unmark it, since it has been Reset and will be running again.
+         .          .    581:			t.ts.zombies.Add(-1)
+         .          .    582:			t.state &^= timerZombie
+         .          .    583:		}
+         .          .    584:		// The corresponding heap[i].when is updated later.
+         .          .    585:		// See comment in type timer above and in timers.adjust below.
+         .          .    586:		if min := t.ts.minWhenModified.Load(); min == 0 || when < min {
+         .          .    587:			wake = true
+         .          .    588:			// Force timerModified bit out to t.astate before updating t.minWhenModified,
+         .          .    589:			// to synchronize with t.ts.adjust. See comment in adjust.
+         .          .    590:			t.astate.Store(t.state)
+         .          .    591:			t.ts.updateMinWhenModified(when)
+         .          .    592:		}
+         .          .    593:	}
+         .          .    594:
+         .          .    595:	add := t.needsAdd()
+         .          .    596:
+         .          .    597:	if !async && t.isChan {
+         .          .    598:		// Stop any future sends with stale values.
+         .          .    599:		// See timer.unlockAndRun.
+         .          .    600:		t.seq++
+         .          .    601:
+         .          .    602:		// If there is currently a send in progress,
+         .          .    603:		// incrementing seq is going to prevent that
+         .          .    604:		// send from actually happening. That means
+         .          .    605:		// that we should return true: the timer was
+         .          .    606:		// stopped, even though t.when may be zero.
+         .          .    607:		if oldPeriod == 0 && t.isSending.Load() > 0 {
+         .          .    608:			pending = true
+         .          .    609:		}
+         .          .    610:	}
+         .          .    611:	t.unlock()
+         .          .    612:	if !async && t.isChan {
+         .          .    613:		if timerchandrain(t.hchan()) {
+         .          .    614:			pending = true
+         .          .    615:		}
+         .          .    616:		unlock(&t.sendLock)
+         .          .    617:	}
+         .          .    618:
+         .          .    619:	if add {
+         .   512.01kB    620:		t.maybeAdd()
+         .          .    621:	}
+         .          .    622:	if wake {
+         .          .    623:		wakeNetPoller(when)
+         .          .    624:	}
+         .          .    625:

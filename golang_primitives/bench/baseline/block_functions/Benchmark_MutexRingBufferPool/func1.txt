@@ -1,0 +1,61 @@
+Total: 63.70s
+ROUTINE ======================== primitives_performance.Benchmark_MutexRingBufferPool.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     35.81s (flat, cum) 56.21% of Total
+         .          .     16:	b.RunParallel(func(pb *testing.PB) {
+         .          .     17:		for pb.Next() {
+         .     19.58s     18:			obj := pool.Get()
+         .     16.23s     19:			pool.Put(obj)
+         .          .     20:		}
+         .          .     21:	})
+         .          .     22:}
+         .          .     23:
+         .          .     24:// Benchmark: RWMutex-protected ring buffer pool
+ROUTINE ======================== testing.(*B).RunParallel.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     35.81s (flat, cum) 56.21% of Total
+         .          .    955:		go func() {
+         .          .    956:			defer wg.Done()
+         .          .    957:			pb := &PB{
+         .          .    958:				globalN: &n,
+         .          .    959:				grain:   grain,
+         .          .    960:				bN:      uint64(b.N),
+         .          .    961:			}
+         .     35.81s    962:			body(pb)
+         .          .    963:		}()
+         .          .    964:	}
+         .          .    965:	wg.Wait()
+         .          .    966:	if n.Load() <= uint64(b.N) && !b.Failed() {
+         .          .    967:		b.Fatal("RunParallel: body exited without pb.Next() == false")
+ROUTINE ======================== testing.(*B).run1.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0    14.83us (flat, cum) 2.3e-05% of Total
+         .          .    238:	go func() {
+         .          .    239:		// Signal that we're done whether we return normally
+         .          .    240:		// or by FailNow's runtime.Goexit.
+         .          .    241:		defer func() {
+         .          .    242:			b.signal <- true
+         .          .    243:		}()
+         .          .    244:
+         .    14.83us    245:		b.runN(1)
+         .          .    246:	}()
+         .          .    247:	<-b.signal
+         .          .    248:	if b.failed {
+         .          .    249:		fmt.Fprintf(b.w, "%s--- FAIL: %s\n%s", b.chatty.prefix(), b.name, b.output)
+         .          .    250:		return false
+ROUTINE ======================== testing.(*M).after.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/testing.go
+         0   108.11ms (flat, cum)  0.17% of Total
+         .          .   2366:	m.afterOnce.Do(func() {
+         .   108.11ms   2367:		m.writeProfiles()
+         .          .   2368:	})
+         .          .   2369:
+         .          .   2370:	// Restore PanicOnExit0 after every run, because we set it to true before
+         .          .   2371:	// every run. Otherwise, if m.Run is called multiple times the behavior of
+         .          .   2372:	// os.Exit(0) will not be restored after the second run.
+ROUTINE ======================== testing.runBenchmarks.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     13.90s (flat, cum) 21.82% of Total
+         .          .    706:		benchFunc: func(b *B) {
+         .          .    707:			for _, Benchmark := range bs {
+         .     13.90s    708:				b.Run(Benchmark.Name, Benchmark.F)
+         .          .    709:			}
+         .          .    710:		},
+         .          .    711:		benchTime: benchTime,
+         .          .    712:		bstate:    bstate,
+         .          .    713:	}

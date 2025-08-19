@@ -1,0 +1,25 @@
+Total: 7.05MB
+ROUTINE ======================== primitives_performance.init.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+    1.50MB     1.50MB (flat, cum) 21.29% of Total
+         .          .    448:var testAllocator = func() *testObject {
+    1.50MB     1.50MB    449:	return &testObject{
+         .          .    450:		ID:   0,
+         .          .    451:		Data: "test",
+         .          .    452:	}
+         .          .    453:}
+         .          .    454:
+ROUTINE ======================== runtime.(*scavengerState).init in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgcscavenge.go
+  512.05kB   512.05kB (flat, cum)  7.10% of Total
+         .          .    356:func (s *scavengerState) init() {
+         .          .    357:	if s.g != nil {
+         .          .    358:		throw("scavenger state is already wired")
+         .          .    359:	}
+         .          .    360:	lockInit(&s.lock, lockRankScavenge)
+         .          .    361:	s.g = getg()
+         .          .    362:
+  512.05kB   512.05kB    363:	s.timer = new(timer)
+         .          .    364:	f := func(s any, _ uintptr, _ int64) {
+         .          .    365:		s.(*scavengerState).wake()
+         .          .    366:	}
+         .          .    367:	s.timer.init(f, s)
+         .          .    368:

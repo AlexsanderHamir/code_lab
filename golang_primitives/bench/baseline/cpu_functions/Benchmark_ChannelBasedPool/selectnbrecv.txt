@@ -1,0 +1,10 @@
+Total: 30.68s
+ROUTINE ======================== runtime.selectnbrecv in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/chan.go
+         0     15.18s (flat, cum) 49.48% of Total
+         .          .    801:func selectnbrecv(elem unsafe.Pointer, c *hchan) (selected, received bool) {
+         .     15.18s    802:	return chanrecv(c, elem, false)
+         .          .    803:}
+         .          .    804:
+         .          .    805://go:linkname reflect_chansend reflect.chansend0
+         .          .    806:func reflect_chansend(c *hchan, elem unsafe.Pointer, nb bool) (selected bool) {
+         .          .    807:	return chansend(c, elem, !nb, sys.GetCallerPC())

@@ -1,0 +1,28 @@
+Total: 30.68s
+ROUTINE ======================== runtime.notewakeup in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_sema.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .     23:func notewakeup(n *note) {
+         .          .     24:	var v uintptr
+         .          .     25:	for {
+         .          .     26:		v = atomic.Loaduintptr(&n.key)
+         .          .     27:		if atomic.Casuintptr(&n.key, v, locked) {
+         .          .     28:			break
+         .          .     29:		}
+         .          .     30:	}
+         .          .     31:
+         .          .     32:	// Successfully set waitm to locked.
+         .          .     33:	// What was it before?
+         .          .     34:	switch {
+         .          .     35:	case v == 0:
+         .          .     36:		// Nothing was waiting. Done.
+         .          .     37:	case v == locked:
+         .          .     38:		// Two notewakeups! Not allowed.
+         .          .     39:		throw("notewakeup - double wakeup")
+         .          .     40:	default:
+         .          .     41:		// Must be the waiting m. Wake it up.
+         .       10ms     42:		semawakeup((*m)(unsafe.Pointer(v)))
+         .          .     43:	}
+         .          .     44:}
+         .          .     45:
+         .          .     46:func notesleep(n *note) {
+         .          .     47:	gp := getg()

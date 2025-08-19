@@ -1,0 +1,10 @@
+Total: 63.70s
+ROUTINE ======================== sync.(*Mutex).Lock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/mutex.go
+    35.81s     35.81s (flat, cum) 56.21% of Total
+         .          .     45:func (m *Mutex) Lock() {
+    35.81s     35.81s     46:	m.mu.Lock()
+         .          .     47:}
+         .          .     48:
+         .          .     49:// TryLock tries to lock m and reports whether it succeeded.
+         .          .     50://
+         .          .     51:// Note that while correct uses of TryLock do exist, they are rare,

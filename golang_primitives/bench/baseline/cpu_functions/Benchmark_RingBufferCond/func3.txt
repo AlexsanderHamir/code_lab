@@ -1,0 +1,19 @@
+Total: 52.38s
+ROUTINE ======================== runtime.gcMarkTermination.func3 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgc.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .   1176:	systemstack(func() {
+         .          .   1177:		// The memstats updated above must be updated with the world
+         .          .   1178:		// stopped to ensure consistency of some values, such as
+         .          .   1179:		// sched.idleTime and sched.totaltime. memstats also include
+         .          .   1180:		// the pause time (work,pauseNS), forcing computation of the
+         .          .   1181:		// total pause time before the pause actually ends.
+         .          .   1182:		//
+         .          .   1183:		// Here we reuse the same now for start the world so that the
+         .          .   1184:		// time added to /sched/pauses/total/gc:seconds will be
+         .          .   1185:		// consistent with the value in memstats.
+         .       10ms   1186:		startTheWorldWithSema(now, stw)
+         .          .   1187:	})
+         .          .   1188:
+         .          .   1189:	// Flush the heap profile so we can start a new cycle next GC.
+         .          .   1190:	// This is relatively expensive, so we don't do it with the
+         .          .   1191:	// world stopped.

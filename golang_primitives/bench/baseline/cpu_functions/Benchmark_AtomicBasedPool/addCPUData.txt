@@ -1,0 +1,69 @@
+Total: 108.20s
+ROUTINE ======================== runtime/pprof.(*profileBuilder).addCPUData in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/proto.go
+         0       40ms (flat, cum) 0.037% of Total
+         .          .    278:func (b *profileBuilder) addCPUData(data []uint64, tags []unsafe.Pointer) error {
+         .          .    279:	if !b.havePeriod {
+         .          .    280:		// first record is period
+         .          .    281:		if len(data) < 3 {
+         .          .    282:			return fmt.Errorf("truncated profile")
+         .          .    283:		}
+         .          .    284:		if data[0] != 3 || data[2] == 0 {
+         .          .    285:			return fmt.Errorf("malformed profile")
+         .          .    286:		}
+         .          .    287:		// data[2] is sampling rate in Hz. Convert to sampling
+         .          .    288:		// period in nanoseconds.
+         .          .    289:		b.period = 1e9 / int64(data[2])
+         .          .    290:		b.havePeriod = true
+         .          .    291:		data = data[3:]
+         .          .    292:		// Consume tag slot. Note that there isn't a meaningful tag
+         .          .    293:		// value for this record.
+         .          .    294:		tags = tags[1:]
+         .          .    295:	}
+         .          .    296:
+         .          .    297:	// Parse CPU samples from the profile.
+         .          .    298:	// Each sample is 3+n uint64s:
+         .          .    299:	//	data[0] = 3+n
+         .          .    300:	//	data[1] = time stamp (ignored)
+         .          .    301:	//	data[2] = count
+         .          .    302:	//	data[3:3+n] = stack
+         .          .    303:	// If the count is 0 and the stack has length 1,
+         .          .    304:	// that's an overflow record inserted by the runtime
+         .          .    305:	// to indicate that stack[0] samples were lost.
+         .          .    306:	// Otherwise the count is usually 1,
+         .          .    307:	// but in a few special cases like lost non-Go samples
+         .          .    308:	// there can be larger counts.
+         .          .    309:	// Because many samples with the same stack arrive,
+         .          .    310:	// we want to deduplicate immediately, which we do
+         .          .    311:	// using the b.m profMap.
+         .          .    312:	for len(data) > 0 {
+         .          .    313:		if len(data) < 3 || data[0] > uint64(len(data)) {
+         .          .    314:			return fmt.Errorf("truncated profile")
+         .          .    315:		}
+         .          .    316:		if data[0] < 3 || tags != nil && len(tags) < 1 {
+         .          .    317:			return fmt.Errorf("malformed profile")
+         .          .    318:		}
+         .          .    319:		if len(tags) < 1 {
+         .          .    320:			return fmt.Errorf("mismatched profile records and tags")
+         .          .    321:		}
+         .          .    322:		count := data[2]
+         .          .    323:		stk := data[3:data[0]]
+         .          .    324:		data = data[data[0]:]
+         .          .    325:		tag := tags[0]
+         .          .    326:		tags = tags[1:]
+         .          .    327:
+         .          .    328:		if count == 0 && len(stk) == 1 {
+         .          .    329:			// overflow record
+         .          .    330:			count = uint64(stk[0])
+         .          .    331:			stk = []uint64{
+         .          .    332:				// gentraceback guarantees that PCs in the
+         .          .    333:				// stack can be unconditionally decremented and
+         .          .    334:				// still be valid, so we must do the same.
+         .          .    335:				uint64(abi.FuncPCABIInternal(lostProfileEvent) + 1),
+         .          .    336:			}
+         .          .    337:		}
+         .       40ms    338:		b.m.lookup(stk, tag).count += int64(count)
+         .          .    339:	}
+         .          .    340:
+         .          .    341:	if len(tags) != 0 {
+         .          .    342:		return fmt.Errorf("mismatched profile records and tags")
+         .          .    343:	}

@@ -1,0 +1,57 @@
+Total: 52.53s
+ROUTINE ======================== runtime.scanobject in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgcmark.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .   1381:func scanobject(b uintptr, gcw *gcWork) {
+         .          .   1382:	// Prefetch object before we scan it.
+         .          .   1383:	//
+         .          .   1384:	// This will overlap fetching the beginning of the object with initial
+         .          .   1385:	// setup before we start scanning the object.
+         .          .   1386:	sys.Prefetch(b)
+         .          .   1387:
+         .          .   1388:	// Find the bits for b and the size of the object at b.
+         .          .   1389:	//
+         .          .   1390:	// b is either the beginning of an object, in which case this
+         .          .   1391:	// is the size of the object to scan, or it points to an
+         .          .   1392:	// oblet, in which case we compute the size to scan below.
+         .          .   1393:	s := spanOfUnchecked(b)
+         .          .   1394:	n := s.elemsize
+         .          .   1395:	if n == 0 {
+         .          .   1396:		throw("scanobject n == 0")
+         .          .   1397:	}
+         .          .   1398:	if s.spanclass.noscan() {
+         .          .   1399:		// Correctness-wise this is ok, but it's inefficient
+         .          .   1400:		// if noscan objects reach here.
+         .          .   1401:		throw("scanobject of a noscan object")
+         .          .   1402:	}
+         .          .   1403:
+         .          .   1404:	var tp typePointers
+         .          .   1405:	if n > maxObletBytes {
+         .          .   1406:		// Large object. Break into oblets for better
+         .          .   1407:		// parallelism and lower latency.
+         .          .   1408:		if b == s.base() {
+         .          .   1409:			// Enqueue the other oblets to scan later.
+         .          .   1410:			// Some oblets may be in b's scalar tail, but
+         .          .   1411:			// these will be marked as "no more pointers",
+         .          .   1412:			// so we'll drop out immediately when we go to
+         .          .   1413:			// scan those.
+         .          .   1414:			for oblet := b + maxObletBytes; oblet < s.base()+s.elemsize; oblet += maxObletBytes {
+         .          .   1415:				if !gcw.putFast(oblet) {
+         .          .   1416:					gcw.put(oblet)
+         .          .   1417:				}
+         .          .   1418:			}
+         .          .   1419:		}
+         .          .   1420:
+         .          .   1421:		// Compute the size of the oblet. Since this object
+         .          .   1422:		// must be a large object, s.base() is the beginning
+         .          .   1423:		// of the object.
+         .          .   1424:		n = s.base() + s.elemsize - b
+         .          .   1425:		n = min(n, maxObletBytes)
+         .          .   1426:		tp = s.typePointersOfUnchecked(s.base())
+         .          .   1427:		tp = tp.fastForward(b-tp.addr, b+n)
+         .          .   1428:	} else {
+         .       10ms   1429:		tp = s.typePointersOfUnchecked(b)
+         .          .   1430:	}
+         .          .   1431:
+         .          .   1432:	var scanSize uintptr
+         .          .   1433:	for {
+         .          .   1434:		var addr uintptr

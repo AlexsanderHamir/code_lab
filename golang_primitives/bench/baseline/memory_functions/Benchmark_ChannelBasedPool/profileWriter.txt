@@ -1,0 +1,27 @@
+Total: 8.43MB
+ROUTINE ======================== runtime/pprof.profileWriter in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/pprof.go
+         0     2.42MB (flat, cum) 28.68% of Total
+         .          .    867:func profileWriter(w io.Writer) {
+         .          .    868:	b := newProfileBuilder(w)
+         .          .    869:	var err error
+         .          .    870:	for {
+         .          .    871:		time.Sleep(100 * time.Millisecond)
+         .          .    872:		data, tags, eof := readProfile()
+         .          .    873:		if e := b.addCPUData(data, tags); e != nil && err == nil {
+         .          .    874:			err = e
+         .          .    875:		}
+         .          .    876:		if eof {
+         .          .    877:			break
+         .          .    878:		}
+         .          .    879:	}
+         .          .    880:	if err != nil {
+         .          .    881:		// The runtime should never produce an invalid or truncated profile.
+         .          .    882:		// It drops records that can't fit into its log buffers.
+         .          .    883:		panic("runtime/pprof: converting profile: " + err.Error())
+         .          .    884:	}
+         .     2.42MB    885:	b.build()
+         .          .    886:	cpu.done <- true
+         .          .    887:}
+         .          .    888:
+         .          .    889:// StopCPUProfile stops the current CPU profile, if any.
+         .          .    890:// StopCPUProfile only returns after all the writes for the

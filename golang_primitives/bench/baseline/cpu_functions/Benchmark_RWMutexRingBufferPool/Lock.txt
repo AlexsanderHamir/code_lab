@@ -1,0 +1,592 @@
+Total: 48.01s
+ROUTINE ======================== internal/sync.(*Mutex).Unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/sync/mutex.go
+      10ms     16.47s (flat, cum) 34.31% of Total
+         .          .    187:func (m *Mutex) Unlock() {
+         .          .    188:	if race.Enabled {
+         .          .    189:		_ = m.state
+         .          .    190:		race.Release(unsafe.Pointer(m))
+         .          .    191:	}
+         .          .    192:
+         .          .    193:	// Fast path: drop lock bit.
+      10ms       10ms    194:	new := atomic.AddInt32(&m.state, -mutexLocked)
+         .          .    195:	if new != 0 {
+         .          .    196:		// Outlined slow path to allow inlining the fast path.
+         .          .    197:		// To hide unlockSlow during tracing we skip one extra frame when tracing GoUnblock.
+         .     16.46s    198:		m.unlockSlow(new)
+         .          .    199:	}
+         .          .    200:}
+         .          .    201:
+         .          .    202:func (m *Mutex) unlockSlow(new int32) {
+         .          .    203:	if (new+mutexLocked)&mutexLocked == 0 {
+ROUTINE ======================== internal/sync.(*Mutex).lockSlow in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/sync/mutex.go
+     2.22s     12.77s (flat, cum) 26.60% of Total
+      10ms       10ms     95:func (m *Mutex) lockSlow() {
+         .          .     96:	var waitStartTime int64
+         .          .     97:	starving := false
+         .          .     98:	awoke := false
+         .          .     99:	iter := 0
+     1.19s      1.19s    100:	old := m.state
+         .          .    101:	for {
+         .          .    102:		// Don't spin in starvation mode, ownership is handed off to waiters
+         .          .    103:		// so we won't be able to acquire the mutex anyway.
+     260ms      330ms    104:		if old&(mutexLocked|mutexStarving) == mutexLocked && runtime_canSpin(iter) {
+         .          .    105:			// Active spinning makes sense.
+         .          .    106:			// Try to set mutexWoken flag to inform Unlock
+         .          .    107:			// to not wake other blocked goroutines.
+         .          .    108:			if !awoke && old&mutexWoken == 0 && old>>mutexWaiterShift != 0 &&
+      40ms       40ms    109:				atomic.CompareAndSwapInt32(&m.state, old, old|mutexWoken) {
+         .          .    110:				awoke = true
+         .          .    111:			}
+      10ms       60ms    112:			runtime_doSpin()
+         .          .    113:			iter++
+         .          .    114:			old = m.state
+         .          .    115:			continue
+         .          .    116:		}
+         .          .    117:		new := old
+         .          .    118:		// Don't try to acquire starving mutex, new arriving goroutines must queue.
+         .          .    119:		if old&mutexStarving == 0 {
+         .          .    120:			new |= mutexLocked
+         .          .    121:		}
+         .          .    122:		if old&(mutexLocked|mutexStarving) != 0 {
+         .          .    123:			new += 1 << mutexWaiterShift
+         .          .    124:		}
+         .          .    125:		// The current goroutine switches mutex to starvation mode.
+         .          .    126:		// But if the mutex is currently unlocked, don't do the switch.
+         .          .    127:		// Unlock expects that starving mutex has waiters, which will not
+         .          .    128:		// be true in this case.
+      20ms       20ms    129:		if starving && old&mutexLocked != 0 {
+         .          .    130:			new |= mutexStarving
+         .          .    131:		}
+         .          .    132:		if awoke {
+         .          .    133:			// The goroutine has been woken from sleep,
+         .          .    134:			// so we need to reset the flag in either case.
+         .          .    135:			if new&mutexWoken == 0 {
+         .          .    136:				throw("sync: inconsistent mutex state")
+         .          .    137:			}
+         .          .    138:			new &^= mutexWoken
+         .          .    139:		}
+     660ms      660ms    140:		if atomic.CompareAndSwapInt32(&m.state, old, new) {
+         .          .    141:			if old&(mutexLocked|mutexStarving) == 0 {
+         .          .    142:				break // locked the mutex with CAS
+         .          .    143:			}
+         .          .    144:			// If we were already waiting before, queue at the front of the queue.
+         .          .    145:			queueLifo := waitStartTime != 0
+         .          .    146:			if waitStartTime == 0 {
+         .       60ms    147:				waitStartTime = runtime_nanotime()
+         .          .    148:			}
+         .     10.27s    149:			runtime_SemacquireMutex(&m.sema, queueLifo, 2)
+         .      100ms    150:			starving = starving || runtime_nanotime()-waitStartTime > starvationThresholdNs
+         .          .    151:			old = m.state
+         .          .    152:			if old&mutexStarving != 0 {
+         .          .    153:				// If this goroutine was woken and mutex is in starvation mode,
+         .          .    154:				// ownership was handed off to us but mutex is in somewhat
+         .          .    155:				// inconsistent state: mutexLocked is not set and we are still
+         .          .    156:				// accounted as waiter. Fix that.
+         .          .    157:				if old&(mutexLocked|mutexWoken) != 0 || old>>mutexWaiterShift == 0 {
+         .          .    158:					throw("sync: inconsistent mutex state")
+         .          .    159:				}
+         .          .    160:				delta := int32(mutexLocked - 1<<mutexWaiterShift)
+         .          .    161:				if !starving || old>>mutexWaiterShift == 1 {
+         .          .    162:					// Exit starvation mode.
+         .          .    163:					// Critical to do it here and consider wait time.
+         .          .    164:					// Starvation mode is so inefficient, that two goroutines
+         .          .    165:					// can go lock-step infinitely once they switch mutex
+         .          .    166:					// to starvation mode.
+         .          .    167:					delta -= mutexStarving
+         .          .    168:				}
+         .          .    169:				atomic.AddInt32(&m.state, delta)
+         .          .    170:				break
+         .          .    171:			}
+         .          .    172:			awoke = true
+         .          .    173:			iter = 0
+         .          .    174:		} else {
+      30ms       30ms    175:			old = m.state
+         .          .    176:		}
+         .          .    177:	}
+         .          .    178:
+         .          .    179:	if race.Enabled {
+         .          .    180:		race.Acquire(unsafe.Pointer(m))
+ROUTINE ======================== internal/sync.(*Mutex).unlockSlow in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/sync/mutex.go
+      70ms     16.46s (flat, cum) 34.28% of Total
+         .          .    202:func (m *Mutex) unlockSlow(new int32) {
+         .          .    203:	if (new+mutexLocked)&mutexLocked == 0 {
+         .          .    204:		fatal("sync: unlock of unlocked mutex")
+         .          .    205:	}
+         .          .    206:	if new&mutexStarving == 0 {
+         .          .    207:		old := new
+         .          .    208:		for {
+         .          .    209:			// If there are no waiters or a goroutine has already
+         .          .    210:			// been woken or grabbed the lock, no need to wake anyone.
+         .          .    211:			// In starvation mode ownership is directly handed off from unlocking
+         .          .    212:			// goroutine to the next waiter. We are not part of this chain,
+         .          .    213:			// since we did not observe mutexStarving when we unlocked the mutex above.
+         .          .    214:			// So get off the way.
+      20ms       20ms    215:			if old>>mutexWaiterShift == 0 || old&(mutexLocked|mutexWoken|mutexStarving) != 0 {
+      10ms       10ms    216:				return
+         .          .    217:			}
+         .          .    218:			// Grab the right to wake someone.
+         .          .    219:			new = (old - 1<<mutexWaiterShift) | mutexWoken
+      40ms       40ms    220:			if atomic.CompareAndSwapInt32(&m.state, old, new) {
+         .     16.39s    221:				runtime_Semrelease(&m.sema, false, 2)
+         .          .    222:				return
+         .          .    223:			}
+         .          .    224:			old = m.state
+         .          .    225:		}
+         .          .    226:	} else {
+ROUTINE ======================== runtime.(*lockTimer).begin in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0       90ms (flat, cum)  0.19% of Total
+         .          .    685:func (lt *lockTimer) begin() {
+         .          .    686:	rate := int64(atomic.Load64(&mutexprofilerate))
+         .          .    687:
+         .          .    688:	lt.timeRate = gTrackingPeriod
+         .          .    689:	if rate != 0 && rate < lt.timeRate {
+         .          .    690:		lt.timeRate = rate
+         .          .    691:	}
+         .          .    692:	if int64(cheaprand())%lt.timeRate == 0 {
+         .       60ms    693:		lt.timeStart = nanotime()
+         .          .    694:	}
+         .          .    695:
+         .          .    696:	if rate > 0 && int64(cheaprand())%rate == 0 {
+         .       30ms    697:		lt.tickStart = cputicks()
+         .          .    698:	}
+         .          .    699:}
+         .          .    700:
+         .          .    701:func (lt *lockTimer) end() {
+         .          .    702:	gp := getg()
+ROUTINE ======================== runtime.(*lockTimer).end in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0      150ms (flat, cum)  0.31% of Total
+         .          .    701:func (lt *lockTimer) end() {
+         .          .    702:	gp := getg()
+         .          .    703:
+         .          .    704:	if lt.timeStart != 0 {
+         .       90ms    705:		nowTime := nanotime()
+         .          .    706:		gp.m.mLockProfile.waitTime.Add((nowTime - lt.timeStart) * lt.timeRate)
+         .          .    707:	}
+         .          .    708:
+         .          .    709:	if lt.tickStart != 0 {
+         .       50ms    710:		nowTick := cputicks()
+         .       10ms    711:		gp.m.mLockProfile.recordLock(nowTick-lt.tickStart, lt.lock)
+         .          .    712:	}
+         .          .    713:}
+         .          .    714:
+         .          .    715:type mLockProfile struct {
+         .          .    716:	waitTime   atomic.Int64 // total nanoseconds spent waiting in runtime.lockWithRank
+ROUTINE ======================== runtime.(*mLockProfile).recordUnlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0      210ms (flat, cum)  0.44% of Total
+         .          .    772:func (prof *mLockProfile) recordUnlock(l *mutex) {
+         .          .    773:	if uintptr(unsafe.Pointer(l)) == prof.pending {
+         .          .    774:		prof.captureStack()
+         .          .    775:	}
+         .          .    776:	if gp := getg(); gp.m.locks == 1 && gp.m.mLockProfile.haveStack {
+         .      210ms    777:		prof.store()
+         .          .    778:	}
+         .          .    779:}
+         .          .    780:
+         .          .    781:func (prof *mLockProfile) captureStack() {
+         .          .    782:	if debug.profstackdepth == 0 {
+ROUTINE ======================== runtime.blockevent in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      10ms      190ms (flat, cum)   0.4% of Total
+         .          .    506:func blockevent(cycles int64, skip int) {
+         .          .    507:	if cycles <= 0 {
+         .          .    508:		cycles = 1
+         .          .    509:	}
+         .          .    510:
+         .          .    511:	rate := int64(atomic.Load64(&blockprofilerate))
+         .          .    512:	if blocksampled(cycles, rate) {
+      10ms      190ms    513:		saveblockevent(cycles, rate, skip+1, blockProfile)
+         .          .    514:	}
+         .          .    515:}
+         .          .    516:
+         .          .    517:// blocksampled returns true for all events where cycles >= rate. Shorter
+         .          .    518:// events have a cycles/rate random chance of returning true.
+ROUTINE ======================== runtime.lock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+         0      430ms (flat, cum)   0.9% of Total
+         .          .    149:func lock(l *mutex) {
+         .      430ms    150:	lockWithRank(l, getLockRank(l))
+         .          .    151:}
+         .          .    152:
+         .          .    153:func lock2(l *mutex) {
+         .          .    154:	gp := getg()
+         .          .    155:	if gp.m.locks < 0 {
+ROUTINE ======================== runtime.lock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+     180ms     20.55s (flat, cum) 42.80% of Total
+      10ms       10ms    153:func lock2(l *mutex) {
+      10ms       10ms    154:	gp := getg()
+         .          .    155:	if gp.m.locks < 0 {
+         .          .    156:		throw("runtime·lock: lock count")
+         .          .    157:	}
+         .          .    158:	gp.m.locks++
+         .          .    159:
+         .          .    160:	k8 := key8(&l.key)
+         .          .    161:
+         .          .    162:	// Speculative grab for lock.
+      40ms       40ms    163:	v8 := atomic.Xchg8(k8, mutexLocked)
+         .          .    164:	if v8&mutexLocked == 0 {
+         .          .    165:		if v8&mutexSleeping != 0 {
+         .          .    166:			atomic.Or8(k8, mutexSleeping)
+         .          .    167:		}
+      10ms       10ms    168:		return
+         .          .    169:	}
+         .          .    170:	semacreate(gp.m)
+         .          .    171:
+         .          .    172:	timer := &lockTimer{lock: l}
+         .       90ms    173:	timer.begin()
+         .          .    174:	// On uniprocessors, no point spinning.
+         .          .    175:	// On multiprocessors, spin for mutexActiveSpinCount attempts.
+         .          .    176:	spin := 0
+         .          .    177:	if ncpu > 1 {
+         .          .    178:		spin = mutexActiveSpinCount
+         .          .    179:	}
+         .          .    180:
+         .          .    181:	var weSpin, atTail bool
+         .          .    182:	v := atomic.Loaduintptr(&l.key)
+         .          .    183:tryAcquire:
+         .          .    184:	for i := 0; ; i++ {
+         .          .    185:		if v&mutexLocked == 0 {
+      10ms       10ms    186:			if weSpin {
+         .          .    187:				next := (v &^ mutexSpinning) | mutexSleeping | mutexLocked
+         .          .    188:				if next&^mutexMMask == 0 {
+         .          .    189:					// The fast-path Xchg8 may have cleared mutexSleeping. Fix
+         .          .    190:					// the hint so unlock2 knows when to use its slow path.
+         .          .    191:					next = next &^ mutexSleeping
+         .          .    192:				}
+      10ms       10ms    193:				if atomic.Casuintptr(&l.key, v, next) {
+         .       40ms    194:					timer.end()
+         .          .    195:					return
+         .          .    196:				}
+         .          .    197:			} else {
+         .          .    198:				prev8 := atomic.Xchg8(k8, mutexLocked|mutexSleeping)
+         .          .    199:				if prev8&mutexLocked == 0 {
+         .      110ms    200:					timer.end()
+         .          .    201:					return
+         .          .    202:				}
+         .          .    203:			}
+      10ms       10ms    204:			v = atomic.Loaduintptr(&l.key)
+         .          .    205:			continue tryAcquire
+         .          .    206:		}
+         .          .    207:
+      10ms       10ms    208:		if !weSpin && v&mutexSpinning == 0 && atomic.Casuintptr(&l.key, v, v|mutexSpinning) {
+         .          .    209:			v |= mutexSpinning
+         .          .    210:			weSpin = true
+         .          .    211:		}
+         .          .    212:
+         .          .    213:		if weSpin || atTail || mutexPreferLowLatency(l) {
+         .          .    214:			if i < spin {
+         .          .    215:				procyield(mutexActiveSpinSize)
+         .          .    216:				v = atomic.Loaduintptr(&l.key)
+         .          .    217:				continue tryAcquire
+         .          .    218:			} else if i < spin+mutexPassiveSpinCount {
+         .      8.88s    219:				osyield() // TODO: Consider removing this step. See https://go.dev/issue/69268.
+      10ms       10ms    220:				v = atomic.Loaduintptr(&l.key)
+         .          .    221:				continue tryAcquire
+         .          .    222:			}
+         .          .    223:		}
+         .          .    224:
+         .          .    225:		// Go to sleep
+         .          .    226:		if v&mutexLocked == 0 {
+         .          .    227:			throw("runtime·lock: sleeping while lock is available")
+         .          .    228:		}
+         .          .    229:
+         .          .    230:		// Store the current head of the list of sleeping Ms in our gp.m.mWaitList.next field
+         .          .    231:		gp.m.mWaitList.next = mutexWaitListHead(v)
+         .          .    232:
+         .          .    233:		// Pack a (partial) pointer to this M with the current lock state bits
+         .          .    234:		next := (uintptr(unsafe.Pointer(gp.m)) &^ mutexMMask) | v&mutexMMask | mutexSleeping
+         .          .    235:		if weSpin { // If we were spinning, prepare to retire
+         .          .    236:			next = next &^ mutexSpinning
+         .          .    237:		}
+         .          .    238:
+      20ms       20ms    239:		if atomic.Casuintptr(&l.key, v, next) {
+         .          .    240:			weSpin = false
+         .          .    241:			// We've pushed ourselves onto the stack of waiters. Wait.
+         .     11.25s    242:			semasleep(-1)
+      20ms       20ms    243:			atTail = gp.m.mWaitList.next == 0 // we were at risk of starving
+         .          .    244:			i = 0
+         .          .    245:		}
+         .          .    246:
+         .          .    247:		gp.m.mWaitList.next = 0
+      20ms       20ms    248:		v = atomic.Loaduintptr(&l.key)
+         .          .    249:	}
+         .          .    250:}
+         .          .    251:
+         .          .    252:func unlock(l *mutex) {
+         .          .    253:	unlockWithRank(l)
+ROUTINE ======================== runtime.lockWithRank in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lockrank_off.go
+         0     20.55s (flat, cum) 42.80% of Total
+         .          .     23:func lockWithRank(l *mutex, rank lockRank) {
+         .     20.55s     24:	lock2(l)
+         .          .     25:}
+         .          .     26:
+         .          .     27:// This function may be called in nosplit context and thus must be nosplit.
+         .          .     28://
+         .          .     29://go:nosplit
+ROUTINE ======================== runtime.parkunlock_c in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms      630ms (flat, cum)  1.31% of Total
+      10ms       10ms   4087:func parkunlock_c(gp *g, lock unsafe.Pointer) bool {
+         .      620ms   4088:	unlock((*mutex)(lock))
+         .          .   4089:	return true
+         .          .   4090:}
+         .          .   4091:
+         .          .   4092:// park continuation on g0.
+         .          .   4093:func park_m(gp *g) {
+ROUTINE ======================== runtime.pthread_mutex_lock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+      30ms       30ms (flat, cum) 0.062% of Total
+         .          .    518:func pthread_mutex_lock(m *pthreadmutex) int32 {
+      30ms       30ms    519:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_mutex_lock_trampoline)), unsafe.Pointer(&m))
+         .          .    520:	KeepAlive(m)
+         .          .    521:	return ret
+         .          .    522:}
+         .          .    523:func pthread_mutex_lock_trampoline()
+         .          .    524:
+ROUTINE ======================== runtime.pthread_mutex_unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+      50ms       50ms (flat, cum)   0.1% of Total
+         .          .    527:func pthread_mutex_unlock(m *pthreadmutex) int32 {
+      50ms       50ms    528:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_mutex_unlock_trampoline)), unsafe.Pointer(&m))
+         .          .    529:	KeepAlive(m)
+         .          .    530:	return ret
+         .          .    531:}
+         .          .    532:func pthread_mutex_unlock_trampoline()
+         .          .    533:
+ROUTINE ======================== runtime.saveBlockEventStack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      20ms      450ms (flat, cum)  0.94% of Total
+      10ms       10ms    859:func saveBlockEventStack(cycles, rate int64, stk []uintptr, which bucketType) {
+         .       40ms    860:	b := stkbucket(which, 0, stk, true)
+      10ms       10ms    861:	bp := b.bp()
+         .          .    862:
+         .      330ms    863:	lock(&profBlockLock)
+         .          .    864:	// We want to up-scale the count and cycles according to the
+         .          .    865:	// probability that the event was sampled. For block profile events,
+         .          .    866:	// the sample probability is 1 if cycles >= rate, and cycles / rate
+         .          .    867:	// otherwise. For mutex profile events, the sample probability is 1 / rate.
+         .          .    868:	// We scale the events by 1 / (probability the event was sampled).
+         .          .    869:	if which == blockProfile && cycles < rate {
+         .          .    870:		// Remove sampling bias, see discussion on http://golang.org/cl/299991.
+         .          .    871:		bp.count += float64(rate) / float64(cycles)
+         .          .    872:		bp.cycles += rate
+         .          .    873:	} else if which == mutexProfile {
+         .          .    874:		bp.count += float64(rate)
+         .          .    875:		bp.cycles += rate * cycles
+         .          .    876:	} else {
+         .          .    877:		bp.count++
+         .          .    878:		bp.cycles += cycles
+         .          .    879:	}
+         .       60ms    880:	unlock(&profBlockLock)
+         .          .    881:}
+         .          .    882:
+         .          .    883:var mutexprofilerate uint64 // fraction sampled
+         .          .    884:
+         .          .    885:// SetMutexProfileFraction controls the fraction of mutex contention events
+ROUTINE ======================== runtime.saveblockevent in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+         0      520ms (flat, cum)  1.08% of Total
+         .          .    533:func saveblockevent(cycles, rate int64, skip int, which bucketType) {
+         .          .    534:	if debug.profstackdepth == 0 {
+         .          .    535:		// profstackdepth is set to 0 by the user, so mp.profStack is nil and we
+         .          .    536:		// can't record a stack trace.
+         .          .    537:		return
+         .          .    538:	}
+         .          .    539:	if skip > maxSkip {
+         .          .    540:		print("requested skip=", skip)
+         .          .    541:		throw("invalid skip value")
+         .          .    542:	}
+         .          .    543:	gp := getg()
+         .          .    544:	mp := acquirem() // we must not be preempted while accessing profstack
+         .          .    545:
+         .          .    546:	var nstk int
+         .          .    547:	if tracefpunwindoff() || gp.m.hasCgoOnStack() {
+         .          .    548:		if gp.m.curg == nil || gp.m.curg == gp {
+         .          .    549:			nstk = callers(skip, mp.profStack)
+         .          .    550:		} else {
+         .          .    551:			nstk = gcallers(gp.m.curg, skip, mp.profStack)
+         .          .    552:		}
+         .          .    553:	} else {
+         .          .    554:		if gp.m.curg == nil || gp.m.curg == gp {
+         .          .    555:			if skip > 0 {
+         .          .    556:				// We skip one fewer frame than the provided value for frame
+         .          .    557:				// pointer unwinding because the skip value includes the current
+         .          .    558:				// frame, whereas the saved frame pointer will give us the
+         .          .    559:				// caller's return address first (so, not including
+         .          .    560:				// saveblockevent)
+         .          .    561:				skip -= 1
+         .          .    562:			}
+         .      260ms    563:			nstk = fpTracebackPartialExpand(skip, unsafe.Pointer(getfp()), mp.profStack)
+         .          .    564:		} else {
+         .          .    565:			mp.profStack[0] = gp.m.curg.sched.pc
+         .          .    566:			nstk = 1 + fpTracebackPartialExpand(skip, unsafe.Pointer(gp.m.curg.sched.bp), mp.profStack[1:])
+         .          .    567:		}
+         .          .    568:	}
+         .          .    569:
+         .      250ms    570:	saveBlockEventStack(cycles, rate, mp.profStack[:nstk], which)
+         .       10ms    571:	releasem(mp)
+         .          .    572:}
+         .          .    573:
+         .          .    574:// fpTracebackPartialExpand records a call stack obtained starting from fp.
+         .          .    575:// This function will skip the given number of frames, properly accounting for
+         .          .    576:// inlining, and save remaining frames as "physical" return addresses. The
+ROUTINE ======================== runtime.unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+      10ms      6.02s (flat, cum) 12.54% of Total
+         .          .    252:func unlock(l *mutex) {
+      10ms      6.02s    253:	unlockWithRank(l)
+         .          .    254:}
+         .          .    255:
+         .          .    256:// We might not be holding a p in this code.
+         .          .    257://
+         .          .    258://go:nowritebarrier
+ROUTINE ======================== runtime.unlock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+      90ms      6.03s (flat, cum) 12.56% of Total
+         .          .    259:func unlock2(l *mutex) {
+         .          .    260:	gp := getg()
+         .          .    261:
+      20ms       20ms    262:	prev8 := atomic.Xchg8(key8(&l.key), 0)
+         .          .    263:	if prev8&mutexLocked == 0 {
+         .          .    264:		throw("unlock of unlocked lock")
+         .          .    265:	}
+         .          .    266:
+      30ms       30ms    267:	if prev8&mutexSleeping != 0 {
+         .      5.73s    268:		unlock2Wake(l)
+         .          .    269:	}
+         .          .    270:
+         .      210ms    271:	gp.m.mLockProfile.recordUnlock(l)
+         .          .    272:	gp.m.locks--
+         .          .    273:	if gp.m.locks < 0 {
+         .          .    274:		throw("runtime·unlock: lock count")
+         .          .    275:	}
+      20ms       20ms    276:	if gp.m.locks == 0 && gp.preempt { // restore the preemption request in case we've cleared it in newstack
+         .          .    277:		gp.stackguard0 = stackPreempt
+         .          .    278:	}
+      20ms       20ms    279:}
+         .          .    280:
+         .          .    281:// unlock2Wake updates the list of Ms waiting on l, waking an M if necessary.
+         .          .    282://
+         .          .    283://go:nowritebarrier
+         .          .    284:func unlock2Wake(l *mutex) {
+ROUTINE ======================== runtime.unlock2Wake in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+      30ms      5.73s (flat, cum) 11.94% of Total
+         .          .    284:func unlock2Wake(l *mutex) {
+         .          .    285:	v := atomic.Loaduintptr(&l.key)
+         .          .    286:
+         .          .    287:	// On occasion, seek out and wake the M at the bottom of the stack so it
+         .          .    288:	// doesn't starve.
+         .          .    289:	antiStarve := cheaprandn(mutexTailWakePeriod) == 0
+         .          .    290:	if !(antiStarve || // avoiding starvation may require a wake
+         .          .    291:		v&mutexSpinning == 0 || // no spinners means we must wake
+      10ms       10ms    292:		mutexPreferLowLatency(l)) { // prefer waiters be awake as much as possible
+         .          .    293:		return
+         .          .    294:	}
+         .          .    295:
+         .          .    296:	for {
+      10ms       10ms    297:		if v&^mutexMMask == 0 || v&mutexStackLocked != 0 {
+         .          .    298:			// No waiting Ms means nothing to do.
+         .          .    299:			//
+         .          .    300:			// If the stack lock is unavailable, its owner would make the same
+         .          .    301:			// wake decisions that we would, so there's nothing for us to do.
+         .          .    302:			//
+         .          .    303:			// Although: This thread may have a different call stack, which
+         .          .    304:			// would result in a different entry in the mutex contention profile
+         .          .    305:			// (upon completion of go.dev/issue/66999). That could lead to weird
+         .          .    306:			// results if a slow critical section ends but another thread
+         .          .    307:			// quickly takes the lock, finishes its own critical section,
+         .          .    308:			// releases the lock, and then grabs the stack lock. That quick
+         .          .    309:			// thread would then take credit (blame) for the delay that this
+         .          .    310:			// slow thread caused. The alternative is to have more expensive
+         .          .    311:			// atomic operations (a CAS) on the critical path of unlock2.
+         .          .    312:			return
+         .          .    313:		}
+         .          .    314:		// Other M's are waiting for the lock.
+         .          .    315:		// Obtain the stack lock, and pop off an M.
+         .          .    316:		next := v | mutexStackLocked
+         .          .    317:		if atomic.Casuintptr(&l.key, v, next) {
+         .          .    318:			break
+         .          .    319:		}
+         .          .    320:		v = atomic.Loaduintptr(&l.key)
+         .          .    321:	}
+         .          .    322:
+         .          .    323:	// We own the mutexStackLocked flag. New Ms may push themselves onto the
+         .          .    324:	// stack concurrently, but we're now the only thread that can remove or
+         .          .    325:	// modify the Ms that are sleeping in the list.
+         .          .    326:
+         .          .    327:	var committed *m // If we choose an M within the stack, we've made a promise to wake it
+         .          .    328:	for {
+         .          .    329:		headM := v &^ mutexMMask
+         .          .    330:		flags := v & (mutexMMask &^ mutexStackLocked) // preserve low bits, but release stack lock
+         .          .    331:
+         .          .    332:		mp := mutexWaitListHead(v).ptr()
+         .          .    333:		wakem := committed
+         .          .    334:		if committed == nil {
+         .          .    335:			if v&mutexSpinning == 0 || mutexPreferLowLatency(l) {
+         .          .    336:				wakem = mp
+         .          .    337:			}
+         .          .    338:			if antiStarve {
+         .          .    339:				// Wake the M at the bottom of the stack of waiters. (This is
+         .          .    340:				// O(N) with the number of waiters.)
+         .          .    341:				wakem = mp
+         .          .    342:				prev := mp
+         .          .    343:				for {
+         .          .    344:					next := wakem.mWaitList.next.ptr()
+         .          .    345:					if next == nil {
+         .          .    346:						break
+         .          .    347:					}
+         .          .    348:					prev, wakem = wakem, next
+         .          .    349:				}
+         .          .    350:				if wakem != mp {
+         .          .    351:					prev.mWaitList.next = wakem.mWaitList.next
+         .          .    352:					committed = wakem
+         .          .    353:				}
+         .          .    354:			}
+         .          .    355:		}
+         .          .    356:
+         .          .    357:		if wakem == mp {
+         .          .    358:			headM = uintptr(mp.mWaitList.next) &^ mutexMMask
+         .          .    359:		}
+         .          .    360:
+         .          .    361:		next := headM | flags
+         .          .    362:		if atomic.Casuintptr(&l.key, v, next) {
+         .          .    363:			if wakem != nil {
+         .          .    364:				// Claimed an M. Wake it.
+         .      5.70s    365:				semawakeup(wakem)
+         .          .    366:			}
+         .          .    367:			break
+         .          .    368:		}
+         .          .    369:
+      10ms       10ms    370:		v = atomic.Loaduintptr(&l.key)
+         .          .    371:	}
+         .          .    372:}
+ROUTINE ======================== runtime.unlockWithRank in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lockrank_off.go
+         0      6.01s (flat, cum) 12.52% of Total
+         .          .     34:func unlockWithRank(l *mutex) {
+         .      6.01s     35:	unlock2(l)
+         .          .     36:}
+         .          .     37:
+         .          .     38:// This function may be called in nosplit context and thus must be nosplit.
+         .          .     39://
+         .          .     40://go:nosplit
+ROUTINE ======================== sync.(*Mutex).Unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/mutex.go
+         0     16.47s (flat, cum) 34.31% of Total
+         .          .     64:func (m *Mutex) Unlock() {
+         .     16.47s     65:	m.mu.Unlock()
+         .          .     66:}
+ROUTINE ======================== sync.(*RWMutex).Unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/rwmutex.go
+      30ms     17.04s (flat, cum) 35.49% of Total
+         .          .    201:func (rw *RWMutex) Unlock() {
+         .          .    202:	if race.Enabled {
+         .          .    203:		race.Read(unsafe.Pointer(&rw.w))
+         .          .    204:		race.Release(unsafe.Pointer(&rw.readerSem))
+         .          .    205:		race.Disable()
+         .          .    206:	}
+         .          .    207:
+         .          .    208:	// Announce to readers there is no active writer.
+         .      540ms    209:	r := rw.readerCount.Add(rwmutexMaxReaders)
+         .          .    210:	if r >= rwmutexMaxReaders {
+         .          .    211:		race.Enable()
+         .          .    212:		fatal("sync: Unlock of unlocked RWMutex")
+         .          .    213:	}
+         .          .    214:	// Unblock blocked readers, if any.
+      30ms       30ms    215:	for i := 0; i < int(r); i++ {
+         .          .    216:		runtime_Semrelease(&rw.readerSem, false, 0)
+         .          .    217:	}
+         .          .    218:	// Allow other writers to proceed.
+         .     16.47s    219:	rw.w.Unlock()
+         .          .    220:	if race.Enabled {
+         .          .    221:		race.Enable()
+         .          .    222:	}
+         .          .    223:}
+         .          .    224:

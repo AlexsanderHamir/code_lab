@@ -1,0 +1,24 @@
+Total: 108.20s
+ROUTINE ======================== primitives_performance.(*AtomicBasedPool).Put in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+    51.99s     52.23s (flat, cum) 48.27% of Total
+      50ms      110ms    325:func (p *AtomicBasedPool) Put(obj *testObject) {
+     120ms      120ms    326:	if p.cleaner != nil {
+         .       50ms    327:		p.cleaner(obj)
+         .          .    328:	}
+         .          .    329:
+         .          .    330:	// Try to put the object back
+         .          .    331:	for {
+     430ms      450ms    332:		idx := atomic.LoadInt64(&p.index)
+      70ms       70ms    333:		if idx >= p.capacity {
+         .          .    334:			return // Pool is full
+         .          .    335:		}
+         .          .    336:
+     8.45s      8.55s    337:		newIdx := idx + 1
+    42.35s     42.36s    338:		if atomic.CompareAndSwapInt64(&p.index, idx, newIdx) {
+     500ms      500ms    339:			p.objects[idx] = obj
+      20ms       20ms    340:			return
+         .          .    341:		}
+         .          .    342:	}
+         .          .    343:}
+         .          .    344:
+         .          .    345:// Condition variable-based implementation for comparison

@@ -1,0 +1,11 @@
+Total: 30.68s
+ROUTINE ======================== runtime.pthread_cond_wait in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+    14.19s     14.19s (flat, cum) 46.25% of Total
+         .          .    546:func pthread_cond_wait(c *pthreadcond, m *pthreadmutex) int32 {
+    14.18s     14.18s    547:	ret := libcCall(unsafe.Pointer(abi.FuncPCABI0(pthread_cond_wait_trampoline)), unsafe.Pointer(&c))
+      10ms       10ms    548:	KeepAlive(c)
+         .          .    549:	KeepAlive(m)
+         .          .    550:	return ret
+         .          .    551:}
+         .          .    552:func pthread_cond_wait_trampoline()
+         .          .    553:

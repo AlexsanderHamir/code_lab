@@ -1,0 +1,51 @@
+Total: 52.38s
+ROUTINE ======================== runtime.systemstack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/asm_arm64.s
+      10ms      730ms (flat, cum)  1.39% of Total
+         .          .    207:TEXT runtime·systemstack(SB), NOSPLIT, $0-8
+         .          .    208:	MOVD	fn+0(FP), R3	// R3 = fn
+         .          .    209:	MOVD	R3, R26		// context
+         .          .    210:	MOVD	g_m(g), R4	// R4 = m
+         .          .    211:
+         .          .    212:	MOVD	m_gsignal(R4), R5	// R5 = gsignal
+         .          .    213:	CMP	g, R5
+         .          .    214:	BEQ	noswitch
+         .          .    215:
+      10ms       10ms    216:	MOVD	m_g0(R4), R5	// R5 = g0
+         .          .    217:	CMP	g, R5
+         .          .    218:	BEQ	noswitch
+         .          .    219:
+         .          .    220:	MOVD	m_curg(R4), R6
+         .          .    221:	CMP	g, R6
+         .          .    222:	BEQ	switch
+         .          .    223:
+         .          .    224:	// Bad: g is not gsignal, not g0, not curg. What is it?
+         .          .    225:	// Hide call from linker nosplit analysis.
+         .          .    226:	MOVD	$runtime·badsystemstack(SB), R3
+         .          .    227:	BL	(R3)
+         .          .    228:	B	runtime·abort(SB)
+         .          .    229:
+         .          .    230:switch:
+         .          .    231:	// save our state in g->sched. Pretend to
+         .          .    232:	// be systemstack_switch if the G stack is scanned.
+         .          .    233:	BL	gosave_systemstack_switch<>(SB)
+         .          .    234:
+         .          .    235:	// switch to g0
+         .          .    236:	MOVD	R5, g
+         .          .    237:	BL	runtime·save_g(SB)
+         .          .    238:	MOVD	(g_sched+gobuf_sp)(g), R3
+         .          .    239:	MOVD	R3, RSP
+         .          .    240:	MOVD	(g_sched+gobuf_bp)(g), R29
+         .          .    241:
+         .          .    242:	// call target function
+         .          .    243:	MOVD	0(R26), R3	// code pointer
+         .      710ms    244:	BL	(R3)
+         .          .    245:
+         .          .    246:	// switch back to g
+         .          .    247:	MOVD	g_m(g), R3
+         .          .    248:	MOVD	m_curg(R3), g
+         .       10ms    249:	BL	runtime·save_g(SB)
+         .          .    250:	MOVD	(g_sched+gobuf_sp)(g), R0
+         .          .    251:	MOVD	R0, RSP
+         .          .    252:	MOVD	(g_sched+gobuf_bp)(g), R29
+         .          .    253:	MOVD	$0, (g_sched+gobuf_sp)(g)
+         .          .    254:	MOVD	$0, (g_sched+gobuf_bp)(g)

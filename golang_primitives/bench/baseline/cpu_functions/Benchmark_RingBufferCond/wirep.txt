@@ -1,0 +1,19 @@
+Total: 52.38s
+ROUTINE ======================== runtime.wirep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .   5902:func wirep(pp *p) {
+         .          .   5903:	gp := getg()
+         .          .   5904:
+         .          .   5905:	if gp.m.p != 0 {
+         .          .   5906:		// Call on the systemstack to avoid a nosplit overflow build failure
+         .          .   5907:		// on some platforms when built with -N -l. See #64113.
+         .          .   5908:		systemstack(func() {
+         .          .   5909:			throw("wirep: already in go")
+         .          .   5910:		})
+         .          .   5911:	}
+      10ms       10ms   5912:	if pp.m != 0 || pp.status != _Pidle {
+         .          .   5913:		// Call on the systemstack to avoid a nosplit overflow build failure
+         .          .   5914:		// on some platforms when built with -N -l. See #64113.
+         .          .   5915:		systemstack(func() {
+         .          .   5916:			id := int64(0)
+         .          .   5917:			if pp.m != 0 {

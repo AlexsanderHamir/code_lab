@@ -1,0 +1,60 @@
+Total: 6.30MB
+ROUTINE ======================== runtime.allocm in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+    2.50MB     2.50MB (flat, cum) 39.78% of Total
+         .          .   2185:func allocm(pp *p, fn func(), id int64) *m {
+         .          .   2186:	allocmLock.rlock()
+         .          .   2187:
+         .          .   2188:	// The caller owns pp, but we may borrow (i.e., acquirep) it. We must
+         .          .   2189:	// disable preemption to ensure it is not stolen, which would make the
+         .          .   2190:	// caller lose ownership.
+         .          .   2191:	acquirem()
+         .          .   2192:
+         .          .   2193:	gp := getg()
+         .          .   2194:	if gp.m.p == 0 {
+         .          .   2195:		acquirep(pp) // temporarily borrow p for mallocs in this function
+         .          .   2196:	}
+         .          .   2197:
+         .          .   2198:	// Release the free M list. We need to do this somewhere and
+         .          .   2199:	// this may free up a stack we can use.
+         .          .   2200:	if sched.freem != nil {
+         .          .   2201:		lock(&sched.lock)
+         .          .   2202:		var newList *m
+         .          .   2203:		for freem := sched.freem; freem != nil; {
+         .          .   2204:			// Wait for freeWait to indicate that freem's stack is unused.
+         .          .   2205:			wait := freem.freeWait.Load()
+         .          .   2206:			if wait == freeMWait {
+         .          .   2207:				next := freem.freelink
+         .          .   2208:				freem.freelink = newList
+         .          .   2209:				newList = freem
+         .          .   2210:				freem = next
+         .          .   2211:				continue
+         .          .   2212:			}
+         .          .   2213:			// Drop any remaining trace resources.
+         .          .   2214:			// Ms can continue to emit events all the way until wait != freeMWait,
+         .          .   2215:			// so it's only safe to call traceThreadDestroy at this point.
+         .          .   2216:			if traceEnabled() || traceShuttingDown() {
+         .          .   2217:				traceThreadDestroy(freem)
+         .          .   2218:			}
+         .          .   2219:			// Free the stack if needed. For freeMRef, there is
+         .          .   2220:			// nothing to do except drop freem from the sched.freem
+         .          .   2221:			// list.
+         .          .   2222:			if wait == freeMStack {
+         .          .   2223:				// stackfree must be on the system stack, but allocm is
+         .          .   2224:				// reachable off the system stack transitively from
+         .          .   2225:				// startm.
+         .          .   2226:				systemstack(func() {
+         .          .   2227:					stackfree(freem.g0.stack)
+         .          .   2228:				})
+         .          .   2229:			}
+         .          .   2230:			freem = freem.freelink
+         .          .   2231:		}
+         .          .   2232:		sched.freem = newList
+         .          .   2233:		unlock(&sched.lock)
+         .          .   2234:	}
+         .          .   2235:
+    2.50MB     2.50MB   2236:	mp := new(m)
+         .          .   2237:	mp.mstartfn = fn
+         .          .   2238:	mcommoninit(mp, id)
+         .          .   2239:
+         .          .   2240:	// In case of cgo or Solaris or illumos or Darwin, pthread_create will make us a stack.
+         .          .   2241:	// Windows and Plan 9 will layout sched stack on OS stack.

@@ -1,0 +1,19 @@
+Total: 9.28MB
+ROUTINE ======================== testing.(*M).before in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/testing.go
+         0     1.72MB (flat, cum) 18.56% of Total
+         .          .   2295:func (m *M) before() {
+         .          .   2296:	if *memProfileRate > 0 {
+         .          .   2297:		runtime.MemProfileRate = *memProfileRate
+         .          .   2298:	}
+         .          .   2299:	if *cpuProfile != "" {
+         .          .   2300:		f, err := os.Create(toOutputDir(*cpuProfile))
+         .          .   2301:		if err != nil {
+         .          .   2302:			fmt.Fprintf(os.Stderr, "testing: %s\n", err)
+         .          .   2303:			return
+         .          .   2304:		}
+         .     1.72MB   2305:		if err := m.deps.StartCPUProfile(f); err != nil {
+         .          .   2306:			fmt.Fprintf(os.Stderr, "testing: can't start cpu profile: %s\n", err)
+         .          .   2307:			f.Close()
+         .          .   2308:			return
+         .          .   2309:		}
+         .          .   2310:		// Could save f so after can call f.Close; not worth the effort.

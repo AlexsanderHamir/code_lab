@@ -1,0 +1,10 @@
+Total: 52.53s
+ROUTINE ======================== internal/runtime/atomic.(*Uint32).CompareAndSwap in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    235:func (u *Uint32) CompareAndSwap(old, new uint32) bool {
+      10ms       10ms    236:	return Cas(&u.value, old, new)
+         .          .    237:}
+         .          .    238:
+         .          .    239:// CompareAndSwapRelease is a partially unsynchronized version
+         .          .    240:// of Cas that relaxes ordering constraints. Other threads
+         .          .    241:// may observe operations that occur after this operation to

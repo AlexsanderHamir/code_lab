@@ -1,0 +1,6 @@
+Total: 49.16s
+ROUTINE ======================== sync.(*Mutex).Unlock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/mutex.go
+    34.68s     34.68s (flat, cum) 70.54% of Total
+         .          .     64:func (m *Mutex) Unlock() {
+    34.68s     34.68s     65:	m.mu.Unlock()
+         .          .     66:}

@@ -1,0 +1,17 @@
+Total: 52.38s
+ROUTINE ======================== runtime.acquirep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       20ms (flat, cum) 0.038% of Total
+         .          .   5879:func acquirep(pp *p) {
+         .          .   5880:	// Do the part that isn't allowed to have write barriers.
+         .       10ms   5881:	wirep(pp)
+         .          .   5882:
+         .          .   5883:	// Have p; write barriers now allowed.
+         .          .   5884:
+         .          .   5885:	// Perform deferred mcache flush before this P can allocate
+         .          .   5886:	// from a potentially stale mcache.
+      10ms       10ms   5887:	pp.mcache.prepareForSweep()
+         .          .   5888:
+         .          .   5889:	trace := traceAcquire()
+         .          .   5890:	if trace.ok() {
+         .          .   5891:		trace.ProcStart()
+         .          .   5892:		traceRelease(trace)

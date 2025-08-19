@@ -1,0 +1,10 @@
+Total: 52.38s
+ROUTINE ======================== sync.(*Cond).Signal in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/cond.go
+      10ms       20ms (flat, cum) 0.038% of Total
+         .          .     82:func (c *Cond) Signal() {
+      10ms       20ms     83:	c.checker.check()
+         .          .     84:	runtime_notifyListNotifyOne(&c.notify)
+         .          .     85:}
+         .          .     86:
+         .          .     87:// Broadcast wakes all goroutines waiting on c.
+         .          .     88://

@@ -1,0 +1,19 @@
+Total: 108.20s
+ROUTINE ======================== primitives_performance.(*AtomicBasedPool).Get in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+    54.80s     54.90s (flat, cum) 50.74% of Total
+      20ms       50ms    310:func (p *AtomicBasedPool) Get() *testObject {
+         .          .    311:	// Try to get an object using atomic operations
+         .          .    312:	for {
+     390ms      390ms    313:		idx := atomic.LoadInt64(&p.index)
+      20ms       20ms    314:		if idx <= 0 {
+         .          .    315:			return p.allocator()
+         .          .    316:		}
+         .          .    317:
+     8.25s      8.30s    318:		newIdx := idx - 1
+    45.54s     45.55s    319:		if atomic.CompareAndSwapInt64(&p.index, idx, newIdx) {
+     580ms      590ms    320:			return p.objects[newIdx]
+         .          .    321:		}
+         .          .    322:	}
+         .          .    323:}
+         .          .    324:
+         .          .    325:func (p *AtomicBasedPool) Put(obj *testObject) {

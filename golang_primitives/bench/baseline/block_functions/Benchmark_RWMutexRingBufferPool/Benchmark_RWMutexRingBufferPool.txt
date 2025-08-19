@@ -1,0 +1,27 @@
+Total: 61.50s
+ROUTINE ======================== primitives_performance.Benchmark_RWMutexRingBufferPool in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     13.90s (flat, cum) 22.61% of Total
+         .          .     25:func Benchmark_RWMutexRingBufferPool(b *testing.B) {
+         .          .     26:	debug.SetGCPercent(-1)
+         .          .     27:	b.ReportAllocs()
+         .          .     28:
+         .          .     29:	pool := NewRWMutexRingBufferPool(1000, testAllocator, testCleaner)
+         .          .     30:
+         .          .     31:	b.ResetTimer()
+         .     13.90s     32:	b.RunParallel(func(pb *testing.PB) {
+         .          .     33:		for pb.Next() {
+         .          .     34:			obj := pool.Get()
+         .          .     35:			pool.Put(obj)
+         .          .     36:		}
+         .          .     37:	})
+ROUTINE ======================== primitives_performance.Benchmark_RWMutexRingBufferPool.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     33.49s (flat, cum) 54.46% of Total
+         .          .     32:	b.RunParallel(func(pb *testing.PB) {
+         .          .     33:		for pb.Next() {
+         .     16.82s     34:			obj := pool.Get()
+         .     16.67s     35:			pool.Put(obj)
+         .          .     36:		}
+         .          .     37:	})
+         .          .     38:}
+         .          .     39:
+         .          .     40:// Benchmark: Channel-based pool

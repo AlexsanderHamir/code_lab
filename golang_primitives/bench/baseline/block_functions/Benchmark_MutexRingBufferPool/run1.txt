@@ -1,0 +1,40 @@
+Total: 63.70s
+ROUTINE ======================== testing.(*B).run1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     3.52ms (flat, cum) 0.0055% of Total
+         .          .    231:func (b *B) run1() bool {
+         .          .    232:	if bstate := b.bstate; bstate != nil {
+         .          .    233:		// Extend maxLen, if needed.
+         .          .    234:		if n := len(b.name) + bstate.extLen + 1; n > bstate.maxLen {
+         .          .    235:			bstate.maxLen = n + 8 // Add additional slack to avoid too many jumps in size.
+         .          .    236:		}
+         .          .    237:	}
+         .          .    238:	go func() {
+         .          .    239:		// Signal that we're done whether we return normally
+         .          .    240:		// or by FailNow's runtime.Goexit.
+         .          .    241:		defer func() {
+         .          .    242:			b.signal <- true
+         .          .    243:		}()
+         .          .    244:
+         .          .    245:		b.runN(1)
+         .          .    246:	}()
+         .     3.52ms    247:	<-b.signal
+         .          .    248:	if b.failed {
+         .          .    249:		fmt.Fprintf(b.w, "%s--- FAIL: %s\n%s", b.chatty.prefix(), b.name, b.output)
+         .          .    250:		return false
+         .          .    251:	}
+         .          .    252:	// Only print the output if we know we are not going to proceed.
+ROUTINE ======================== testing.(*B).run1.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0    14.83us (flat, cum) 2.3e-05% of Total
+         .          .    238:	go func() {
+         .          .    239:		// Signal that we're done whether we return normally
+         .          .    240:		// or by FailNow's runtime.Goexit.
+         .          .    241:		defer func() {
+         .          .    242:			b.signal <- true
+         .          .    243:		}()
+         .          .    244:
+         .    14.83us    245:		b.runN(1)
+         .          .    246:	}()
+         .          .    247:	<-b.signal
+         .          .    248:	if b.failed {
+         .          .    249:		fmt.Fprintf(b.w, "%s--- FAIL: %s\n%s", b.chatty.prefix(), b.name, b.output)
+         .          .    250:		return false

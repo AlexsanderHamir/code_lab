@@ -1,0 +1,16 @@
+goos: darwin
+goarch: arm64
+pkg: primitives_performance
+cpu: Apple M1
+Benchmark_RWMutexRingBufferPool-8   	 5422286	       197.3 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RWMutexRingBufferPool-8   	 6039458	       198.0 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RWMutexRingBufferPool-8   	 6098942	       196.9 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RWMutexRingBufferPool-8   	 6113412	       196.4 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RWMutexRingBufferPool-8   	 6111019	       197.1 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RWMutexRingBufferPool-8   	 6101220	       195.8 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RWMutexRingBufferPool-8   	 6112635	       197.5 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RWMutexRingBufferPool-8   	 6102296	       196.4 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RWMutexRingBufferPool-8   	 6112138	       196.9 ns/op	       0 B/op	       0 allocs/op
+Benchmark_RWMutexRingBufferPool-8   	 6101638	       198.8 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	primitives_performance	14.314s

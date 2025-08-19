@@ -1,0 +1,41 @@
+Total: 6.30MB
+ROUTINE ======================== runtime.(*timer).maybeAdd in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0   512.01kB (flat, cum)  7.94% of Total
+         .          .    660:func (t *timer) maybeAdd() {
+         .          .    661:	// Note: Not holding any locks on entry to t.maybeAdd,
+         .          .    662:	// so the current g can be rescheduled to a different M and P
+         .          .    663:	// at any time, including between the ts := assignment and the
+         .          .    664:	// call to ts.lock. If a reschedule happened then, we would be
+         .          .    665:	// adding t to some other P's timers, perhaps even a P that the scheduler
+         .          .    666:	// has marked as idle with no timers, in which case the timer could
+         .          .    667:	// go unnoticed until long after t.when.
+         .          .    668:	// Calling acquirem instead of using getg().m makes sure that
+         .          .    669:	// we end up locking and inserting into the current P's timers.
+         .          .    670:	mp := acquirem()
+         .          .    671:	var ts *timers
+         .          .    672:	if t.isFake {
+         .          .    673:		sg := getg().syncGroup
+         .          .    674:		if sg == nil {
+         .          .    675:			throw("invalid timer: fake time but no syncgroup")
+         .          .    676:		}
+         .          .    677:		ts = &sg.timers
+         .          .    678:	} else {
+         .          .    679:		ts = &mp.p.ptr().timers
+         .          .    680:	}
+         .          .    681:	ts.lock()
+         .          .    682:	ts.cleanHead()
+         .          .    683:	t.lock()
+         .          .    684:	t.trace("maybeAdd")
+         .          .    685:	when := int64(0)
+         .          .    686:	wake := false
+         .          .    687:	if t.needsAdd() {
+         .          .    688:		t.state |= timerHeaped
+         .          .    689:		when = t.when
+         .          .    690:		wakeTime := ts.wakeTime()
+         .          .    691:		wake = wakeTime == 0 || when < wakeTime
+         .   512.01kB    692:		ts.addHeap(t)
+         .          .    693:	}
+         .          .    694:	t.unlock()
+         .          .    695:	ts.unlock()
+         .          .    696:	releasem(mp)
+         .          .    697:	if wake {

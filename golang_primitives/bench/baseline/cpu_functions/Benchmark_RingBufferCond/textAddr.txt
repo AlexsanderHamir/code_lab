@@ -1,0 +1,25 @@
+Total: 52.38s
+ROUTINE ======================== runtime.(*moduledata).textAddr in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      40ms       40ms (flat, cum) 0.076% of Total
+         .          .    681:func (md *moduledata) textAddr(off32 uint32) uintptr {
+         .          .    682:	off := uintptr(off32)
+         .          .    683:	res := md.text + off
+      10ms       10ms    684:	if len(md.textsectmap) > 1 {
+         .          .    685:		for i, sect := range md.textsectmap {
+         .          .    686:			// For the last section, include the end address (etext), as it is included in the functab.
+         .          .    687:			if off >= sect.vaddr && off < sect.end || (i == len(md.textsectmap)-1 && off == sect.end) {
+         .          .    688:				res = sect.baseaddr + off - sect.vaddr
+         .          .    689:				break
+         .          .    690:			}
+         .          .    691:		}
+         .          .    692:		if res > md.etext && GOARCH != "wasm" { // on wasm, functions do not live in the same address space as the linear memory
+         .          .    693:			println("runtime: textAddr", hex(res), "out of range", hex(md.text), "-", hex(md.etext))
+         .          .    694:			throw("runtime: text offset out of range")
+         .          .    695:		}
+         .          .    696:	}
+      30ms       30ms    697:	return res
+         .          .    698:}
+         .          .    699:
+         .          .    700:// textOff is the opposite of textAddr. It converts a PC to a (virtual) offset
+         .          .    701:// to md.text, and returns if the PC is in any Go text section.
+         .          .    702://

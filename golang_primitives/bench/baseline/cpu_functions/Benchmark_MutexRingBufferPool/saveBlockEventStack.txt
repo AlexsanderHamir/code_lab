@@ -1,0 +1,30 @@
+Total: 52.53s
+ROUTINE ======================== runtime.saveBlockEventStack in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      10ms      510ms (flat, cum)  0.97% of Total
+         .          .    859:func saveBlockEventStack(cycles, rate int64, stk []uintptr, which bucketType) {
+         .       50ms    860:	b := stkbucket(which, 0, stk, true)
+         .       10ms    861:	bp := b.bp()
+         .          .    862:
+         .      370ms    863:	lock(&profBlockLock)
+         .          .    864:	// We want to up-scale the count and cycles according to the
+         .          .    865:	// probability that the event was sampled. For block profile events,
+         .          .    866:	// the sample probability is 1 if cycles >= rate, and cycles / rate
+         .          .    867:	// otherwise. For mutex profile events, the sample probability is 1 / rate.
+         .          .    868:	// We scale the events by 1 / (probability the event was sampled).
+         .          .    869:	if which == blockProfile && cycles < rate {
+         .          .    870:		// Remove sampling bias, see discussion on http://golang.org/cl/299991.
+         .          .    871:		bp.count += float64(rate) / float64(cycles)
+         .          .    872:		bp.cycles += rate
+         .          .    873:	} else if which == mutexProfile {
+         .          .    874:		bp.count += float64(rate)
+         .          .    875:		bp.cycles += rate * cycles
+         .          .    876:	} else {
+         .          .    877:		bp.count++
+         .          .    878:		bp.cycles += cycles
+         .          .    879:	}
+      10ms       80ms    880:	unlock(&profBlockLock)
+         .          .    881:}
+         .          .    882:
+         .          .    883:var mutexprofilerate uint64 // fraction sampled
+         .          .    884:
+         .          .    885:// SetMutexProfileFraction controls the fraction of mutex contention events

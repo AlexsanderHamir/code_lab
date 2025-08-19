@@ -1,0 +1,11 @@
+Total: 52.53s
+ROUTINE ======================== runtime.cheaprandn in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/rand.go
+         0       10ms (flat, cum) 0.019% of Total
+         .          .    291:func cheaprandn(n uint32) uint32 {
+         .          .    292:	// See https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
+         .       10ms    293:	return uint32((uint64(cheaprand()) * uint64(n)) >> 32)
+         .          .    294:}
+         .          .    295:
+         .          .    296:// Too much legacy code has go:linkname references
+         .          .    297:// to runtime.fastrand and friends, so keep these around for now.
+         .          .    298:// Code should migrate to math/rand/v2.Uint64,

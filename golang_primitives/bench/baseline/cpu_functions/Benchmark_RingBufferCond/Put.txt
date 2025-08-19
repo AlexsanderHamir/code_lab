@@ -1,0 +1,17 @@
+Total: 52.38s
+ROUTINE ======================== primitives_performance.(*RingBufferCondPool).Put in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+     100ms     13.08s (flat, cum) 24.97% of Total
+      10ms       10ms    437:func (p *RingBufferCondPool) Put(obj *testObject) {
+      40ms      4.80s    438:	p.mu.Lock()
+         .          .    439:	defer p.mu.Unlock()
+         .          .    440:
+         .       10ms    441:	if !p.ringBuffer.IsFull() {
+      20ms       30ms    442:		p.ringBuffer.Push(obj)
+         .       20ms    443:		p.cond.Signal() // Wake up one waiting goroutine
+         .          .    444:	}
+      30ms      8.21s    445:}
+         .          .    446:
+         .          .    447:// Test functions
+         .          .    448:var testAllocator = func() *testObject {
+         .          .    449:	return &testObject{
+         .          .    450:		ID:   0,

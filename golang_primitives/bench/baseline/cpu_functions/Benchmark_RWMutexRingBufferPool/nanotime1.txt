@@ -1,0 +1,18 @@
+Total: 48.01s
+ROUTINE ======================== runtime.nanotime1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+     580ms      600ms (flat, cum)  1.25% of Total
+         .          .    363:func nanotime1() int64 {
+      10ms       10ms    364:	var r struct {
+         .          .    365:		t            int64  // raw timer
+         .          .    366:		numer, denom uint32 // conversion factors. nanoseconds = t * numer / denom.
+         .          .    367:	}
+     550ms      570ms    368:	libcCall(unsafe.Pointer(abi.FuncPCABI0(nanotime_trampoline)), unsafe.Pointer(&r))
+         .          .    369:	// Note: Apple seems unconcerned about overflow here. See
+         .          .    370:	// https://developer.apple.com/library/content/qa/qa1398/_index.html
+         .          .    371:	// Note also, numer == denom == 1 is common.
+      20ms       20ms    372:	t := r.t
+         .          .    373:	if r.numer != 1 {
+         .          .    374:		t *= int64(r.numer)
+         .          .    375:	}
+         .          .    376:	if r.denom != 1 {
+         .          .    377:		t /= int64(r.denom)

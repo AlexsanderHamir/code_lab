@@ -1,0 +1,10 @@
+Total: 48.01s
+ROUTINE ======================== runtime.usleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sys_darwin.go
+    22.93s     22.95s (flat, cum) 47.80% of Total
+         .          .    332:func usleep(usec uint32) {
+    22.93s     22.95s    333:	libcCall(unsafe.Pointer(abi.FuncPCABI0(usleep_trampoline)), unsafe.Pointer(&usec))
+         .          .    334:}
+         .          .    335:func usleep_trampoline()
+         .          .    336:
+         .          .    337://go:nosplit
+         .          .    338://go:cgo_unsafe_args

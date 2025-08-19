@@ -1,0 +1,31 @@
+Total: 10.13MB
+ROUTINE ======================== testing.(*B).runN in /opt/homebrew/Cellar/go/1.24.3/libexec/src/testing/benchmark.go
+         0     3.01MB (flat, cum) 29.73% of Total
+         .          .    197:func (b *B) runN(n int) {
+         .          .    198:	benchmarkLock.Lock()
+         .          .    199:	defer benchmarkLock.Unlock()
+         .          .    200:	ctx, cancelCtx := context.WithCancel(context.Background())
+         .          .    201:	defer func() {
+         .          .    202:		b.runCleanup(normalPanic)
+         .          .    203:		b.checkRaces()
+         .          .    204:	}()
+         .          .    205:	// Try to get a comparable environment for each run
+         .          .    206:	// by clearing garbage from previous runs.
+         .          .    207:	runtime.GC()
+         .          .    208:	b.resetRaces()
+         .          .    209:	b.N = n
+         .          .    210:	b.loop.n = 0
+         .          .    211:	b.loop.i = 0
+         .          .    212:	b.loop.done = false
+         .          .    213:	b.ctx = ctx
+         .          .    214:	b.cancelCtx = cancelCtx
+         .          .    215:
+         .          .    216:	b.parallelism = 1
+         .          .    217:	b.ResetTimer()
+         .          .    218:	b.StartTimer()
+         .     3.01MB    219:	b.benchFunc(b)
+         .          .    220:	b.StopTimer()
+         .          .    221:	b.previousN = n
+         .          .    222:	b.previousDuration = b.duration
+         .          .    223:
+         .          .    224:	if b.loop.n > 0 && !b.loop.done && !b.failed {

@@ -1,0 +1,19 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*timer).reset in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    705:func (t *timer) reset(when, period int64) bool {
+         .       10ms    706:	return t.modify(when, period, nil, nil, 0)
+         .          .    707:}
+         .          .    708:
+         .          .    709:// cleanHead cleans up the head of the timer queue. This speeds up
+         .          .    710:// programs that create and delete timers; leaving them in the heap
+         .          .    711:// slows down heap operations.
+ROUTINE ======================== runtime.resetForSleep in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    346:func resetForSleep(gp *g, _ unsafe.Pointer) bool {
+         .       10ms    347:	gp.timer.reset(gp.sleepWhen, 0)
+         .          .    348:	return true
+         .          .    349:}
+         .          .    350:
+         .          .    351:// A timeTimer is a runtime-allocated time.Timer or time.Ticker
+         .          .    352:// with the additional runtime state following it.

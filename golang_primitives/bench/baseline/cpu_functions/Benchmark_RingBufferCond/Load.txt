@@ -1,0 +1,19 @@
+Total: 52.38s
+ROUTINE ======================== internal/runtime/atomic.(*Bool).Load in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+         0       20ms (flat, cum) 0.038% of Total
+         .          .    167:func (b *Bool) Load() bool {
+         .       20ms    168:	return b.u.Load() != 0
+         .          .    169:}
+         .          .    170:
+         .          .    171:// Store updates the value atomically.
+         .          .    172://
+         .          .    173://go:nosplit
+ROUTINE ======================== internal/runtime/atomic.(*Uint8).Load in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+      20ms       20ms (flat, cum) 0.038% of Total
+         .          .    123:func (u *Uint8) Load() uint8 {
+      20ms       20ms    124:	return Load8(&u.value)
+         .          .    125:}
+         .          .    126:
+         .          .    127:// Store updates the value atomically.
+         .          .    128://
+         .          .    129://go:nosplit

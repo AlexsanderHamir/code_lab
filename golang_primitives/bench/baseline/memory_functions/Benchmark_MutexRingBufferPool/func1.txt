@@ -1,0 +1,10 @@
+Total: 9.28MB
+ROUTINE ======================== primitives_performance.init.func1 in /Users/alexsandergomes/Documents/experiments/golang_primitives/helpers.go
+       1MB        1MB (flat, cum) 10.78% of Total
+         .          .    448:var testAllocator = func() *testObject {
+       1MB        1MB    449:	return &testObject{
+         .          .    450:		ID:   0,
+         .          .    451:		Data: "test",
+         .          .    452:	}
+         .          .    453:}
+         .          .    454:

@@ -1,0 +1,10 @@
+Total: 7.05MB
+ROUTINE ======================== runtime.bgscavenge in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mgcscavenge.go
+         0   512.05kB (flat, cum)  7.10% of Total
+         .          .    649:func bgscavenge(c chan int) {
+         .   512.05kB    650:	scavenger.init()
+         .          .    651:
+         .          .    652:	c <- 1
+         .          .    653:	scavenger.park()
+         .          .    654:
+         .          .    655:	for {

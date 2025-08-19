@@ -1,0 +1,12 @@
+Total: 52.53s
+ROUTINE ======================== runtime.acquirem in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/runtime1.go
+      20ms       20ms (flat, cum) 0.038% of Total
+         .          .    605:func acquirem() *m {
+         .          .    606:	gp := getg()
+      10ms       10ms    607:	gp.m.locks++
+      10ms       10ms    608:	return gp.m
+         .          .    609:}
+         .          .    610:
+         .          .    611://go:nosplit
+         .          .    612:func releasem(mp *m) {
+         .          .    613:	gp := getg()

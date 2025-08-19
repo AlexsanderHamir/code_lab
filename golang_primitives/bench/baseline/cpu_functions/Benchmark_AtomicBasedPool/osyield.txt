@@ -1,0 +1,10 @@
+Total: 108.20s
+ROUTINE ======================== runtime.osyield in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/os_darwin.go
+         0       70ms (flat, cum) 0.065% of Total
+         .          .    361:func osyield() {
+         .       70ms    362:	usleep(1)
+         .          .    363:}
+         .          .    364:
+         .          .    365:const (
+         .          .    366:	_NSIG        = 32
+         .          .    367:	_SI_USER     = 0 /* empirically true, but not what headers say */

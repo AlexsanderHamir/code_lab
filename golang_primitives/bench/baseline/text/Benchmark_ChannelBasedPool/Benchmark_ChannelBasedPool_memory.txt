@@ -1,0 +1,34 @@
+File: primitives_performance.test
+Type: alloc_space
+Time: 2025-08-19 12:51:00 PDT
+Showing nodes accounting for 8634.96kB, 100% of 8634.96kB total
+      flat  flat%   sum%        cum   cum%
+    3078kB 35.65% 35.65%     3078kB 35.65%  runtime.allocm
+         0     0% 35.65%     3078kB 35.65%  runtime.newm
+         0     0% 35.65%     3078kB 35.65%  runtime.resetspinning
+         0     0% 35.65%     3078kB 35.65%  runtime.schedule
+         0     0% 35.65%     3078kB 35.65%  runtime.startm
+         0     0% 35.65%     3078kB 35.65%  runtime.wakep
+         0     0% 35.65%  2568.06kB 29.74%  primitives_performance.Benchmark_ChannelBasedPool
+ 1032.02kB 11.95% 47.60%  2568.06kB 29.74%  primitives_performance.NewChannelBasedPool (inline)
+         0     0% 47.60%  2568.06kB 29.74%  testing.(*B).launch
+         0     0% 47.60%  2568.06kB 29.74%  testing.(*B).runN
+         0     0% 47.60%  2476.89kB 28.68%  runtime/pprof.(*profileBuilder).appendLocsForStack
+         0     0% 47.60%  2476.89kB 28.68%  runtime/pprof.(*profileBuilder).build
+  516.64kB  5.98% 53.58%  2476.89kB 28.68%  runtime/pprof.(*profileBuilder).emitLocation
+         0     0% 53.58%  2476.89kB 28.68%  runtime/pprof.profileWriter
+         0     0% 53.58%     1539kB 17.82%  runtime.mcall
+         0     0% 53.58%     1539kB 17.82%  runtime.mstart
+         0     0% 53.58%     1539kB 17.82%  runtime.mstart0
+         0     0% 53.58%     1539kB 17.82%  runtime.mstart1
+         0     0% 53.58%     1539kB 17.82%  runtime.park_m
+ 1536.04kB 17.79% 71.37%  1536.04kB 17.79%  primitives_performance.init.func1
+  902.59kB 10.45% 81.82%  1447.25kB 16.76%  compress/flate.NewWriter (inline)
+         0     0% 81.82%  1447.25kB 16.76%  compress/gzip.(*Writer).Write
+         0     0% 81.82%  1447.25kB 16.76%  runtime/pprof.(*profileBuilder).flush
+  544.67kB  6.31% 88.13%   544.67kB  6.31%  compress/flate.(*compressor).init
+         0     0% 88.13%      513kB  5.94%  runtime/pprof.(*profileBuilder).pbLine
+         0     0% 88.13%      513kB  5.94%  runtime/pprof.(*protobuf).endMessage
+         0     0% 88.13%      513kB  5.94%  runtime/pprof.(*protobuf).length (inline)
+     513kB  5.94% 94.07%      513kB  5.94%  runtime/pprof.(*protobuf).varint (inline)
+  512.02kB  5.93%   100%   512.02kB  5.93%  testing.(*B).RunParallel.func1

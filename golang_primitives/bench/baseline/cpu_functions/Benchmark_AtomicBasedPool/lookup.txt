@@ -1,0 +1,22 @@
+Total: 108.20s
+ROUTINE ======================== runtime/pprof.(*profMap).lookup in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/pprof/map.go
+      20ms       40ms (flat, cum) 0.037% of Total
+      10ms       10ms     28:func (m *profMap) lookup(stk []uint64, tag unsafe.Pointer) *profMapEntry {
+         .          .     29:	// Compute hash of (stk, tag).
+         .          .     30:	h := uintptr(0)
+      10ms       10ms     31:	for _, x := range stk {
+         .          .     32:		h = h<<8 | (h >> (8 * (unsafe.Sizeof(h) - 1)))
+         .          .     33:		h += uintptr(x) * 41
+         .          .     34:	}
+         .          .     35:	h = h<<8 | (h >> (8 * (unsafe.Sizeof(h) - 1)))
+         .          .     36:	h += uintptr(tag) * 41
+         .          .     37:
+         .          .     38:	// Find entry if present.
+         .          .     39:	var last *profMapEntry
+         .          .     40:Search:
+         .       20ms     41:	for e := m.hash[h]; e != nil; last, e = e, e.nextHash {
+         .          .     42:		if len(e.stk) != len(stk) || e.tag != tag {
+         .          .     43:			continue
+         .          .     44:		}
+         .          .     45:		for j := range stk {
+         .          .     46:			if e.stk[j] != uintptr(stk[j]) {

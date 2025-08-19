@@ -1,0 +1,100 @@
+Total: 108.20s
+ROUTINE ======================== runtime.lock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+     120ms      200ms (flat, cum)  0.18% of Total
+         .          .    153:func lock2(l *mutex) {
+         .          .    154:	gp := getg()
+      10ms       10ms    155:	if gp.m.locks < 0 {
+         .          .    156:		throw("runtime·lock: lock count")
+         .          .    157:	}
+         .          .    158:	gp.m.locks++
+         .          .    159:
+      20ms       20ms    160:	k8 := key8(&l.key)
+         .          .    161:
+         .          .    162:	// Speculative grab for lock.
+      70ms       70ms    163:	v8 := atomic.Xchg8(k8, mutexLocked)
+         .          .    164:	if v8&mutexLocked == 0 {
+      10ms       10ms    165:		if v8&mutexSleeping != 0 {
+         .          .    166:			atomic.Or8(k8, mutexSleeping)
+         .          .    167:		}
+         .          .    168:		return
+         .          .    169:	}
+         .          .    170:	semacreate(gp.m)
+         .          .    171:
+         .          .    172:	timer := &lockTimer{lock: l}
+         .       10ms    173:	timer.begin()
+         .          .    174:	// On uniprocessors, no point spinning.
+         .          .    175:	// On multiprocessors, spin for mutexActiveSpinCount attempts.
+         .          .    176:	spin := 0
+         .          .    177:	if ncpu > 1 {
+         .          .    178:		spin = mutexActiveSpinCount
+         .          .    179:	}
+         .          .    180:
+         .          .    181:	var weSpin, atTail bool
+         .          .    182:	v := atomic.Loaduintptr(&l.key)
+         .          .    183:tryAcquire:
+         .          .    184:	for i := 0; ; i++ {
+         .          .    185:		if v&mutexLocked == 0 {
+         .          .    186:			if weSpin {
+         .          .    187:				next := (v &^ mutexSpinning) | mutexSleeping | mutexLocked
+         .          .    188:				if next&^mutexMMask == 0 {
+         .          .    189:					// The fast-path Xchg8 may have cleared mutexSleeping. Fix
+         .          .    190:					// the hint so unlock2 knows when to use its slow path.
+         .          .    191:					next = next &^ mutexSleeping
+         .          .    192:				}
+         .          .    193:				if atomic.Casuintptr(&l.key, v, next) {
+         .          .    194:					timer.end()
+         .          .    195:					return
+         .          .    196:				}
+         .          .    197:			} else {
+         .          .    198:				prev8 := atomic.Xchg8(k8, mutexLocked|mutexSleeping)
+         .          .    199:				if prev8&mutexLocked == 0 {
+         .          .    200:					timer.end()
+         .          .    201:					return
+         .          .    202:				}
+         .          .    203:			}
+         .          .    204:			v = atomic.Loaduintptr(&l.key)
+         .          .    205:			continue tryAcquire
+         .          .    206:		}
+         .          .    207:
+      10ms       10ms    208:		if !weSpin && v&mutexSpinning == 0 && atomic.Casuintptr(&l.key, v, v|mutexSpinning) {
+         .          .    209:			v |= mutexSpinning
+         .          .    210:			weSpin = true
+         .          .    211:		}
+         .          .    212:
+         .          .    213:		if weSpin || atTail || mutexPreferLowLatency(l) {
+         .          .    214:			if i < spin {
+         .          .    215:				procyield(mutexActiveSpinSize)
+         .          .    216:				v = atomic.Loaduintptr(&l.key)
+         .          .    217:				continue tryAcquire
+         .          .    218:			} else if i < spin+mutexPassiveSpinCount {
+         .       70ms    219:				osyield() // TODO: Consider removing this step. See https://go.dev/issue/69268.
+         .          .    220:				v = atomic.Loaduintptr(&l.key)
+         .          .    221:				continue tryAcquire
+         .          .    222:			}
+         .          .    223:		}
+         .          .    224:
+ROUTINE ======================== runtime.unlock2 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/lock_spinbit.go
+      90ms      120ms (flat, cum)  0.11% of Total
+      10ms       10ms    259:func unlock2(l *mutex) {
+         .          .    260:	gp := getg()
+         .          .    261:
+      10ms       10ms    262:	prev8 := atomic.Xchg8(key8(&l.key), 0)
+         .          .    263:	if prev8&mutexLocked == 0 {
+         .          .    264:		throw("unlock of unlocked lock")
+         .          .    265:	}
+         .          .    266:
+      30ms       30ms    267:	if prev8&mutexSleeping != 0 {
+         .          .    268:		unlock2Wake(l)
+         .          .    269:	}
+         .          .    270:
+         .       30ms    271:	gp.m.mLockProfile.recordUnlock(l)
+      10ms       10ms    272:	gp.m.locks--
+         .          .    273:	if gp.m.locks < 0 {
+         .          .    274:		throw("runtime·unlock: lock count")
+         .          .    275:	}
+      30ms       30ms    276:	if gp.m.locks == 0 && gp.preempt { // restore the preemption request in case we've cleared it in newstack
+         .          .    277:		gp.stackguard0 = stackPreempt
+         .          .    278:	}
+         .          .    279:}
+         .          .    280:
+         .          .    281:// unlock2Wake updates the list of Ms waiting on l, waking an M if necessary.

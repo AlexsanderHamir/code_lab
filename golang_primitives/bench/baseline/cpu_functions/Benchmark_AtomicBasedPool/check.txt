@@ -1,0 +1,42 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*timers).check in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      30ms      110ms (flat, cum)   0.1% of Total
+      10ms       10ms    952:func (ts *timers) check(now int64) (rnow, pollUntil int64, ran bool) {
+         .          .    953:	ts.trace("check")
+         .          .    954:	// If it's not yet time for the first timer, or the first adjusted
+         .          .    955:	// timer, then there is nothing to do.
+         .          .    956:	next := ts.wakeTime()
+         .          .    957:	if next == 0 {
+         .          .    958:		// No timers to run or adjust.
+      10ms       10ms    959:		return now, 0, false
+         .          .    960:	}
+         .          .    961:
+         .          .    962:	if now == 0 {
+         .       30ms    963:		now = nanotime()
+         .          .    964:	}
+         .          .    965:
+         .          .    966:	// If this is the local P, and there are a lot of deleted timers,
+         .          .    967:	// clear them out. We only do this for the local P to reduce
+         .          .    968:	// lock contention on timersLock.
+         .          .    969:	zombies := ts.zombies.Load()
+         .          .    970:	if zombies < 0 {
+         .          .    971:		badTimer()
+         .          .    972:	}
+         .          .    973:	force := ts == &getg().m.p.ptr().timers && int(zombies) > int(ts.len.Load())/4
+         .          .    974:
+      10ms       10ms    975:	if now < next && !force {
+         .          .    976:		// Next timer is not ready to run, and we don't need to clear deleted timers.
+         .          .    977:		return now, next, false
+         .          .    978:	}
+         .          .    979:
+         .          .    980:	ts.lock()
+         .          .    981:	if len(ts.heap) > 0 {
+         .          .    982:		ts.adjust(now, false)
+         .          .    983:		for len(ts.heap) > 0 {
+         .          .    984:			// Note that runtimer may temporarily unlock ts.
+         .       50ms    985:			if tw := ts.run(now); tw != 0 {
+         .          .    986:				if tw > 0 {
+         .          .    987:					pollUntil = tw
+         .          .    988:				}
+         .          .    989:				break
+         .          .    990:			}

@@ -1,0 +1,12 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*gQueue).pop in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .   7057:func (q *gQueue) pop() *g {
+         .          .   7058:	gp := q.head.ptr()
+         .          .   7059:	if gp != nil {
+      10ms       10ms   7060:		q.head = gp.schedlink
+         .          .   7061:		if q.head == 0 {
+         .          .   7062:			q.tail = 0
+         .          .   7063:		}
+         .          .   7064:	}
+         .          .   7065:	return gp

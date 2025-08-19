@@ -1,0 +1,34 @@
+Total: 30.68s
+ROUTINE ======================== runtime.(*waitq).dequeue in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/chan.go
+      20ms       20ms (flat, cum) 0.065% of Total
+         .          .    883:func (q *waitq) dequeue() *sudog {
+      10ms       10ms    884:	for {
+         .          .    885:		sgp := q.first
+         .          .    886:		if sgp == nil {
+         .          .    887:			return nil
+         .          .    888:		}
+         .          .    889:		y := sgp.next
+         .          .    890:		if y == nil {
+         .          .    891:			q.first = nil
+         .          .    892:			q.last = nil
+         .          .    893:		} else {
+         .          .    894:			y.prev = nil
+         .          .    895:			q.first = y
+         .          .    896:			sgp.next = nil // mark as removed (see dequeueSudoG)
+         .          .    897:		}
+         .          .    898:
+         .          .    899:		// if a goroutine was put on this queue because of a
+         .          .    900:		// select, there is a small window between the goroutine
+         .          .    901:		// being woken up by a different case and it grabbing the
+         .          .    902:		// channel locks. Once it has the lock
+         .          .    903:		// it removes itself from the queue, so we won't see it after that.
+         .          .    904:		// We use a flag in the G struct to tell us when someone
+         .          .    905:		// else has won the race to signal this goroutine but the goroutine
+         .          .    906:		// hasn't removed itself from the queue yet.
+         .          .    907:		if sgp.isSelect {
+      10ms       10ms    908:			if !sgp.g.selectDone.CompareAndSwap(0, 1) {
+         .          .    909:				// We lost the race to wake this goroutine.
+         .          .    910:				continue
+         .          .    911:			}
+         .          .    912:		}
+         .          .    913:

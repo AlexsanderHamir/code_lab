@@ -1,0 +1,19 @@
+Total: 108.20s
+ROUTINE ======================== runtime.goroutineReady in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    416:func goroutineReady(arg any, _ uintptr, _ int64) {
+         .       10ms    417:	goready(arg.(*g), 0)
+         .          .    418:}
+         .          .    419:
+         .          .    420:// addHeap adds t to the timers heap.
+         .          .    421:// The caller must hold ts.lock or the world must be stopped.
+         .          .    422:// The caller must also have checked that t belongs in the heap.
+ROUTINE ======================== runtime.goroutineReady.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.0092% of Total
+         .          .    455:	systemstack(func() {
+         .       10ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {

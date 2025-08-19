@@ -1,0 +1,21 @@
+Total: 108.20s
+ROUTINE ======================== internal/runtime/maps.(*groupReference).key in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/maps/group.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    278:func (g *groupReference) key(typ *abi.SwissMapType, i uintptr) unsafe.Pointer {
+      10ms       10ms    279:	offset := groupSlotsOffset + i*typ.SlotSize
+         .          .    280:
+         .          .    281:	return unsafe.Pointer(uintptr(g.data) + offset)
+         .          .    282:}
+         .          .    283:
+         .          .    284:// elem returns a pointer to the element at index i.
+ROUTINE ======================== internal/runtime/maps.(*groupsReference).group in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/maps/group.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    316:func (g *groupsReference) group(typ *abi.SwissMapType, i uint64) groupReference {
+         .          .    317:	// TODO(prattmic): Do something here about truncation on cast to
+         .          .    318:	// uintptr on 32-bit systems?
+      10ms       10ms    319:	offset := uintptr(i) * typ.GroupSize
+         .          .    320:
+         .          .    321:	return groupReference{
+         .          .    322:		data: unsafe.Pointer(uintptr(g.data) + offset),
+         .          .    323:	}
+         .          .    324:}

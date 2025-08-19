@@ -1,0 +1,44 @@
+Total: 52.38s
+ROUTINE ======================== runtime.stkbucket in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      80ms       80ms (flat, cum)  0.15% of Total
+         .          .    275:func stkbucket(typ bucketType, size uintptr, stk []uintptr, alloc bool) *bucket {
+         .          .    276:	bh := (*buckhashArray)(buckhash.Load())
+         .          .    277:	if bh == nil {
+         .          .    278:		lock(&profInsertLock)
+         .          .    279:		// check again under the lock
+         .          .    280:		bh = (*buckhashArray)(buckhash.Load())
+         .          .    281:		if bh == nil {
+         .          .    282:			bh = (*buckhashArray)(sysAlloc(unsafe.Sizeof(buckhashArray{}), &memstats.buckhash_sys))
+         .          .    283:			if bh == nil {
+         .          .    284:				throw("runtime: cannot allocate memory")
+         .          .    285:			}
+         .          .    286:			buckhash.StoreNoWB(unsafe.Pointer(bh))
+         .          .    287:		}
+         .          .    288:		unlock(&profInsertLock)
+         .          .    289:	}
+         .          .    290:
+         .          .    291:	// Hash stack.
+         .          .    292:	var h uintptr
+         .          .    293:	for _, pc := range stk {
+         .          .    294:		h += pc
+         .          .    295:		h += h << 10
+         .          .    296:		h ^= h >> 6
+         .          .    297:	}
+         .          .    298:	// hash in size
+         .          .    299:	h += size
+         .          .    300:	h += h << 10
+         .          .    301:	h ^= h >> 6
+         .          .    302:	// finalize
+         .          .    303:	h += h << 3
+      20ms       20ms    304:	h ^= h >> 11
+         .          .    305:
+         .          .    306:	i := int(h % buckHashSize)
+         .          .    307:	// first check optimistically, without the lock
+         .          .    308:	for b := (*bucket)(bh[i].Load()); b != nil; b = b.next {
+      50ms       50ms    309:		if b.typ == typ && b.hash == h && b.size == size && eqslice(b.stk(), stk) {
+      10ms       10ms    310:			return b
+         .          .    311:		}
+         .          .    312:	}
+         .          .    313:
+         .          .    314:	if !alloc {
+         .          .    315:		return nil

@@ -1,0 +1,10 @@
+Total: 52.53s
+ROUTINE ======================== internal/sync.runtime_SemacquireMutex in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+         0      7.25s (flat, cum) 13.80% of Total
+         .          .     94:func internal_sync_runtime_SemacquireMutex(addr *uint32, lifo bool, skipframes int) {
+         .      7.25s     95:	semacquire1(addr, lifo, semaBlockProfile|semaMutexProfile, skipframes, waitReasonSyncMutexLock)
+         .          .     96:}
+         .          .     97:
+         .          .     98://go:linkname sync_runtime_SemacquireRWMutexR sync.runtime_SemacquireRWMutexR
+         .          .     99:func sync_runtime_SemacquireRWMutexR(addr *uint32, lifo bool, skipframes int) {
+         .          .    100:	semacquire1(addr, lifo, semaBlockProfile|semaMutexProfile, skipframes, waitReasonSyncRWMutexRLock)

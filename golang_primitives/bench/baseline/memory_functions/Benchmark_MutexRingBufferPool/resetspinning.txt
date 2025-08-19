@@ -1,0 +1,22 @@
+Total: 9.28MB
+ROUTINE ======================== runtime.resetspinning in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0     1.50MB (flat, cum) 16.20% of Total
+         .          .   3872:func resetspinning() {
+         .          .   3873:	gp := getg()
+         .          .   3874:	if !gp.m.spinning {
+         .          .   3875:		throw("resetspinning: not a spinning m")
+         .          .   3876:	}
+         .          .   3877:	gp.m.spinning = false
+         .          .   3878:	nmspinning := sched.nmspinning.Add(-1)
+         .          .   3879:	if nmspinning < 0 {
+         .          .   3880:		throw("findrunnable: negative nmspinning")
+         .          .   3881:	}
+         .          .   3882:	// M wakeup policy is deliberately somewhat conservative, so check if we
+         .          .   3883:	// need to wakeup another P here. See "Worker thread parking/unparking"
+         .          .   3884:	// comment at the top of the file for details.
+         .     1.50MB   3885:	wakep()
+         .          .   3886:}
+         .          .   3887:
+         .          .   3888:// injectglist adds each runnable G on the list to some run queue,
+         .          .   3889:// and clears glist. If there is no current P, they are added to the
+         .          .   3890:// global queue, and up to npidle M's are started to run them.

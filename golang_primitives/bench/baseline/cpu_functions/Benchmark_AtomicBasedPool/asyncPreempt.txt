@@ -1,0 +1,10 @@
+Total: 108.20s
+ROUTINE ======================== runtime.asyncPreempt in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/preempt_arm64.s
+     200ms      200ms (flat, cum)  0.18% of Total
+         .          .      6:TEXT ·asyncPreempt(SB),NOSPLIT|NOFRAME,$0-0
+     200ms      200ms      7:	MOVD R30, -496(RSP)
+         .          .      8:	SUB $496, RSP
+         .          .      9:	MOVD R29, -8(RSP)
+         .          .     10:	SUB $8, RSP, R29
+         .          .     11:	#ifdef GOOS_ios
+         .          .     12:	MOVD R30, (RSP)

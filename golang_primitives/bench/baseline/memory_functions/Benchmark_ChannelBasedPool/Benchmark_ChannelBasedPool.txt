@@ -1,0 +1,13 @@
+Total: 8.43MB
+ROUTINE ======================== primitives_performance.Benchmark_ChannelBasedPool in /Users/alexsandergomes/Documents/experiments/golang_primitives/bench_test.go
+         0     2.51MB (flat, cum) 29.74% of Total
+         .          .     41:func Benchmark_ChannelBasedPool(b *testing.B) {
+         .          .     42:	debug.SetGCPercent(-1)
+         .          .     43:	b.ReportAllocs()
+         .          .     44:
+         .     2.51MB     45:	pool := NewChannelBasedPool(1000, testAllocator, testCleaner)
+         .          .     46:
+         .          .     47:	b.ResetTimer()
+         .          .     48:	b.RunParallel(func(pb *testing.PB) {
+         .          .     49:		for pb.Next() {
+         .          .     50:			obj := pool.Get()

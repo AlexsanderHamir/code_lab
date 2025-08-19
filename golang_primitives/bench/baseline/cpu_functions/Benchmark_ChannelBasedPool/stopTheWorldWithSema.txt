@@ -1,0 +1,67 @@
+Total: 30.68s
+ROUTINE ======================== runtime.stopTheWorldWithSema in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       10ms (flat, cum) 0.033% of Total
+         .          .   1554:func stopTheWorldWithSema(reason stwReason) worldStop {
+         .          .   1555:	trace := traceAcquire()
+         .          .   1556:	if trace.ok() {
+         .          .   1557:		trace.STWStart(reason)
+         .          .   1558:		traceRelease(trace)
+         .          .   1559:	}
+         .          .   1560:	gp := getg()
+         .          .   1561:
+         .          .   1562:	// If we hold a lock, then we won't be able to stop another M
+         .          .   1563:	// that is blocked trying to acquire the lock.
+         .          .   1564:	if gp.m.locks > 0 {
+         .          .   1565:		throw("stopTheWorld: holding locks")
+         .          .   1566:	}
+         .          .   1567:
+         .          .   1568:	lock(&sched.lock)
+         .          .   1569:	start := nanotime() // exclude time waiting for sched.lock from start and total time metrics.
+         .          .   1570:	sched.stopwait = gomaxprocs
+         .          .   1571:	sched.gcwaiting.Store(true)
+         .          .   1572:	preemptall()
+         .          .   1573:	// stop current P
+         .          .   1574:	gp.m.p.ptr().status = _Pgcstop // Pgcstop is only diagnostic.
+         .          .   1575:	gp.m.p.ptr().gcStopTime = start
+         .          .   1576:	sched.stopwait--
+         .          .   1577:	// try to retake all P's in Psyscall status
+         .          .   1578:	trace = traceAcquire()
+         .          .   1579:	for _, pp := range allp {
+         .          .   1580:		s := pp.status
+         .          .   1581:		if s == _Psyscall && atomic.Cas(&pp.status, s, _Pgcstop) {
+         .          .   1582:			if trace.ok() {
+         .          .   1583:				trace.ProcSteal(pp, false)
+         .          .   1584:			}
+         .          .   1585:			pp.syscalltick++
+         .          .   1586:			pp.gcStopTime = nanotime()
+         .          .   1587:			sched.stopwait--
+         .          .   1588:		}
+         .          .   1589:	}
+         .          .   1590:	if trace.ok() {
+         .          .   1591:		traceRelease(trace)
+         .          .   1592:	}
+         .          .   1593:
+         .          .   1594:	// stop idle P's
+         .          .   1595:	now := nanotime()
+         .          .   1596:	for {
+         .          .   1597:		pp, _ := pidleget(now)
+         .          .   1598:		if pp == nil {
+         .          .   1599:			break
+         .          .   1600:		}
+         .          .   1601:		pp.status = _Pgcstop
+         .          .   1602:		pp.gcStopTime = nanotime()
+         .          .   1603:		sched.stopwait--
+         .          .   1604:	}
+         .          .   1605:	wait := sched.stopwait > 0
+         .          .   1606:	unlock(&sched.lock)
+         .          .   1607:
+         .          .   1608:	// wait for remaining P's to stop voluntarily
+         .          .   1609:	if wait {
+         .          .   1610:		for {
+         .          .   1611:			// wait for 100us, then try to re-preempt in case of any races
+         .       10ms   1612:			if notetsleep(&sched.stopnote, 100*1000) {
+         .          .   1613:				noteclear(&sched.stopnote)
+         .          .   1614:				break
+         .          .   1615:			}
+         .          .   1616:			preemptall()
+         .          .   1617:		}

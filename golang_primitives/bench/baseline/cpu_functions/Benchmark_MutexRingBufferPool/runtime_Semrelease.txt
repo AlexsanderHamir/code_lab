@@ -1,0 +1,11 @@
+Total: 52.53s
+ROUTINE ======================== internal/sync.runtime_Semrelease in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      20ms     14.79s (flat, cum) 28.16% of Total
+         .          .    119:func internal_sync_runtime_Semrelease(addr *uint32, handoff bool, skipframes int) {
+         .     14.77s    120:	semrelease1(addr, handoff, skipframes)
+      20ms       20ms    121:}
+         .          .    122:
+         .          .    123:func readyWithTime(s *sudog, traceskip int) {
+         .          .    124:	if s.releasetime != 0 {
+         .          .    125:		s.releasetime = cputicks()
+         .          .    126:	}

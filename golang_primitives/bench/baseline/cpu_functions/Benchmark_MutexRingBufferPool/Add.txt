@@ -1,0 +1,57 @@
+Total: 52.53s
+ROUTINE ======================== internal/runtime/atomic.(*Uint32).Add in /opt/homebrew/Cellar/go/1.24.3/libexec/src/internal/runtime/atomic/types.go
+      20ms       20ms (flat, cum) 0.038% of Total
+         .          .    290:func (u *Uint32) Add(delta int32) uint32 {
+      20ms       20ms    291:	return Xadd(&u.value, delta)
+         .          .    292:}
+         .          .    293:
+         .          .    294:// Uint64 is an atomically accessed uint64 value.
+         .          .    295://
+         .          .    296:// 8-byte aligned on all platforms, unlike a regular uint64.
+ROUTINE ======================== runtime.(*moduledata).textAddr in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/symtab.go
+      30ms       30ms (flat, cum) 0.057% of Total
+      10ms       10ms    681:func (md *moduledata) textAddr(off32 uint32) uintptr {
+         .          .    682:	off := uintptr(off32)
+         .          .    683:	res := md.text + off
+      20ms       20ms    684:	if len(md.textsectmap) > 1 {
+         .          .    685:		for i, sect := range md.textsectmap {
+         .          .    686:			// For the last section, include the end address (etext), as it is included in the functab.
+         .          .    687:			if off >= sect.vaddr && off < sect.end || (i == len(md.textsectmap)-1 && off == sect.end) {
+         .          .    688:				res = sect.baseaddr + off - sect.vaddr
+         .          .    689:				break
+ROUTINE ======================== runtime.(*mspan).heapBitsSmallForAddr in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mbitmap.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .    601:func (span *mspan) heapBitsSmallForAddr(addr uintptr) uintptr {
+         .          .    602:	spanSize := span.npages * pageSize
+         .          .    603:	bitmapSize := spanSize / goarch.PtrSize / 8
+         .          .    604:	hbits := (*byte)(unsafe.Pointer(span.base() + spanSize - bitmapSize))
+         .          .    605:
+         .          .    606:	// These objects are always small enough that their bitmaps
+         .          .    607:	// fit in a single word, so just load the word or two we need.
+         .          .    608:	//
+         .          .    609:	// Mirrors mspan.writeHeapBitsSmall.
+         .          .    610:	//
+         .          .    611:	// We should be using heapBits(), but unfortunately it introduces
+         .          .    612:	// both bounds checks panics and throw which causes us to exceed
+         .          .    613:	// the nosplit limit in quite a few cases.
+         .          .    614:	i := (addr - span.base()) / goarch.PtrSize / ptrBits
+         .          .    615:	j := (addr - span.base()) / goarch.PtrSize % ptrBits
+         .          .    616:	bits := span.elemsize / goarch.PtrSize
+         .          .    617:	word0 := (*uintptr)(unsafe.Pointer(addb(hbits, goarch.PtrSize*(i+0))))
+         .          .    618:	word1 := (*uintptr)(unsafe.Pointer(addb(hbits, goarch.PtrSize*(i+1))))
+         .          .    619:
+         .          .    620:	var read uintptr
+         .          .    621:	if j+bits > ptrBits {
+         .          .    622:		// Two reads.
+         .          .    623:		bits0 := ptrBits - j
+         .          .    624:		bits1 := bits - bits0
+         .          .    625:		read = *word0 >> j
+         .          .    626:		read |= (*word1 & ((1 << bits1) - 1)) << bits0
+         .          .    627:	} else {
+         .          .    628:		// One read.
+      10ms       10ms    629:		read = (*word0 >> j) & ((1 << bits) - 1)
+         .          .    630:	}
+         .          .    631:	return read
+         .          .    632:}
+         .          .    633:
+         .          .    634:// writeHeapBitsSmall writes the heap bits for small objects whose ptr/scalar data is

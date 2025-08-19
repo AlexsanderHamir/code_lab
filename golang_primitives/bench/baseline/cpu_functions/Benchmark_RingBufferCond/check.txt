@@ -1,0 +1,47 @@
+Total: 52.38s
+ROUTINE ======================== runtime.(*timers).check in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/time.go
+      30ms       40ms (flat, cum) 0.076% of Total
+         .          .    952:func (ts *timers) check(now int64) (rnow, pollUntil int64, ran bool) {
+         .          .    953:	ts.trace("check")
+         .          .    954:	// If it's not yet time for the first timer, or the first adjusted
+         .          .    955:	// timer, then there is nothing to do.
+         .          .    956:	next := ts.wakeTime()
+      30ms       30ms    957:	if next == 0 {
+         .          .    958:		// No timers to run or adjust.
+         .          .    959:		return now, 0, false
+         .          .    960:	}
+         .          .    961:
+         .          .    962:	if now == 0 {
+         .       10ms    963:		now = nanotime()
+         .          .    964:	}
+         .          .    965:
+         .          .    966:	// If this is the local P, and there are a lot of deleted timers,
+         .          .    967:	// clear them out. We only do this for the local P to reduce
+         .          .    968:	// lock contention on timersLock.
+ROUTINE ======================== runtime.checkRunqsNoP in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      10ms       20ms (flat, cum) 0.038% of Total
+         .          .   3753:func checkRunqsNoP(allpSnapshot []*p, idlepMaskSnapshot pMask) *p {
+         .          .   3754:	for id, p2 := range allpSnapshot {
+      10ms       10ms   3755:		if !idlepMaskSnapshot.read(uint32(id)) && !runqempty(p2) {
+         .          .   3756:			lock(&sched.lock)
+         .       10ms   3757:			pp, _ := pidlegetSpinning(0)
+         .          .   3758:			if pp == nil {
+         .          .   3759:				// Can't get a P, don't bother checking remaining Ps.
+         .          .   3760:				unlock(&sched.lock)
+         .          .   3761:				return nil
+         .          .   3762:			}
+ROUTINE ======================== sync.(*copyChecker).check in /opt/homebrew/Cellar/go/1.24.3/libexec/src/sync/cond.go
+      10ms       10ms (flat, cum) 0.019% of Total
+         .          .     99:func (c *copyChecker) check() {
+         .          .    100:	// Check if c has been copied in three steps:
+         .          .    101:	// 1. The first comparison is the fast-path. If c has been initialized and not copied, this will return immediately. Otherwise, c is either not initialized, or has been copied.
+         .          .    102:	// 2. Ensure c is initialized. If the CAS succeeds, we're done. If it fails, c was either initialized concurrently and we simply lost the race, or c has been copied.
+         .          .    103:	// 3. Do step 1 again. Now that c is definitely initialized, if this fails, c was copied.
+         .          .    104:	if uintptr(*c) != uintptr(unsafe.Pointer(c)) &&
+         .          .    105:		!atomic.CompareAndSwapUintptr((*uintptr)(c), 0, uintptr(unsafe.Pointer(c))) &&
+      10ms       10ms    106:		uintptr(*c) != uintptr(unsafe.Pointer(c)) {
+         .          .    107:		panic("sync.Cond is copied")
+         .          .    108:	}
+         .          .    109:}
+         .          .    110:
+         .          .    111:// noCopy may be added to structs which must not be copied

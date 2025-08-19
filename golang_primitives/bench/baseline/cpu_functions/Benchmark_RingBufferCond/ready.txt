@@ -1,0 +1,58 @@
+Total: 52.38s
+ROUTINE ======================== runtime.goready in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0       80ms (flat, cum)  0.15% of Total
+         .          .    454:func goready(gp *g, traceskip int) {
+         .       80ms    455:	systemstack(func() {
+         .          .    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+ROUTINE ======================== runtime.ready in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      40ms      700ms (flat, cum)  1.34% of Total
+         .          .   1040:func ready(gp *g, traceskip int, next bool) {
+         .          .   1041:	status := readgstatus(gp)
+         .          .   1042:
+         .          .   1043:	// Mark runnable.
+         .          .   1044:	mp := acquirem() // disable preemption because it can be holding p in a local var
+      40ms       40ms   1045:	if status&^_Gscan != _Gwaiting {
+         .          .   1046:		dumpgstatus(gp)
+         .          .   1047:		throw("bad g->status in ready")
+         .          .   1048:	}
+         .          .   1049:
+         .          .   1050:	// status is Gwaiting or Gscanwaiting, make Grunnable and put on runq
+         .          .   1051:	trace := traceAcquire()
+         .       30ms   1052:	casgstatus(gp, _Gwaiting, _Grunnable)
+         .          .   1053:	if trace.ok() {
+         .          .   1054:		trace.GoUnpark(gp, traceskip)
+         .          .   1055:		traceRelease(trace)
+         .          .   1056:	}
+         .       10ms   1057:	runqput(mp.p.ptr(), gp, next)
+         .      610ms   1058:	wakep()
+         .       10ms   1059:	releasem(mp)
+         .          .   1060:}
+         .          .   1061:
+         .          .   1062:// freezeStopWait is a large value that freezetheworld sets
+         .          .   1063:// sched.stopwait to in order to request that all Gs permanently stop.
+         .          .   1064:const freezeStopWait = 0x7fffffff
+ROUTINE ======================== runtime.readyWithTime in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/sema.go
+      10ms      160ms (flat, cum)  0.31% of Total
+      10ms       10ms    123:func readyWithTime(s *sudog, traceskip int) {
+         .          .    124:	if s.releasetime != 0 {
+         .       70ms    125:		s.releasetime = cputicks()
+         .          .    126:	}
+         .       80ms    127:	goready(s.g, traceskip)
+         .          .    128:}
+         .          .    129:
+         .          .    130:type semaProfileFlags int
+         .          .    131:
+         .          .    132:const (
+ROUTINE ======================== runtime.readyWithTime.goready.func1 in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+         0      700ms (flat, cum)  1.34% of Total
+         .          .    455:	systemstack(func() {
+         .      700ms    456:		ready(gp, traceskip, true)
+         .          .    457:	})
+         .          .    458:}
+         .          .    459:
+         .          .    460://go:nosplit
+         .          .    461:func acquireSudog() *sudog {

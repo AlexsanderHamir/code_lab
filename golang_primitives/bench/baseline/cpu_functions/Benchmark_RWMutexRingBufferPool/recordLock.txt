@@ -1,0 +1,22 @@
+Total: 48.01s
+ROUTINE ======================== runtime.(*mLockProfile).recordLock in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/mprof.go
+      10ms       10ms (flat, cum) 0.021% of Total
+         .          .    725:func (prof *mLockProfile) recordLock(cycles int64, l *mutex) {
+         .          .    726:	if cycles < 0 {
+         .          .    727:		cycles = 0
+         .          .    728:	}
+         .          .    729:
+         .          .    730:	if prof.disabled {
+         .          .    731:		// We're experiencing contention while attempting to report contention.
+         .          .    732:		// Make a note of its magnitude, but don't allow it to be the sole cause
+         .          .    733:		// of another contention report.
+         .          .    734:		prof.cyclesLost += cycles
+         .          .    735:		return
+         .          .    736:	}
+         .          .    737:
+      10ms       10ms    738:	if uintptr(unsafe.Pointer(l)) == prof.pending {
+         .          .    739:		// Optimization: we'd already planned to profile this same lock (though
+         .          .    740:		// possibly from a different unlock site).
+         .          .    741:		prof.cycles += cycles
+         .          .    742:		return
+         .          .    743:	}

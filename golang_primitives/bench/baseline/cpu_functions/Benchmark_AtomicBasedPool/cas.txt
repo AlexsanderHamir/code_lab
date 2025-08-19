@@ -1,0 +1,113 @@
+Total: 108.20s
+ROUTINE ======================== runtime.(*guintptr).cas in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/runtime2.go
+      10ms       10ms (flat, cum) 0.0092% of Total
+         .          .    246:func (gp *guintptr) cas(old, new guintptr) bool {
+      10ms       10ms    247:	return atomic.Casuintptr((*uintptr)(unsafe.Pointer(gp)), uintptr(old), uintptr(new))
+         .          .    248:}
+         .          .    249:
+         .          .    250://go:nosplit
+         .          .    251:func (gp *g) guintptr() guintptr {
+         .          .    252:	return guintptr(unsafe.Pointer(gp))
+ROUTINE ======================== runtime.casgstatus in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/proc.go
+      50ms      100ms (flat, cum) 0.092% of Total
+         .          .   1193:func casgstatus(gp *g, oldval, newval uint32) {
+         .          .   1194:	if (oldval&_Gscan != 0) || (newval&_Gscan != 0) || oldval == newval {
+         .          .   1195:		systemstack(func() {
+         .          .   1196:			// Call on the systemstack to prevent print and throw from counting
+         .          .   1197:			// against the nosplit stack reservation.
+         .          .   1198:			print("runtime: casgstatus: oldval=", hex(oldval), " newval=", hex(newval), "\n")
+         .          .   1199:			throw("casgstatus: bad incoming values")
+         .          .   1200:		})
+         .          .   1201:	}
+         .          .   1202:
+         .          .   1203:	lockWithRankMayAcquire(nil, lockRankGscan)
+         .          .   1204:
+         .          .   1205:	// See https://golang.org/cl/21503 for justification of the yield delay.
+         .          .   1206:	const yieldDelay = 5 * 1000
+         .          .   1207:	var nextYield int64
+         .          .   1208:
+         .          .   1209:	// loop if gp->atomicstatus is in a scan state giving
+         .          .   1210:	// GC time to finish and change the state to oldval.
+      20ms       20ms   1211:	for i := 0; !gp.atomicstatus.CompareAndSwap(oldval, newval); i++ {
+         .          .   1212:		if oldval == _Gwaiting && gp.atomicstatus.Load() == _Grunnable {
+         .          .   1213:			systemstack(func() {
+         .          .   1214:				// Call on the systemstack to prevent throw from counting
+         .          .   1215:				// against the nosplit stack reservation.
+         .          .   1216:				throw("casgstatus: waiting for Gwaiting but is Grunnable")
+         .          .   1217:			})
+         .          .   1218:		}
+         .          .   1219:		if i == 0 {
+         .          .   1220:			nextYield = nanotime() + yieldDelay
+         .          .   1221:		}
+         .          .   1222:		if nanotime() < nextYield {
+         .          .   1223:			for x := 0; x < 10 && gp.atomicstatus.Load() != oldval; x++ {
+         .          .   1224:				procyield(1)
+         .          .   1225:			}
+         .          .   1226:		} else {
+         .          .   1227:			osyield()
+         .          .   1228:			nextYield = nanotime() + yieldDelay/2
+         .          .   1229:		}
+         .          .   1230:	}
+         .          .   1231:
+         .          .   1232:	if gp.syncGroup != nil {
+         .          .   1233:		systemstack(func() {
+         .          .   1234:			gp.syncGroup.changegstatus(gp, oldval, newval)
+         .          .   1235:		})
+         .          .   1236:	}
+         .          .   1237:
+      10ms       10ms   1238:	if oldval == _Grunning {
+         .          .   1239:		// Track every gTrackingPeriod time a goroutine transitions out of running.
+         .          .   1240:		if casgstatusAlwaysTrack || gp.trackingSeq%gTrackingPeriod == 0 {
+      10ms       10ms   1241:			gp.tracking = true
+         .          .   1242:		}
+         .          .   1243:		gp.trackingSeq++
+         .          .   1244:	}
+         .          .   1245:	if !gp.tracking {
+      10ms       10ms   1246:		return
+         .          .   1247:	}
+         .          .   1248:
+         .          .   1249:	// Handle various kinds of tracking.
+         .          .   1250:	//
+         .          .   1251:	// Currently:
+         .          .   1252:	// - Time spent in runnable.
+         .          .   1253:	// - Time spent blocked on a sync.Mutex or sync.RWMutex.
+         .          .   1254:	switch oldval {
+         .          .   1255:	case _Grunnable:
+         .          .   1256:		// We transitioned out of runnable, so measure how much
+         .          .   1257:		// time we spent in this state and add it to
+         .          .   1258:		// runnableTime.
+         .       30ms   1259:		now := nanotime()
+         .          .   1260:		gp.runnableTime += now - gp.trackingStamp
+         .          .   1261:		gp.trackingStamp = 0
+         .          .   1262:	case _Gwaiting:
+         .          .   1263:		if !gp.waitreason.isMutexWait() {
+         .          .   1264:			// Not blocking on a lock.
+         .          .   1265:			break
+         .          .   1266:		}
+         .          .   1267:		// Blocking on a lock, measure it. Note that because we're
+         .          .   1268:		// sampling, we have to multiply by our sampling period to get
+         .          .   1269:		// a more representative estimate of the absolute value.
+         .          .   1270:		// gTrackingPeriod also represents an accurate sampling period
+         .          .   1271:		// because we can only enter this state from _Grunning.
+         .          .   1272:		now := nanotime()
+         .          .   1273:		sched.totalMutexWaitTime.Add((now - gp.trackingStamp) * gTrackingPeriod)
+         .          .   1274:		gp.trackingStamp = 0
+         .          .   1275:	}
+         .          .   1276:	switch newval {
+         .          .   1277:	case _Gwaiting:
+         .          .   1278:		if !gp.waitreason.isMutexWait() {
+         .          .   1279:			// Not blocking on a lock.
+         .          .   1280:			break
+         .          .   1281:		}
+         .          .   1282:		// Blocking on a lock. Write down the timestamp.
+         .          .   1283:		now := nanotime()
+         .          .   1284:		gp.trackingStamp = now
+         .          .   1285:	case _Grunnable:
+         .          .   1286:		// We just transitioned into runnable, so record what
+         .          .   1287:		// time that happened.
+         .       20ms   1288:		now := nanotime()
+         .          .   1289:		gp.trackingStamp = now
+         .          .   1290:	case _Grunning:
+         .          .   1291:		// We're transitioning into running, so turn off
+         .          .   1292:		// tracking and record how much time we spent in
+         .          .   1293:		// runnable.

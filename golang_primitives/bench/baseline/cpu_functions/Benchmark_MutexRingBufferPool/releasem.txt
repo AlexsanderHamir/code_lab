@@ -1,0 +1,14 @@
+Total: 52.53s
+ROUTINE ======================== runtime.releasem in /opt/homebrew/Cellar/go/1.24.3/libexec/src/runtime/runtime1.go
+      40ms       40ms (flat, cum) 0.076% of Total
+         .          .    612:func releasem(mp *m) {
+         .          .    613:	gp := getg()
+      30ms       30ms    614:	mp.locks--
+         .          .    615:	if mp.locks == 0 && gp.preempt {
+         .          .    616:		// restore the preemption request in case we've cleared it in newstack
+      10ms       10ms    617:		gp.stackguard0 = stackPreempt
+         .          .    618:	}
+         .          .    619:}
+         .          .    620:
+         .          .    621:// reflect_typelinks is meant for package reflect,
+         .          .    622:// but widely used packages access it using linkname.
