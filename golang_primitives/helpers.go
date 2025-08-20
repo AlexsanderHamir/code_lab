@@ -109,6 +109,59 @@ func (p *MutexRingBufferPool) Put(obj *testObject) {
 	p.ringBuffer.Push(obj)
 }
 
+// ProcPinned Mutex-protected ring buffer implementation
+// This version pins goroutines to logical processors and avoids defers for better performance
+type ProcPinnedMutexRingBufferPool struct {
+	ringBuffer *RingBuffer[*testObject]
+	mu         sync.Mutex
+	allocator  func() *testObject
+	cleaner    func(*testObject)
+}
+
+func NewProcPinnedMutexRingBufferPool(capacity int, allocator func() *testObject, cleaner func(*testObject)) *ProcPinnedMutexRingBufferPool {
+	pool := &ProcPinnedMutexRingBufferPool{
+		ringBuffer: NewRingBuffer[*testObject](capacity),
+		allocator:  allocator,
+		cleaner:    cleaner,
+	}
+
+	// Pre-populate the pool
+	for range capacity {
+		pool.ringBuffer.Push(allocator())
+	}
+
+	return pool
+}
+
+func (p *ProcPinnedMutexRingBufferPool) Get() *testObject {
+	// Pin goroutine to current logical processor
+	runtimeProcPin()
+	// Unpin goroutine from logical processor
+	runtimeProcUnpin()
+
+	p.mu.Lock()
+	obj, ok := p.ringBuffer.Pop()
+	p.mu.Unlock()
+
+	if ok {
+		return obj
+	}
+
+	return p.allocator()
+}
+
+func (p *ProcPinnedMutexRingBufferPool) Put(obj *testObject) {
+	// Pin goroutine to current logical processor
+	runtimeProcPin()
+	// Unpin goroutine from logical processor
+	runtimeProcUnpin()
+
+	p.mu.Lock()
+	p.ringBuffer.Push(obj)
+	p.mu.Unlock()
+
+}
+
 // Channel-based implementation for comparison
 type ChannelBasedPool struct {
 	objects   chan *testObject

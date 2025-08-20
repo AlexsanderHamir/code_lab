@@ -148,3 +148,19 @@ func Benchmark_ShardedGoroutineIDPool(b *testing.B) {
 		}
 	})
 }
+
+// Benchmark: ProcPinned Mutex-protected ring buffer pool
+func Benchmark_ProcPinnedMutexRingBufferPool(b *testing.B) {
+	debug.SetGCPercent(-1)
+	b.ReportAllocs()
+
+	pool := NewProcPinnedMutexRingBufferPool(1000, testAllocator, testCleaner)
+
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			obj := pool.Get()
+			pool.Put(obj)
+		}
+	})
+}
