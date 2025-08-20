@@ -21,6 +21,23 @@ func Benchmark_MutexRingBufferPool(b *testing.B) {
 	})
 }
 
+// Benchmark: Mutex-protected ring buffer pool with increased goroutines
+func Benchmark_MutexRingBufferPoolHighConcurrency(b *testing.B) {
+	debug.SetGCPercent(-1)
+	b.ReportAllocs()
+
+	pool := NewMutexRingBufferPool(1000, testAllocator, testCleaner)
+
+	b.ResetTimer()
+	b.SetParallelism(2000) // Increased to 2k goroutines
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			obj := pool.Get()
+			pool.Put(obj)
+		}
+	})
+}
+
 // Benchmark: Channel-based pool
 func Benchmark_ChannelBasedPool(b *testing.B) {
 	debug.SetGCPercent(-1)
@@ -157,6 +174,23 @@ func Benchmark_ProcPinnedMutexRingBufferPool(b *testing.B) {
 	pool := NewProcPinnedMutexRingBufferPool(1000, testAllocator, testCleaner)
 
 	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			obj := pool.Get()
+			pool.Put(obj)
+		}
+	})
+}
+
+// Benchmark: ProcPinned Mutex-protected ring buffer pool with increased goroutines
+func Benchmark_ProcPinnedMutexRingBufferPoolHighConcurrency(b *testing.B) {
+	debug.SetGCPercent(-1)
+	b.ReportAllocs()
+
+	pool := NewProcPinnedMutexRingBufferPool(1000, testAllocator, testCleaner)
+
+	b.ResetTimer()
+	b.SetParallelism(2000) // Increased to 2k goroutines
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			obj := pool.Get()
